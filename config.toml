@@ -31,8 +31,14 @@ googleAnalytics = "UA-144641266-1"
 [[menu.main]]
     identifier = "blog"
     # name = "Blog" #If display text link, cancel comment out
-    pre = "<i class='fa fa-book-open fa-lg'></i>" #Choose your favorite font from Font Awesome
+    pre = "<i class='fa fa-pen fa-lg'></i>" #Choose your favorite font from Font Awesome
     url = "/posts/"
+    weight = 10
+
+[[menu.main]]
+    identifier = "reading logs"
+    pre = "<i class='fa fa-book-open fa-lg'></i>" #Choose your favorite font from Font Awesome
+    url = "/reading-logs/"
     weight = 10
 
 [[menu.main]]

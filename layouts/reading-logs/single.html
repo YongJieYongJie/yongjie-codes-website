@@ -1,0 +1,20 @@
+{{ define "main"}}
+  <h1>Reading Log: {{ .Params.short_title }}</h1>
+  {{ partial "header.html" . }}
+  <!-- date -->
+  {{ $singlePageDateFormat := .Site.Params.singlePageDateFormat | default "January 2, 2006"}}
+  <p class="date">{{ .Date.Format $singlePageDateFormat }}</p>
+  <!-- content -->
+  <div id="contentBody">
+    <h1>Specifications</h1>
+    <ul>
+      <li><p>Full Title: <i>{{ .Params.title }}</i></p></li>
+      <li><p>Author: <i>{{ .Params.author }}</i></p></li>
+      <li><p>ISBN: <i>{{ .Params.isbn }}</i></p></li>
+      <li><p>Reading Period: <i>{{ .Params.reading_period }}</i></p></li>
+      <li><p>Source: <i>{{ .Params.source }}</i></p></li>
+    </ul>
+  {{ .Content }}
+  </div>
+  {{ partial "footer.html" . }}
+{{ end }}

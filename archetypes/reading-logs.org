@@ -1,0 +1,22 @@
+---
+short_title: "{{ replace .Name "-" " " | title }}"
+title: "{{ replace .Name "-" " " | title }}"
+source: 
+author: 
+isbn: 
+reading_period: yyyy.mm.dd–yyyy.mm.dd
+date: {{ .Date }}
+draft: true
+---
+
+* General Review
+
+* Specific Takeaways
+
+* To Internalize /Now/
+
+* To Learn Soon
+
+* To Revisit When Necessary
+
+* Other Resources Referred To

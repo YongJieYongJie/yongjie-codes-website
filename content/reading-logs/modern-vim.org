@@ -1,0 +1,46 @@
+---
+short_title: "Modern Vim"
+title: "Modern Vim: Craft Your Development Environment with Vim 8 and Neovim"
+source: Ad-hock browsing at the library
+author: Drew Neil
+isbn: 13:978-1-68050-262-6
+reading_period: 2019.08.04–2019.08.08
+date: 2019-10-11T18:16:47+08:00
+draft: false
+---
+
+* General Review
+- Read this book if you want to learn how to use Vim/Neovim more like an IDE.
+- The book explains how to configure and use various plugins to provide IDE-like
+  features to Vim.
+* Specific Takeaways
+- You should try out "non-official" forks of open-source software that interests you.
+  - By exploring and supporting such "non-official" forks, the software actually
+    develops more.
+  - For example, Neovim is one such worthy project to check out (apparently the
+    story is that the original creator of Neovim submitted a pull request adding
+    asynchronous operations support to Vim, but was rejected)
+* To Internalize /Now/
+- The [[https://vimhelp.org/quickfix.txt.html][quickfix]] list is global across buffers, whereas the location list is a
+  window-local quickfix list
+- To generate help tags after installing plugins, run ~:helptags ALL~
+- To scroll up and down without moving the cursor, use =<C-e>= and
+  =<C-y>=
+- To execute a command in shell and read the output back into Vim, use
+  ~:read !<cmd>~
+- Use more of =<Leader>X= key for commonly used commands
+- Use =<C-^>= to switch to alternate-file
+- Use =<C-x>= to decrement number and =<C-a>= to increment number
+- Use ~expand()~ to expand variables. E.g., ~:echo expand("%")~
+* To Learn Soon
+- Look through all the normal mode commands starting with ~g~ (~:help g~)
+- Revise how to properly use Vim's in-built help system (~:help help~)
+* To Revisit When Necessary
+- How to install plugins using Vim's new in-built package manager
+- How to configure quick alternate files jumping (e.g., header and
+  source; source and unit tests) using [[https://github.com/tpope/vim-projectionist][vim-projectionist]] plugin
+- How to configure Vim to run compiler / linting / tests
+- How to configure Vim for a better file searching experience
+- How to use terminal in Neovim
+- How to use [[https://github.com/mhinz/neovim-remote][neovim-remote]] to avoid multiple instances of Neovim
+- How to configure Vim to run certain commands asynchronously; use Vim job control
