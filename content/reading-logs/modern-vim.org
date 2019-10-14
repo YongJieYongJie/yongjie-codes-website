@@ -32,7 +32,7 @@ draft: false
 - Use =<C-^>= to switch to alternate-file
 - Use =<C-x>= to decrement number and =<C-a>= to increment number
 - Use ~expand()~ to expand variables. E.g., ~:echo expand("%")~
-* To Learn Soon
+* To Learn/Do Soon
 - Look through all the normal mode commands starting with ~g~ (~:help g~)
 - Revise how to properly use Vim's in-built help system (~:help help~)
 * To Revisit When Necessary

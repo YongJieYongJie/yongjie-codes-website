@@ -1,0 +1,36 @@
+---
+short_title: "tmux 2"
+title: "tmux 2: Productive Mouse-Free Development"
+source: "Referred to in Modern Vim (ISBN: 13:978-1-68050-262-6)"
+author: Brian P. Hogan
+isbn: 978-1-68050-221-3
+reading_period: 2019.08
+date: 2019-10-14T15:26:03+08:00
+draft: false
+---
+
+* General Review
+- Read this book if you want to get a sense of the basic usage of tmux, and the
+  sensible default set of configurations.
+* Specific Takeaways
+- tmux is actually a full-featured software capable of more than just managing
+  screens and maintaining sessions.
+  - Its ability to scroll back (and search) the console output without the use
+    of mouse gives potential productivity boost.
+* To Internalise /Now/
+- Use =<prefix> ?= to bring up the key bindings
+- By default, keys will be bound into the =prefix= group, so ~bind h set-option
+  -g status~ will bind the =<prefix> h= to toggle the status bar
+- To rebind the prefix to =`= key, use ~unbind C-b~, ~set-option -g prefix `~,
+  followed by ~bind ` send-prefix~
+- To use a different shell, use something like: ~set-option -g default-shell
+  /usr/bin/zsh~
+- To scroll back in the buffer (i.e., activate =copy mode=), use =<prefix> [=
+* To Learn/Do Soon
+- Come up with a sensible =.tmux.conf= for myself, and starting using it
+* To Revisit When Necessary
+- How to configure different sessions for different workflow (e.g., when opening
+  a tmux in a certain project, it will start the development server in one
+  window, and the editor in another etc.)
+- How to move windows and panes around
+- How to configure tmux to copy and paste intuitively with system clipboards
