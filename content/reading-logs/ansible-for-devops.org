@@ -1,0 +1,39 @@
+---
+short_title: "Ansible for Devops"
+title: "Ansible for DevOps: Server and configuration management for humans"
+source: Ad-hoc browsing at the library
+author: Jeff Geerling
+isbn: 978-0-9863934-1-9
+reading_period: 2019.08
+date: 2019-10-19T10:52:02+08:00
+draft: false
+---
+
+* General Review
+- Read this book if you want to get some practical examples of how to use
+  Ansible to manage actual servers.
+* Specific Takeaways
+- Ansible is a server orchestration tool: with Ansible, I can easily sent
+  commands to multiple servers.
+- Ansible makes server managament easier by making commands idempotent, or
+  providing ways to make idempotent commands.
+- It is easy to migrate from shell scripts style of server management to
+  Ansible: you can simple use Ansible to run the scripts (while you slowly
+  convert them to Ansible format).
+- Vagrant is a tool to manage virtual machines. Think of it as Docker, but for
+  VMs. E.g., with Vagrant, you can specify a host, and choose whether the host
+  will be created using VirtualBox or VMware.
+- When dealing with stateful programming, always consider making an operation
+  idempotent (like how Ansible commands generally are). This will avoid untended
+  state modifications.
+* To Internalize /Now/
+- Nil
+* To Learn/Do Soon
+- Get a book on Redis, Memcache, Kubernetes, Kafka, and Zookeeper to understand
+  the related technologies.
+* To Revisit When Necessary
+- How to use Ansible to deploy and manage Node.js app, LAMP server, Apache
+  Tomcat with Solr.
+- [[https://github.com/geerlingguy/ansible-for-devops][Example Code on GitHub]]
+* Other Resources Referred To
+- Nil
