@@ -1,0 +1,94 @@
+---
+short_title: "Agile Project Management With Kanban"
+title: "Agile Project Management with Kanban (Developer Best Practices)"
+source: Ad-hoc browsing at the library
+author: Eric Brechner
+isbn: 978-0-7356-9895-6
+reading_period: 2019.08–2019.09.03
+date: 2019-10-29T13:54:53+08:00
+draft: false
+---
+
+* General Review
+- This book give practical information on how to use Kanban as a project
+  management system in a company.
+- Read this book if you want to get a sense of what are some good starting
+  points to structure the Kanban board, and what a typical Kanban issue would
+  look like.
+- This book also compares Kanban with Agile/Srum.
+  - The author is arguing from experience that Kanban is a better approach.
+- Microsoft Press publishes quite some great books.
+* Specific Takeaways
+- Main idea of using the Kanban approach is to keep tasks small, and limit
+  work-in-progress at each stage of the Kanban workflow.
+  - This prevents the team structure is balanced, and the output rate of each
+    part of the pipeline is in line with the rest of the pipeline.
+  - Keeping tasks small, and avoiding partially completed work from piling up
+    also help makes the system capable of responding to changes.
+* To Internalize /Now/
+- When using Kanban, have a separate column of the concept of "done" that is
+  before the commencement of the next step.
+  - E.g., Instead of just =Implementing= followed by =For Review=, it would be
+    clearer to have =Implementing=, =Done Implementing=, =Reviewing= and =Done
+    Reviewing=. In the former, once an item is put from =Implementing= to =For
+    Review=, we have no visibility on the progress of review (i.e., we don't
+    know whether the reviewer has started reviewing, or it is pending review).
+- Kanban is a viable project management approach. It consists the following
+  elements:
+  - Clearly defined steps for the workflow: e.g., =Specify=, =Implement=,
+    =Validate=
+  - Each steps should be split into at least two columns---=in progress=, and
+    =done=. There should be specific rules on when items can be moved to the
+    =done=: e.g., for =Implement=, it is only done when, among other things, all
+    public APIs are documented
+  - There should be strict Work-In-Progress limit for each steps (including both
+    =in progess= and =done= columns. The WIP should be set starting with the
+    slowest step, and setting it to number of members responsible for that
+    steps, + 50% buffer. Set the WIP for other steps to match the throughput of
+    the slowest step (note: to do this, I need to have an estimate of the rate
+    of the steps (days/person), and the number of team members on that task)
+  - The daily stand-up is only used to addressed blocked issues
+* To Learn/Do Soon
+- Get a good book on Scrum / Agile / Lean / Extreme Programming etc. to
+  understand the difference, and the underlying problems each is trying to
+  solve.
+* To Revisit When Necessary
+- I might want to re-read specific sections of the book:
+  - For details on how to specify / break down each step of the workflow
+  - When I face problems using a Kanban approach
+  - When I'm required to provide timeline estimates when using a Kanban approach
+  - When trying to convince people (upwards and downwards) to adopt Kanban
+    approach
+  - For details on how to use Kanban in a large organization
+* Other Resources Referred To
+- Recommended books:
+  - For when signboard becomes unwiedly---[[https://www.amazon.com/Kanban-Successful-Evolutionary-Technology-Business/dp/0984521402][Kanban: Successful Evolutionary Change
+    for Your Technology Business]]
+  - For when separate swim lanes might be required---[[https://www.amazon.com/Scrumban-Systems-Software-Development-Cooperandi/dp/0578002140/][Scrumban - Essays on Kanban
+    Systems for Lean Software Development (Modus Cooperandi Lean)]]
+  - On Scenario-Focused Engineering to add steps relating to prototyping and
+    customer engagement prior to actual implementation---[[https://www.amazon.com/Scenario-Focused-Engineering-innovation-customer-centricity-Developer-ebook/dp/B00QFI5S9Y][Scenario-Focused
+    Engineering: A toolbox for innovation and customer-centricity (Developer
+    Best Practices)]]
+  - Personal Kanban---[[https://www.amazon.com/Personal-Kanban-Mapping-Work-Navigating-ebook/dp/B004R1Q642][Personal Kanban: Mapping Work | Navigating Life]]
+  - Test-driven development---[[https://www.amazon.com/Test-Driven-Development-Kent-Beck/dp/0321146530][Test Driven Development: By Example]]
+  - Refactoring---[[https://www.amazon.com/Refactoring-Improving-Existing-Addison-Wesley-Signature-ebook/dp/B07LCM8RG2][Refactoring: Improving the Design of Existing Code]]
+  - Acceptance test-driven development---[[https://www.amazon.com/Lean-Agile-Acceptance-Test-Driven-Development-Collaboration-ebook/dp/B004JN0DEC][Lean-Agile Acceptance
+    Test-Driven-Development: Better Software Through Collaboration]]
+  - Behavior-driven
+    developmen---[[https://www.amazon.com/RSpec-Book-Behaviour-Development-Cucumber/dp/1934356379][The
+    RSpec Book: Behaviour Driven Development with RSpec, Cucumber, and Friends]]
+  - Pair programming---[[https://www.amazon.com/Pair-Programming-Illuminated-Laurie-Williams/dp/0201745763][Pair Programming Illuminated]]
+  - DevOps---[[https://www.amazon.com/Continuous-Delivery-Deployment-Automation-Addison-Wesley/dp/0321601912][Continuous Delivery: Reliable Software Releases through Build,
+    Test, and Deployment Automation]]
+  - Why Kanban works---[[https://www.amazon.com/Managing-Design-Factory-Donald-Reinertsen/dp/0684839911][Managing the Design Factory]]
+  - Single-piece flow---[[https://www.amazon.com/Myth-Multitasking-Doing-Gets-Nothing/dp/0470372257][The Myth of Multitasking: How "Doing It All" Gets
+    Nothing Done]]
+  - Theory of Constraints---[[https://www.amazon.com/Goal-Process-Ongoing-Improvement/dp/0884271951][The Goal: A Process of Ongoing Improvement]], [[https://www.amazon.com/Theory-Constraints-Handbook-James-Cox/dp/0071665544][Theory
+    of Constraints Handbook]]
+  - Critical Chain---[[https://www.amazon.com/Critical-Chain-Eliyahu-M-Goldratt/dp/0884271536][Critical Chain]]
+  - Lean development---[[https://www.amazon.com/Lean-Software-Development-Agile-Toolkit/dp/0321150783][Lean Software Development: An Agile Toolkit]]
+  - Global optimisation---[[https://www.amazon.com/Freedom-Command-Control-John-Seddon/dp/0954618300][Freedom from Command and Control]], [[https://www.amazon.com/Lean-Thinking-Corporation-Revised-Updated/dp/0743249275][Lean Thinking:
+    Banish Waste and Create Wealth in Your Corporation]],
+    [[https://www.amazon.com/This-Lean-Resolving-Efficiency-Paradox/dp/919803930X][This
+    is Lean: Resolving the Efficiency Paradox]]
