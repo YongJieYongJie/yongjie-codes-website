@@ -1,0 +1,45 @@
+---
+short_title: "Test-Driven Development With Django"
+title: "Test-Driven Development With Django"
+source: Ad-hoc browsing at the library
+author: Kevin Harvey
+isbn: 978-1785281167
+reading_period: 2019.08–2019.09.07
+date: 2019-11-28T20:36:31+08:00
+draft: false
+---
+
+* General Review
+- Read this book if you want to get an actual example of how TDD might work from
+  scratch in building a front-end application (i.e., from the feature
+  requirements, to specifying how the frontend interactions should be, and down
+  to the actual unit test).
+* Specific Takeaways
+- A way to do TDD is to use functional tests to guide the TDD. The way to do
+  this might be to write the functional test in comments first, and implement
+  just enough of the test to get a failing test. We can then proceed to write
+  the first unit test.
+- Misconception: It is troublesome to use Selenium to make UI functional tests
+  to drive TDD.
+* To Internalize /Now/
+- When doing unit test in the context of web frameworks, consider the following:
+  - How to partition the tests: whether it is easy / feasible to test routing
+    separately from the controllers, to test the model logic separately from the
+    controllers, or whether we have to test end-to-end from the URL to the
+    response
+* To Learn/Do Soon
+- Nil
+* To Revisit When Necessary
+- Example of how to write functional tests for standard web application that is
+  a thin wrapper around database
+- Beyond the basic CRUD, what other complexities I need to be comfortable
+  with. E.g.:
+  - Using production level database
+  - Full QA testing (e.g., with fuzzing etc.)
+  - Load testing (e.g., with [[https://locust.io][Locust]] or [[https://httpd.apache.org/docs/2.4/programs/ab.html][ab - Apache HTTP server benchmarking tool]])
+  - Authentication
+  - Tagging support
+  - Integration with search providers like [[https://lucene.apache.org/solr/][Solr]]
+  - Caching with [[https://docs.celeryproject.org/en/latest/index.html][Celery]]
+* Other Notable Resources Referred To
+- Nil
