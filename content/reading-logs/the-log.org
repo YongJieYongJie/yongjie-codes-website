@@ -1,0 +1,52 @@
+---
+short_title: "The Log"
+title: "The Log: What every software engineer should know about real-time data's unifying abstraction"
+source: LinkedIn recommendation
+author: Jay Kreps
+isbn: https://engineering.linkedin.com/distributed-systems/log-what-every-software-engineer-should-know-about-real-time-datas-unifying; https://web.archive.org/web/20190913020020/https://engineering.linkedin.com/distributed-systems/log-what-every-software-engineer-should-know-about-real-time-datas-unifying
+reading_period: 2019.08–2019.09.13
+date: 2019-11-28T20:59:23+08:00
+draft: true
+---
+
+* General Review
+- This is an in-depth article explaining the use of log as the medium for data
+  transfer / message brokering in a distributed system.
+  - The specific system is Kafka.
+  - In particular, the article discusses the problems faced by LinkedIn prior to
+    Kafka, and how Kafka enabled centralize communications across different
+    services producing and consuming data/messages.
+- The article also contains numerous references to various other similar and
+  related technologies.
+* Specific Takeaways
+- The log is a useful abstraction for centralize data management across multiple
+  producers and consumers of data.
+- When designing new systems, consider using a centralized log for all data, and
+  keep any new sources of data centralized.
+* To Internalize /Now/
+- Nil
+* To Learn/Do Soon
+- More about Kafka, and how it may be useful
+- Pick up a book on Kafka.
+- Read up on RabbitMq.
+- Distributed systems
+* To Revisit When Necessary
+- How various opensource technologies fit together (or overlap) in the whole
+  data pipeline / system:
+  - Zookeeper, Helix, Curator, Mesos, YARN, Lucene, LevelDB, Netty, Jetty,
+    Finagle, rest.li, Avro, Protocol Buffers, Thrift, Kafka, Bookeeper
+- Comprehensive list of references (academic papers, systems, talks and blogs)
+  on:
+  - stream processing
+  - distributed systems
+- What are the similar problems faced in enterprise software engineering,
+  including:
+  - Event Sourcing
+  - Change Data Capture
+  - Complex Event Processing (CEP)
+  - Enterprise Service Bus
+* Other Resources Referred To
+- [[http://sites.computer.org/debull/A12june/pipeline.pdf][Building LinkedIn's Real-time Activity Data Pipeline]]
+  - Description of how Kafka is used at LinkedIn (2012 paper)
+- [[https://www.allthingsdistributed.com/2007/10/amazons_dynamo.html][Amazon's Dynamo]]
+  - Description of Amazon's Dynamo (2007 blog post)
