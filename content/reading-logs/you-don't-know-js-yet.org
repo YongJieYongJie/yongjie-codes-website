@@ -1,0 +1,86 @@
+---
+short_title: "You Don't Know JS Yet"
+title: "You Don't Know JS Yet (2nd edition, work-in-progress)"
+source: Recommended by the Internet after Google search on ways to learn modern JavaScript
+author: Kyle Simpson
+isbn/url: https://github.com/getify/You-Dont-Know-JS/tree/04610d866963114ab4ceb9621779f390710da0ed; https://github.com/getify/You-Dont-Know-JS/tree/2nd-ed
+reading_period: 2019.10.14–2019.12.17
+date: 2019-12-26T12:11:20+08:00
+draft: false
+---
+
+* General Review
+- Read this book if you want to get a good (albeit opinionated at times) understanding of how JavaScript works under the hood.
+  - This allows understanding of the quirks of JavaScript.
+* Specific Takeaways
+- After reading this book, I understand the binding behavior of ~this~:
+  - In order to determine what is ~this~ during the execution of a function, we examine the call site and observe how the method is called. The list below is in descending precedence, and ~theFunction()~ represents the function containing the ~this~:
+    - ~someVar = new theFunction(...)~ --> ~this~ is set to a newly created object
+    - ~someVar = theFunction.bind(someObj)(...)~ --> ~this~ is set to ~someObj~
+    - ~someVar = anotherObj.theFunction(...)~ --> ~this~ is set to ~anotherObj~
+    - ~theFunction(...)~ --> ~this~ is set to the current lexical scope (e.g., the ~window~ object if called directly in browser developer console)
+  - Arrow functions will inherit the ~this~ in the context. As such, if a function ~namedFunction()~ returns an arrow function with refers to ~this~, that ~this~ will be the one when ~namedFunction()~ was originally called.
+- After reading this book, I understand the details of object property access:
+  - It is helpful to consider two aspects of property: (1) whether it is =enumerable=, and (2) whether it is directly owned by the object, or is further up the prototype chain.
+  - Different in-built statements sometimes behave differently depending on (1) and (2) above:
+    - The conditional ~('a' in someObj)~ returns ~True~ even if ~'a'~ is not =enumerable= and is not directly owned.
+    - The ~for..in~ loop iterates over the keys of all =enumerable= properties, whether directly or indirectly owned
+    - ~obj.keys()~ returns the keys of enumerable properties that are directly owned.
+- After reading this book, I learned that it is possible to:
+  - change whether a property is =enumerable=, =writable=, and/or =configurable=
+  - define getters and setters for properties (properties accessed using setters and getters are called =accessor descriptors= whereas properties accessed directly are call =data descriptors=)
+  - define an iterator on an object to allow usage of ~for..of~ loop on any objects (and not just ~Arrays~)
+- After reading this book, I understand that JavaScript can be understood as a compiled language. For example, variables declarations like ~var a;~ will be hoisted to the top of the scope (and initialized as undefined) even if it exist later in the actual code.
+  - As another example, syntax error in a later part of the file will prevent execution of valid code earlier in the file. (E.g., if that is a valid ~console.log('Hello, world')~ in the first line, and a syntax error in the second line, the "Hello, world" will not be printed. Contrast with Python, where the code will execute until the interpreter encounters the first syntax error.)
+- After reading this book, I understand that JavaScript's object-oriented might be seen in at least two ways:
+  - the usual parent-child inheritance paradigm (i.e., overriding parent's methods in the child and using polymorphism)
+  - a delegation of behavior via traversal of prototype links (i.e., not overriding parent's method, but instead naming the parent and child method in a way that is more descriptive of what each actually does)
+- JavaScript has primitive types (e.g. ~string~) and natives / built-ins (e.g. ~String~ (notice the uppercase =S=)).
+  - Many "type-specific" behaviors are defined on the prototype of the corresponding natives (e.g., ~Number.prototype.toString()~)
+  - Primitive types will be automatically boxed with an object wrapper (i.e., converted into the corresponding natives) in certain operations (e.g., ~let a = 42; a.toString()~ will box the primitive ~number~ into a ~Number~ before calling ~toString()~.
+- There are specific not-so-complex rules governing implicit type coercion, that results in the myriad of weird behaviors that JavaScript is known for.
+- One intereseting thing about using JavaScript for front-end development is that the same source code will be runned in different enviroments supporting different features of JavaScript.
+  - As such, it might be fruitful to consider writing code that works in all environments, but will take advantage of the newer features if available.
+  - For example:
+    - Check for availability of APIs, and use polyfill if not available.
+    - Check for availability of syntax, and load different source files accordinglye
+    - Tail Call Optimization (TCO) is only available in ES6, we can write code that will make use of TCO if available, but will still run without error even without TCO. (See example [[https://github.com/getify/You-Dont-Know-JS/blob/2nd-ed/es-next-beyond/ch7.md#self-adjusting-code][here]]).
+- JavaScript offers certain more "advanced" data structures:
+  - ~Map~ in JavaScript allows using objects as keys (normal object doesn't).
+  - ~TypedArrays~ create a structured ~view~ over underlying binary buffer for structured access (i.e., I can access and modify a ~int32~ array view over a binary buffer).
+    - The ~.sort()~ method on ~TypedArrays~ sorts numerically (whereas the ~.sort()~ method on usual ~array~ sorts alphabetically, so ~10~ comes before ~2~).
+  - ~Set~ provides the usual set semantics.
+- JavaScript supports meta-programming via proxy objects and overwriting of "Well Known Symbols". (Note: =symbol= is a JavaScript primitive type.)
+  - For example, it is possible to overwrite what happens when a function is called.
+- When there are hard-to-debug errors, consider whether the program has exceeded certain limits such as:
+  - maximum number of characters allowed in a string literal (not just a string value)
+  - size (bytes) of data that can be sent in arguments to a function call (aka stack size)
+  - number of parameters in a function declaration
+  - maximum depth of non-optimized call stack (i.e., with recursion): how long a chain of function calls from one to the other can be
+  - number of seconds a JS program can run continuously blocking the browser
+  - maximum length allowed for a variable name
+  - and other possible limits
+- Note that ~console.log()~ might be executed asynchronously by the JavaScript enviroment (e.g., the browser. The code below may log ~2~ instead of ~1~:
+#+BEGIN_SRC javascript
+let a = 1;
+console.log(a);
+a++;
+#+END_SRC
+- If more performance is desired from JavaScript code, consider (a) multi-threading with [[https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers][Web Workers]] and/or (b) [[http://asmjs.org/][asm.js]].
+* To Internalize /Now/
+- Things I should put into my day-to-day toolbox include:
+  - Consider using the various =TypedArrays=, =Map= and =Set= data structures
+* To Learn/Do Soon
+- Nil
+* To Revisit When Necessary
+- This book covers the following topics in detail, I have not immediate need for them right now, but I can revisit the book in the future when needed
+- There are practice tasks to reinforce / refresh my understanding of the concepts covered at https://github.com/getify/You-Dont-Know-JS/blob/2nd-ed/get-started/apB.md
+* Other Resources Referred To
+- I should check out the following references made in the book
+- I should check out MDN Web Docs on Promise API when doing JavaScript work:
+  - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise
+- I should check out the MDN Web Docs on Generator functions when doing serious JavaScript work:
+  - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Generator
+- I should check the appendix on asyncquence to understand the thought process behind designing and building an abstraction on top of the Promises API:
+  - https://github.com/getify/You-Dont-Know-JS/blob/04610d866963114ab4ceb9621779f390710da0ed/async-performance/apA.md
+  - https://github.com/getify/You-Dont-Know-JS/blob/04610d866963114ab4ceb9621779f390710da0ed/async-performance/apB.md
