@@ -1,0 +1,115 @@
+---
+short_title: "The Algorithm Design Manual (2nd Edition) - Chapters 3 and 4"
+title: "The Algorithm Design Manual (2nd Edition) - Chapters 3 and 4"
+source: Googl-ing on what is a good book for data structures and algorithms
+author: Steven S. Skiena
+isbn: 978-1-84800-069-8
+reading_period: 2019.11–2019.11
+date: 2020-01-31T07:31:04+08:00
+draft: false
+---
+
+* General Review
+- Chapters 3 and 4 of the books go into some depth on data structures and
+  sorting and searching.
+* Specific Takeaways
+** Chapter 3 - Data Structures
+- When deciding on data structures, besides computational efficiency (i.e., the
+  usual Big-O notation), also consider the space efficiency (e.g., a linked list
+  requires an overhead one pointer per unit of data, a binary tree requires two,
+  and an array requires none).
+- I can think of data structures in different ways:
+  - Whether a contiguous (e.g., array) or linked (e.g, linked list) data
+    structure is desired. For example, a heap can be implemented using either
+    array or linked list, and different situations may call for different
+    implementation.
+  - Whether a container (e.g., queue and stack) or dictionary (e.g., hashtable)
+    is required.
+  - What operations do I need to support:
+    - Search
+    - Insert
+    - Delete
+    - Successor
+    - Predecessor
+    - Minimum
+    - Maximum
+- An application of hashing is the problem of finding substring /p/ in text /t/:
+  - By computing the hash of /p/ and each /p/-length substring in /t/, we can
+    quickly determine whether /p/ is a substring of /t/. Furthermore, an
+    efficient hashing algorithm can be used such that calculation of substring
+    at position =x= can make use of results of calculation at position =x-1=,
+    since the substrings at the two consecutive position differ only by two
+    characters.
+** Chapter 4 - Sorting and Searching
+- When considering possible algorithm, a preliminary consideration is whether
+  sorting will render the problem straightforward. For example, finding the two
+  closest numbers in a set of unique number will require only a linear sweep
+  once the data is sorted.
+  - Other applications besides finding closest pair includes:
+    - Searching
+    - Element uniqueness
+    - Frequency distribution
+    - Selection (e.g., of /k/-th largest item)
+    - Convex hulls (i.e., what is the polygon of smallest area that contains a given set of n points in 2 dimensions?)
+- Heapsort is actually just selection sort (i.e., find the smallest element from
+  remaining unsorted portion, put it at the next sorted position) using a
+  priority queue implemented with heap data structure.
+- Heap, represented by an array, can be constructed in linear time by starting
+  from the rightmost element, and moving left and bubbling-down the element
+  whenever it does not dominate its child element.
+- Besides selection sort, another way of sorting is insertion sort, where we
+  choose an arbitrary element from the unsorted set, and put it in he proper
+  position in the sorted set.
+  - By using an efficient data structure (e.g., binary search tree), we can
+    achieve O(n log n) efficiency (since each insertion takes only log n time).
+- When choosing sorting algorithm, also consider the underlying data
+  structure. For example, when linked list is concerned, mergesort may be more
+  appropriate because it does not require random access to the elements (like
+  heapsort or quicksort).
+- If there is a particular data that will result in the worst case for a
+  particular algorithm (e.g., passing a sorted array to a quicksort that
+  repeatedly selects the rigthmost element as the pivot), consider whether
+  adding randomization will result in a better expected time efficiency.
+- One-sided binary search can be used to efficiency find a key that likes close
+  to the current position.
+  - Suppose we have an array of consecutive 0 followed by 1, and we want to find
+    the transition point, we can repeatedly test the array element at positions
+    1, 2, 4, 8, 16 and so on until we get a 1. Thereafter we do a binary search
+    on the last two points tested.
+- Binary search can be used to find square roots using numerical analysis
+  approach.
+  - For example, let =leftBound= be =1= and =rightBound= be =n=. We repeatedly
+    test whether the midpoint (i.e., =(leftBound + rightBound)^2=) is greater or
+    smaller than =n=. If greater, we update =rightBound= to be the midpoint; if
+    smaller, we update =leftBound= to be the midpoint. We repeat until the
+    difference between =leftBound= and =rightBound= is smaller than a certain
+    acceptable threshold.
+  - So when faced with a general algorithmic problem (even without clear
+    applicable of binary search), I can consider whether a binary search can be
+    implemented somewhere (which usually means whether the solution has a lower
+    and upper bound, and the range between the two can be halved each time).
+* To Internalize /Now/
+- Things I should put into my day-to-day toolbox include:
+  - Always think whether sorting the data first is a worthwhile endeavor.
+  - When designing algorithms, always try to find a binary search angle.
+* To Learn/Do Soon
+** Chapter 4 - Sorting and Searching
+- Memorize how to quickly write out the algorithm for:
+  - Heapsort (including the bubbling operations)
+  - Quicksort
+  - Mergesort (including the merging step)
+* To Revisit When Necessary
+** There are more specialized data structures for dealing with special data:
+- Strings
+- Geometric (e.g., /kd/-trees)
+- Graph
+- Set (e.g., bit vectors)
+** Chapter 4
+- Interesting problem at 117 regarding how to efficiently determine (in O(k)
+  time) whether the k-th smallest element in an array-based heap is greater than
+  or equal to /x/.
+  - In particular, the solution is a heap search/traversal algorithm to
+    determine certain property on the k-th smallest elements (e.g., whether the
+    k-th smallest element is greater than or equal to another item)
+* Other Resources Referred To
+- Nil

@@ -1,0 +1,110 @@
+---
+short_title: "The Algorithm Design Manual (2nd Edition) - Chapters 1 and 2"
+title: "The Algorithm Design Manual (2nd Edition) - Chapters 1 and 2"
+source: Googl-ing on what is a good book for data structures and algorithms
+author: Steven S. Skiena
+isbn: 978-1-84800-069-8
+reading_period: 2019.11–2019.11
+date: 2020-01-31T07:22:04+08:00
+draft: false
+---
+
+* General Review
+- Read this book to get a good understanding (with sufficient but not too much
+  depth) in algorithim design.
+- Chapters 1 and 2 covers general concepts behind algorithmic thinking and also
+  basic big-O notation.
+* Specific Takeaways
+*** Chapter 1 - Introduction to Algorithm Design
+- There are several well-known problem types where finding the optimal solution
+  is prohibitively computationally intensive, and heuristics might be applied
+  (but which usually have a worst case scenario to watch out for).
+  - An example is the travelling salesman problem. Examples of heuristics that
+    will not provide the optimal solutions is all cases include:
+    - Always travelling to the closest neighbor next
+    - Connect all points starting from points that are closer, each point can
+      only be connected to two other points, repeat until all points are
+      connected, and the result is the path
+- The difference between algorithm and heuristics is that the former always
+  produce a correct result whereas the latter "usually do a good job without
+  providing any guarantee".
+- The difference between correctness and efficiency is that correctness means
+  producing the desired output (e.g., sorted list, finding out the shortest
+  path), whereas efficiency refers to the computational efficiency (or space
+  efficiency etc.).
+  - The goal is always to find an algorithm that is both correct and efficient,
+    though this may not always be possible. Sometimes we choose an efficiency
+    algorithm with some heuristics that provides a correct result most of the
+    time (or a mostly correct result).
+- Always try to decompose the problem (in story form) into something more
+  formal. For example:
+  - The travelling salesman problem can be thought of as a problem of connecting
+    points on a 2D plane.
+  - The movie scheduling problem (i.e., how should a movie star choose among
+    movie projects that may overlap in schedules in order to maximize the number
+    of movie the movie star can participate in) can be thought of as selecting a
+    non-overlapping subset of intervals on a number line.
+- Most problems can be decomposed into the following:
+  - Permutations - where the story has words like "arrangement", "tour",
+    "ordering" or "sequence"
+  - Subsets - where the story has words like "cluster", "collection",
+    "committee", "group", "packaging" or "selection"
+  - Trees - where the story has words like "hierarchy", "dominance
+    relationship", "ancestor/descendant relationship" or "taxonomy"
+  - Graphs - where the story has words like "network", "circuit", "web", or
+    "relationship"
+  - Points - where the story has words like "sites", "positions", "data records"
+    or "locations"
+  - Polygons - where the story has words like "shapes", "regions",
+    "configurations", or "boundaries"
+  - Strings - where the story has words like "text", "characters", "patterns" or
+    "labels"
+- It helps to think in terms of summation (i.e., Σ) when calculating algorithmic
+  efficiency. For example:
+  - A loop where the amount of work in each iteration is proportional to the
+    iteration number can be modelled as an arithmetic progression
+  - A loop where the amount of work in each iteration is proportional to a
+    constant raised to the iteration number can be modelled as a geometric
+    progression. Recall that if the constant is smaller than one, the geometric
+    progress converges to a constant.
+*** Chapter 2 - Algorithm Analysis
+- The formal definition of Big O notation are:
+  - =f(n) = O(g(n))= means =c . g(n)= is an upper bound on =f(n)=. I.e., there
+    exists some constant =C= such that =f(n)= is always <= c . g(n), for large
+    enough =n=.
+  - =f(n) = Ω(g(n))= means =c . g(n)= is a lower bound on =f(n)=, for large
+    enough =n=.
+  - =f(n) = Θ(g(n))= means =c1 . g(n)= is an upper bound and =c2 . g(n)= is a
+    lower bound on =f(n)=, for large enough =n=.
+- The common functions are =lg n=, =n=, =n lg n=, =n^2=, =2^n=, and =n!=.
+  - =lg n= occurs when the problem is halved after every step.
+  - =n= occurs when each element must be iterated through.
+  - =n lg n= occurs in quicksort and mergesort.
+  - =n^2= occurs when the problem requires looking at most or all pairs of =n=
+    elements, e.g., in insertion sort and selection sort.
+  - =2^n= occurs when enumerating all subsets of =n= items.
+  - =n!= occurs when generating all permutations of =n= items.
+- There are also other more esoteric functions (e.g., =log log n), so just be
+  aware.
+- Basic mathematical operations can be applied to big O functions:
+  - =O(f(n)) + O(g(n))= --> =O(max(f(n), g(n))=, same for =Ω= and =Θ=
+  - Multiplying by a positive constant does not affect the functions
+  - =O(f(n)) * O(g(n))= --> =O(f(n) * g(n))=, same for =Ω= and =Θ=
+- When simplifying complex big O functions, try the following:
+  - Choose two expressions, and see if they can be simplified to a single upper
+    bound. For example, in =O(n + m + ...)=, if we know =m < n= for meaningful
+    data (e.g., we are searching for a =m= length string in an =n= length text),
+    then we know =n + m < 2n=, it follows that =O(n + m) = O(n)=, and we can
+    replace the =n + m= in the original function with just a single =n=
+  - Similar to the reason above, we can replace =O(n + nm)= with =O(nm)= if we
+    know =n < nm= for meaningful values of =n= and =m=
+  - =-n^2= is a strictly positive term (assuming no complex numbers)
+* To Internalize /Now/
+- Things I should put into my day-to-day toolbox:
+  - Try to analyze algorithmic efficiency whenever possible.
+* To Learn/Do Soon
+- Nil
+* To Revisit When Necessary
+- Do the exercise at the end of the chapters to revise the concepts covered.
+* Other Resources Referred To
+- Nil
