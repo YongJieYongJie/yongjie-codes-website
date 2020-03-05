@@ -1,0 +1,3 @@
+[submodule "plugin/x-frame-bypass"]
+	path = plugin/x-frame-bypass
+	url = git@github.com:niutech/x-frame-bypass.git
