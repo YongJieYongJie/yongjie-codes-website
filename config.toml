@@ -56,8 +56,15 @@ googleAnalytics = "UA-144641266-1"
     weight = 40
 
 [[menu.main]]
+    identifier = "portfolio"
+    # name = "Portfolio"
+    pre = "<i class='fa fa-palette fa-lg'></i>"
+    url = "/portfolio/"
+    weight = 50
+
+[[menu.main]]
     identifier = "resume"
     # name = "resume"
     pre = "<i class='fa fa-file-code fa-lg'></i>"
     url = "https://bit.ly/yongjie_resume"
-    weight = 40
+    weight = 60

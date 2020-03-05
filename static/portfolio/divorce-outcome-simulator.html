@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+
+	<head>
+		<meta charset="utf-8">
+
+		<title>Portfolio Projects | Divorce Outcome Simulator | Yong Jie</title>
+
+		<meta name="description" content="A collection of some projects
+		Yong Jie"> <meta name="author" content="Hakim El Hattab">
+
+		<meta name="apple-mobile-web-app-capable" content="yes"> <meta
+		name="apple-mobile-web-app-status-bar-style"
+		content="black-translucent">
+
+		<meta name="viewport" content="width=device-width,
+		initial-scale=1.0">
+
+		<link rel="stylesheet" href="../reveal_js/css/reset.css">
+        <link rel="stylesheet" href="../reveal_js/css/reveal.css">
+        <link rel="stylesheet" href="../reveal_js/css/theme/black.css" id="theme">
+
+		<!-- Theme used for syntax highlighting of code -->
+        <link rel="stylesheet" href="../reveal_js/lib/css/monokai.css">
+
+		<!-- Printing and PDF exports -->
+        <script>
+		 var link = document.createElement( 'link' );
+         link.rel = 'stylesheet';
+         link.type = 'text/css';
+         link.href = window.location.search.match( /print-pdf/gi )
+                   ? '../reveal_js/css/print/pdf.css'
+                   : '../reveal_js/css/print/paper.css';
+         document.getElementsByTagName( 'head' )[0].appendChild( link);
+		</script>
+
+		<!--[if lt IE 9]>
+		    <script src="../reveal_js/lib/js/html5shiv.js"></script>
+		<![endif]-->
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+			<div class="slides">
+                <section>
+                    <section>
+                        <h1>Divorce Outcome Simulator</h1>
+                        <p><a href="https://lexq-react.herokuapp.com/">
+                            https://lexq-react.herokuapp.com</a></p>
+                    </section>
+                    <section>
+                        <h1>User Problem</h1>
+                    </section>
+                    <section>
+                        <p>Parties to many divorce proceedings unnecessarily
+                            choose litigation instead of settling even when a
+                            compromise is possible.</p>
+                    </section>
+                    <section>
+                        <p>Underlying reason: In divorce proceedings,
+                            relationships tend to be acrimonious, and parties
+                            will subjectively believe they deserve a greater
+                            share of the asset then they actually do.</p>
+                    </section>
+                    <section>
+                        <p>Lead-on consequences: (1) The parties themselves
+                            incur more time and money when embroiled in legal
+                            proceedings they unnecessarily received legal
+                            services, and (2) the society suffers loss as the
+                            judiciary system is unecessarily burdened by such
+                            cases.</p>
+                    </section>
+                    <section>
+                        <h1>Final Solution</h1>
+                    </section>
+                    <section>
+                        <p>An outcome simulator that:</p>
+                        <ul>
+                            <li>Prompts user for factual elements of the
+                                case;</li>
+                            <li>Generate a prediction based on statistical
+                                analysis on past cases; and thus</li>
+                            <li>Provide an objective basis for parties to settle
+                                (it is akin to having a neutral third party
+                                providing the prediction)</li>
+                        </ul>
+                    </section>
+                    <section>
+                        <h1>Usage Walkthrough</h1>
+                    </section>
+                    <section>
+                        <p>Logging in and creating a new matter</p>
+                    </section>
+                    <section
+                        data-background-image="img/divorce_outcome_simulator_-_logging_in.gif"
+                        data-background-position="center"
+                        data-background-size="contain"></section>
+                    <section>
+                        <p>Entering matter details and generating report</p>
+                    </section>
+                    <section
+                        data-background-image="img/divorce_outcome_simulator_-_entering_details.gif"
+                        data-background-position="center"
+                        data-background-size="contain"> </section>
+                    <section>
+                        <p>Viewing Report</p>
+                    </section>
+                    <section
+                        data-background-image="img/divorce_outcome_simulator_-_viewing_report.gif"
+                        data-background-position="center"
+                        data-background-size="contain"></section>
+                    <section>
+                        <h1>Design Considerations</h1>
+                    </section>
+                    <section>
+                        <p>Target users of the outcome simulator are lawyers and
+                            not the parties to the divorce themselves.</p>
+                        <br>
+                        <p>This is because parties would need to engage the
+                            lawyers in any case and it would make little sense
+                            for parties to learn a new platform for a divorce
+                            proceeding which doesn't happen more than a few
+                            times at most.</p>
+                    </section>
+                    <section>
+                        <p>The prediction report shows only the information that
+                            are directly relevant to the particular case.</p>
+                        <br>
+                        <p>This is because early prototypes which contained
+                            charts and showed the data in various alternative
+                            scenarios proved a little to complicated for
+                            lawyers.</p>
+                    </section>
+                    <section>
+                        <h1>Select Implementation Details</h1>
+                        <h3>(for the nerds)</h3>
+                    </section>
+                    <section>
+                        <ul>
+                            <li>The frontend is built as a SPA using React to
+                                ensure a smooth experience and to allow for
+                                design of user-friendly input components (since
+                                the application requires complicated data
+                                entry).</li>
+                            <li>The backend is built on Django in order to
+                                interface smoothly with the data pipeline and
+                                prediction models that are written in
+                                Python.</li>
+                            <li>The application is hosted on Heroku for ease of
+                                deployment.</li>
+                        </ul>
+                    </section>
+                </section>
+			</div>
+
+		</div>
+
+		<script src="../reveal_js/js/reveal.js"></script>
+
+		<script>
+
+		 // More info https://github.com/hakimel/reveal.js#configuration
+		 Reveal.initialize({
+			 controls: true,
+			 progress: true,
+			 center: true,
+			 hash: true,
+
+			 transition: 'slide', // none/fade/slide/convex/concave/zoom
+
+			 // More info https://github.com/hakimel/reveal.js#dependencies
+			 dependencies: [
+				 { src: '../reveal_js/plugin/markdown/marked.js',
+                   condition: function() {
+                       return !!document.querySelector( '[data-markdown]' );
+                   }
+                 },
+				 { src: '../reveal_js/plugin/markdown/markdown.js',
+                   condition: function() {
+                       return !!document.querySelector( '[data-markdown]' );
+                   }
+                 },
+				 { src: '../reveal_js/plugin/highlight/highlight.js', async: true },
+				 { src: '../reveal_js/plugin/search/search.js', async: true },
+				 { src: '../reveal_js/plugin/zoom-js/zoom.js', async: true },
+				 { src: '../reveal_js/plugin/notes/notes.js', async: true }
+			 ]
+		 });
+
+		</script>
+
+	</body>
+</html>
