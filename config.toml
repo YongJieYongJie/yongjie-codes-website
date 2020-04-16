@@ -28,43 +28,44 @@ googleAnalytics = "UA-144641266-1"
 [outputs]
     section = ["JSON", "HTML"]
 
-[[menu.main]]
-    identifier = "blog"
-    # name = "Blog" #If display text link, cancel comment out
-    pre = "<i class='fa fa-pen fa-lg'></i>" #Choose your favorite font from Font Awesome
-    url = "/posts/"
-    weight = 10
+#[[menu.main]]
+#    identifier = "blog"
+#    # name = "Blog" #If display text link, cancel comment out
+#    pre = "<i class='fa fa-pen fa-lg'></i>" #Choose your favorite font from Font Awesome
+#    url = "/posts/"
+#    weight = 10
 
 [[menu.main]]
     identifier = "reading logs"
+    name = "Reading Logs"
     pre = "<i class='fa fa-book-open fa-lg'></i>" #Choose your favorite font from Font Awesome
     url = "/reading-logs/"
     weight = 10
 
 [[menu.main]]
     identifier = "github"
-    # name = "GitHub"
+    name = "GitHub"
     pre = "<i class='fab fa-github fa-lg'></i>"
     url = "https://github.com/yongjieyongjie"
     weight = 30
 
 [[menu.main]]
     identifier = "email"
-    # name = "Email"
+    name = "Email"
     pre = "<i class='fa fa-envelope fa-lg'></i>"
     url = "mailto:khooyongjie@gmx.com"
     weight = 40
 
 [[menu.main]]
     identifier = "portfolio"
-    # name = "Portfolio"
+    name = "Portfolio"
     pre = "<i class='fa fa-palette fa-lg'></i>"
     url = "/portfolio/"
     weight = 50
 
 [[menu.main]]
     identifier = "resume"
-    # name = "resume"
+    name = "Resume"
     pre = "<i class='fa fa-file-code fa-lg'></i>"
     url = "https://bit.ly/yongjie_resume"
     weight = 60
