@@ -1,0 +1,136 @@
+---
+short_title: "MySQL 8.0 Reference Manual"
+title: "MySQL 8.0  Reference Manual"
+source: Official Website
+author: N.A.
+isbn: https://dev.mysql.com/doc/refman/8.0/en/
+reading_period: 2020.02–2020.03.08
+date: 2020-04-16T09:06:12+08:00
+draft: false
+---
+
+* General Review
+- The reference manual provides a comprehensive knowledge on how to use
+  MySQL. Each section generally explain what a particular feature does, what
+  are the configuration options, how to actually configure it, and followed by
+  some common use cases.
+- It will be useful to revisit the relevant section when designing or
+  optimizing certain parts of the database.
+* Specific Takeaways
+- The general types of SQL joins are:
+  - Left [Outer] Join: Left table is joined with right table on a particular
+    row as the key, all rows in the left table are included, and if any
+    particular row is left table has no corresponding key in the right table,
+    the rows that would have otherwise come from the right table will be set to
+    ~null~.
+  - Inner Join: An intersection of two tables based on certain key. If the key
+    is not present on either table, the row is not included.
+** /Backup and Recovery/
+- Backing up of MySQL involves numerous considerations:
+  - Whether to use physical (i.e., using the raw files) or logical backups
+    (e.g., backing up the SQL statements that'll create the same database)
+  - Whether to use full or full + incremental backup
+  - Whether to use online or offline backup
+- A general backup solution will involve: (a) a full backup up to a certain
+  point in time (e.g., using =mysqldump=, file system snapshot, or copying the
+  table files), followed by (b) an incremental backup from that point in time
+  using binary logs.
+** /Optimization/
+- MySQL-specific keywords can be wrapped in ~/*! \*/~ comment delimiter to it
+  compatibile with SQL in general.
+** /Optimization - Optimizing SQL Statements/
+- When optimizing particular SQL statements, refer to the reference manual on
+  what kind of optimizations are available for the particular query in question
+  (e.g., =Index Condition Pushdown= might be available depending on how the
+  query is structured).
+  - Thereafter, using the ~EXPLAIN~ statement to examine whether and why the
+    optimization is or is not used.
+- In general, always use the ~EXPLAIN~ statement to examine how a particular
+  SQL statement will be executed. Do this before rearranging the SQL statement
+  (e.g., there might be different ways of expressing the same operation, don't
+  assume any particular way is less efficient based on the query itself; use
+  ~EXPLAIN~ to check for sure).
+- The same "top-level operation" (my personal terminology; e.g., "SELECT",
+  "UPDATE" etc.) may be executed differently with different efficiency,
+  depending on any, some or all of the following:
+  - Table statistics (e.g., if the table is still small, the optimizer may
+    choose to scan the whole table instead of relying on index)
+  - Each particular condition in the where clause (e.g., depending on whether a
+    particular comparison is done with a constant or with another value in the
+    row, the optimizer might be able to structure the execution differently)
+  - How the various conditions in the where clause are combined together (e.g.,
+    perhaps there might be a different depedning on whether it is ~(cond_a OR
+    cond_b) AND (cond_c or cond_d)~ or ~(cond_a AND cond_c) OR (cond_a AND
+    cond_d) OR (cond_b AND cond_c) OR (cond_b AND cond_d)~)
+- A join operation may be performed using the more optimal =hash join= or the
+  usual =block nested loop algorithm=.
+  - Hash join might be possible where the ~WHERE~ clause of the ~JOIN~
+    statement is ~WHERE table1.rowA = table2.rowA~. The operation will occur in
+    two phases. Phase one involves scanning the smaller table and building a
+    hash table using ~rowA~. Phase two involves scanning the other table and
+    comparing with the hash table, if there is a match, a new row is sent to
+    the output table.
+  - Nested loop algorithm is essentially a nested loop algorithm where each of
+    row in the first table will be compared with the rows in the other
+    table. Block nested loop algorithm is an optimization where multiple rows
+    in the first table is read and passed to the inner loop, such that each
+    single read in the inner loop can compared with more than one rows in the
+    outer table at the same time, thus reducing the number of times the other
+    table must be read.
+** /Replication/
+- A way to achieve High Availability on MySQL is to use semisynchronous
+  replication, where the master waits for acknowledgement from a configurable
+  number of slaves that the transaction is received by the slave (but not
+  necessarily committed) before committing the transaction on the master
+  itself, and returning to the client.
+** /Partitioning/
+- MySQL only supports horizontal partitioning (i.e., different rows may be in
+  different partitions) and not vertical partitioning (i.e., different columnsn
+  are in different partitions).
+- Partitioning serves several purposes:
+  - Enable a table to be split across multiple disks / filesystems
+  - Allow easier deletion or restoring of subset of the data in a table
+    represented by a partition
+- The various partitioning types are:
+  - range (i.e., by range of values)
+  - list (i.e., by values in a list; note that it not possible to specify a
+    catch-all partition for values not in any explicitly defined list)
+  - columns (variant of partitioning by range or by list, where multiple
+    columns might be used and the types required of the columns are less
+    restricted)
+  - hash (i.e., partitions by a user-defined expression)
+  - key (i.e., partitions by using internal hashing function)
+  - subpartitioning
+- It is possible to load data quickly with mininal impact on the current users
+  by loading the data into a separate table, then swapping the partition such
+  that the load data is now in the target table.
+* To Internalize /Now/
+- N.A.
+* To Learn/Do Soon
+- Find an equivalent resource on NoSQL
+* To Revisit When Necessary
+** /Backup and Recovery/
+- I should revisit the documentation when I need to consider backing up
+  strategy myself, and want to (a) come up with the backup strategy; and/or (b)
+  see example scripts on the backing up process (e.g., common usage of
+  mysqldump).
+** /Optimization/
+- Refer to the page on =Optimization Overview= on the high-level
+  considerations:
+  - Few tables with many columns vs many tables with few columns
+  - Storage engine: InnoDB vs MyISAM
+  - Indexes
+  - Locking strategies
+  - Table row format
+  - Size of memory areas used for caching
+** /Optimization - Optimizing SQL Statements/
+- Refer to the main page on [[https://dev.mysql.com/doc/refman/8.0/en/select-optimization.html][=Optimization - Optimizing SQL Statements=]] for
+  specific considerations when optimizisg individual SQL statements.
+- Refer to [[https://dev.mysql.com/doc/refman/8.0/en/miscellaneous-optimization-tips.html][8.2.7 Other Optimization Tips]] for other miscellaneous optimization
+  tips that are not listed in the other section headers.
+** /Replication/
+- Refer to [[https://dev.mysql.com/doc/refman/8.0/en/replication-solutions.html][=17.4 Replication Solutions=]] for various use cases for replication.
+- Refer to [[https://dev.mysql.com/doc/refman/8.0/en/replication-solutions-backups.html][=17.4.1 Using Replication for Backups=]] for options and instructions
+  on how to back up a replication slave.
+* Other Resources Referred To
+- N.A.

@@ -1,0 +1,154 @@
+---
+short_title: "Kafka Documentation (2.4.0)"
+title: "Kafka Documentation"
+source: Official Documentation
+author: N.A.
+isbn: N.A.
+reading_period: 2019.12–2019.12.29
+date: 2020-03-07T11:26:22+08:00
+draft: false
+---
+
+* General Review
+- Read this documentation to get a good middle-to-high level understanding of
+  Kafka, including how it works and also the various use cases.
+- The documentation is rather easy to read, and discusses alternative designs
+  and the rationale behind certain design elements.
+* To Internalize /Now/
+- When designing components, always think about information flow -- who is the caller and who is the callee, whether any parallel can be drawn to Kafka's push-pull design, or would a push-push design work better.
+* Specific Takeaways
+- Each Kafka record comprises a key-value pair and a timestamp. The key and
+  value themselves are binary arrays and can hold arbitrary data structures. As
+  such, each of the key and value itself may be JSON, and thus contain another
+  layer of key-value pairs.
+- Kafka has four core APIs (and an Admin API):
+  - Producer API
+  - Consumer API
+  - Streams API
+  - Connector API
+- The Producer API and Consumer API are for building applications that
+  publishes to a topic or subscribes to a topic respectively.
+- The Connector API provides the building blocks for building applications that
+  load of data from external system (e.g., a RDBMS) into Kafka (via =source
+  connectors=) and applications that extract of data out of Kafka into external
+  system (via =sink connectors=).
+  - Elements of the Connection API:
+    - Each =connector= is generally responsible for importing from (or
+      exporting to ) one external.
+    - The connector is runned on a =worker= machine.
+    - The worker machine spawns =task(s)= based on the connector code to do the
+      actual processing.
+    - The tasks are represented by custom Java class that inherits from
+      =SourceTask= or =SinkTask=.
+  - Kafka connectors can be executed from the commandline, and also added via
+    REST API to the running Kafka service.
+  - There are various in-built transformations that can be used to transform
+    the records when importing / exporting.
+- The Stream API can be though of as a client-side API to consume data from
+  Kafka and produce an output steam, without the need to understand the
+  server-side considerations in relation to the Kafka cluster(s).
+  - In short, Kafka Streams are generally inside applications that uses / enriches data in Kafka.
+- A consumer in Kafka can be part of a consumer group. For every topic that
+  consumer group is subscribed to, the partitions of that topic will be split
+  as evenly as possible over all the consumers in that group (note that each
+  partition can only be assigned to a single consumer).
+  - As such, it may make sense for the number of partitions of the topic to be
+    a multiple of the number of consumers in the consumer group.
+- Kafka is a messaging system. Traditionally, messaging system can be based on
+  either (a) queue or (b) publish-subscribe. A queuing system allows scaling by
+  have more consumers. A traditional publish-subscribe system does not allow
+  easy scaling because each message is broadcasted to all consumers. However,
+  Kafka (albeit a publish-subscribe messaging system) allows scaling by
+  increasing the number of consumers. This is achieve by having the concept of
+  partitions (akin to sharding).
+- Kafka performance is constant with respect to data size so storing data for a
+  long time is not a problem.
+- Common use cases of Kafka includes the following:
+  - Messaging
+  - Website Acivity Tracking (this is the original use case)
+  - Metrics (i.e., aggregating statistics from distributed applications to
+    produce centralized feeds of operational data)
+  - Log Aggregation
+  - Stream Processing
+  - Event Sourcing
+  - Commit Log
+- Each Kafka broker may have one of more =listeners=. A listener is the port
+  that the broker binds to and listens for connection.
+  - Note that there are different configurations for the listener host and
+    port. Some configuration settings are used for inter-broker communication
+    (which usually happens on the internal network), whereas some configuration
+    settings are advertised to the client, and used by clients to connect to
+    the Kafka brokers from a different network (e.g., the Internet).
+  - Kafka relies heavily on the file system for storing and caching messages.
+    - For example, I/O on hard disk drives are generally thought of as being
+      slow. However, performance in reality is actually much better than
+      expected, owing to optimizations by the file system (e.g., read-ahead,
+      write-behind, prefetching and use of main memory for disk caching) and
+      coupled with linear reads and writes of contiguous data.
+  - Kafka is designed as a push-pull system (i.e., push from producers and pull
+    from consumers). This is as opposed to some push-push systems where the
+    messages are always pushed downstream.
+    - A push-pull system grants certain trade-offs suitable for Kafka use
+      cases:
+      - When the rate of consumption falls behind the rate of production, the
+        consumer will not be overwhelmed with new messages being pushed to
+        it. It will simply fall behind and catch up when it can (though note
+        that if it falls behind for too long and the messages are no longer
+        retained by Kafka, messages might be lost).
+      - A pull based system also allows batching of data sent to the consumer.
+  - Kafka manages to minimize the copying required when transferring messages
+    by leverages unix's =sendfile= system call to directly end the data from
+    unix pagecache into the network interface controller (NIC) buffer.
+  - Kafka will rebalance the allocation of partitions across consumers upon
+    certain events (e.g., new consumer joining, existing consumer being
+    shutdown cleanly, when a consumer is considered dead, when new partitions
+    are added, etc.).
+  - There are three message delivery semantics supported in Kafka: =at most
+    once=, =at least once=, and =exactly once=. Each comes with its set of
+    trade-offs.
+    - Implementing =exactly once= semantics with an external system will
+      require coordination with the external system (e.g., when saving messages
+      from Kafka into HDFS, I can simultaneously save the offset to HDFS, so I
+      know whether certain data have been saved, without causing duplication).
+  - Kafka's replication is based on the concept of in-sync replicas (ISR). A
+    replica is in-sync if: (a) it is able to maintain its session with
+    Zookeeper, and (b) if it is a follower, it must replicate the writes
+    happening on the leader and not fall "too far" behind. A message from a
+    producer is only committed when all ISRs have received the write. When a
+    leader fails, any of the ISRs is eligible to become the new leader. As
+    such, for =f+1= replicas (which includes the leader), the system can
+    tolerate =f= failures.
+    - This is in contrast to the more traditionl majority vote approach where
+      more than half of the replicas (i.e., =f+1= out of =2f+1= replicas) must
+      have received the write before a message is considered committed.
+  - Another consideration is what happens in the event of an unclean leader
+    election (i.e., all replicas fail):
+    - Whether to wait for a replica in the ISR to come back to life as the
+      leader (and hope that it still has the data), or simply choose the first
+      replica (not necessarily in the ISR) to come back to life as the leader
+  - Log compaction allows deletion of records past a certain limit, leaving
+    only the latest record of the particular key. This is useful in system
+    where only the latest value of each key is relevant.
+  - Kafka is unlikely to require much OS-level tuning, but there are
+    configurations to be considered.
+* To Learn/Do Soon
+- Learn about Scribe and Flume, and the trade-offs each offers vis-a-vis Kafka
+  as a log aggregation system.
+- Learn about RabbitMQ, and the trade-offs it offers vis-a-vis Kafka as a
+  messaging system.
+- Learn about Apache Storm and Apache Samza, and the trade-offs each offers
+  vis-a-vis Kafka as a stream processing system.
+* To Revisit When Necessary
+- Read through each of the configuration settings available for the various
+  APIs (e.g., Producer, Consmuer, Connect and Stream) to make sure I have done
+  the basic tuning to avoid avoidable worst case performance.
+- For details on when a consumer updates the offset of messages that it has
+  consumed, refer to the javadocs:
+  - https://kafka.apache.org/24/javadoc/index.html?org/apache/kafka/clients/consumer/KafkaConsumer.html
+- In general, refer to the javadocs for fine details on the APIs.
+- The documentation contains recommendation when operationalizing with
+  ZooKeeper
+* Other Resources Referred To
+- The ecosystem page on the wiki list many other tools / systems that
+  integrates with Kafka:
+  - https://cwiki.apache.org/confluence/display/KAFKA/Ecosystem

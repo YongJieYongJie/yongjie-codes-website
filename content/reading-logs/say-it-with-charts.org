@@ -1,0 +1,122 @@
+---
+short_title: "Say It With Charts"
+title: "Say It with Charts : The Executive's Guide to Visual Communication (4th)"
+source: "Referred to in The McKinsey Way: Using the Techniques of the World's Top Strategic Consultants to Help You and Your Business"
+author: Gene Zelazny
+isbn: 9780071369978
+reading_period: 2020.03
+date: 2020-04-16T09:34:52+08:00
+draft: false
+---
+
+* General Review
+- Read this book if you want to really communicate effectively with charts
+- Highly recommended
+- This book highlights many details about charting that you may not have paid
+  particular attention to, but definitely have affected how you perceived a
+  chart.
+* Specific Takeaways
+** /Choosing Charts/
+*** In General
+- First, determine the message I want to get across
+  - Given the same set of data, I might want to bring across a different
+    message. E.g., given market share data across multiple years, I might want
+    to highlight the increase in market share of a certain company, or I might
+    want to highlight that a certain company has small market share
+  - The message should be the title of the chart. E.g., instead of "Company
+    Sales Trend", I should use something like "Company Sales Have Doubled"
+- Next, ascertain what kind of comparison does the message entails
+  - Component -- When I'm interested in showing the size of each part as a
+    percentage of the whole
+  - Item -- When I'm trying to highlight whether something is more or less than
+    other things; when ranking is important
+  - Time Series -- When showing changes over time
+  - Frequency Distribution -- When showing a count of items falling into
+    various numerical ranges (think literally normal distribution, poisson
+    distribution, etc.)
+  - Correlation -- Relationship between variables
+- Finally, select the chart form
+- The table below shows the chart form(s) that generally goes well with each
+  particular comparison type
+  | Comparison Type        | Chart Form     |
+  |------------------------+----------------|
+  | Component              | Pie            |
+  | Item                   | Bar            |
+  | Time Series            | Line or Column |
+  | Frequency Distribution | Line or Column |
+  | Correlation            | Bar or Dot     |
+
+*** Component Comparison
+- Generally pie chart is appropriate because the angles effectively show how
+  much each component contributes to the total (e.g., an angle of 90 degrees
+  corresponds to 25%)
+- When showing change is components composition over time, consider using 100%
+  bar or column charts, with lines connecting the components from one time
+  period to another
+- Tricks
+  - Sometimes placing the component at the bottom (at around 4 o'clock to 8
+    o'clock position) has the effect of making the component look bigger (see
+    example of Apple making 21.2% appear greater than 19.5% at
+    https://www.wired.com/2008/02/macworlds-iphon/)
+*** Item Comparison
+- Generally a column bar chart is appropriate because:
+  - the labels can be written horizontally to the left of the bars (within the
+    need to rotate the labels as in the case of a vertial bar chart)
+  - a single scale can be placed at the top
+  - this reduces the possibility of the item comparison being confused with
+    time comparison (which is usually presented on a vertial bar chart where
+    time flows horizontally)
+*** Time Series Comparison
+- Generally a column (fewer data points) or line chart (more data points) works
+  best
+- Tricks
+  - For a column chart, to emphasize a particular column, try using a downward-pointing arrow just
+    above that particular column
+  - For a line chart, instead of drawing multiple lines on one chart,
+    split the data into multiple chart comparing just two items in
+    each chart (e.g., instead of plotting trend across time of company
+    A, B, C and D on one chart, trying plotting three charts -- A v B,
+    A v C, A v D, assuming A is the common basis of comparison)
+- Variations
+  - Instead of a simple line chart, consider Surface chart /
+    subdivided surface chart (i.e., two or more line charts stacked
+    vertically together)
+*** Frequency Distribution Comparison
+- Generally a column (fewer data points) or line chart (more data points) works
+  best
+- Frequency distribution comparison can be thought of as:
+  - a time series comparison where the dimension of time is replaced with
+    things like size of sales (e.g., plot of number of sales (y-axis) against size of
+    sales in dollars (x-axis))
+  - an item comparison where the "items" are actually a binned groups of an
+    otherwise single item (e.g., plot of number of employees (y-axis) against
+    various age groups (x-axis))
+*** Correlation Comparison
+- Correlation comparison generally means to show whether a correlation exists
+  or does not exist (e.g., whether size of discount correlates with number of
+  sales)
+- Generally a scatter plot or paired bar chart is best
+- Variations to consider
+  - On a scatter plot, it is possible to include a third dimension as the size
+    / colour of the dots
+*** Things to consider when charting
+  - Where should the axes be (e.g., left or right, top or bottom)
+  - Should the scale be absolute values, or index / percentage
+  - How should the data points be ordered (where there is flexibility)
+  - How to visually emphasize what is most relevant
+    - Consider shapes and bounding boxes like circles, triangles, stars, and arrows
+* To Internalize /Now/
+- Things I should put into my day-to-day toolbox include:
+  - When titling graphs, makes sure the title conveys a message
+  - Don't be constrained to the default graph forms; always think of possible
+    variations
+* To Learn/Do Soon
+- Whenever I see any data, try to think of ways to present it in a graphical
+  manner
+* To Revisit When Necessary
+- Browse through Section Two for example usages of various charts across all
+  comparison types to get inspiration when considering on how to present data
+  - The example usages show how to emphasize particular data points
+* Other Resources Referred To
+- N.A.
+  

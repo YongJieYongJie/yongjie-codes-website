@@ -1,0 +1,306 @@
+---
+short_title: "The McKinsey Way"
+title: "The McKinsey Way: Using the Techniques of the World's Top Strategic Consultants to Help You and Your Business"
+source: Googl-ing on the books every consultant must read
+author: Ethan M. Rasiel
+isbn: 0-07-136883-3
+reading_period: 2020.03
+date: 2020-04-16T09:23:41+08:00
+draft: false
+---
+
+* General Review
+- Read this book if you want to get a brief insight into what consultants do.
+- This book touches on several established ways of solving business problems,
+  managing teams, selling ideas etc.
+* Specific Takeaways
+** /The McKinsey Way of Thinking about Business Problems/
+*** Building the Solution
+- Solution for client's problem must be (1) fact-based, (2) rigidly structured,
+  and (3) hypothesis-driven
+- Being fact-based helps in the lack of instinct (because consultants generally
+  do not have the same familiarity with the business or industry) and lends
+  credibility
+- Being MECE (mutually exclusive, collectively exhaustive) helps in structuring
+  the solution
+- Define the Initial Hypothesis (i.e., what might be the solution to the problem)
+  - Start by breaking down the problem into its key drivers
+  - Next, make an actionable recommendation regarding each driver
+  - Next, take each top-line recommendation and break it down into level of issues
+  #+BEGIN_QUOTE
+  If a given recommendation is correct, what issues does it raise? Consider the
+  likely answers to each issue. Then go down another level. For each issue, what
+  analyses would you need to make to prove or disprove your hypothesis?
+  #+END_QUOTE
+- Test the Initial Hypothesis
+*** Developing an Approach
+- The Problem is Not Always the Problem
+  - Figure out whether the problem given is the real problem by digging deeper
+- Don't Reinvent the Wheel
+  - Use established problem-solving methods like: Analysis of Value
+    Added, Business Process Redesign, Product-Market Scan etc.
+  - Use analytical frameworks (e.g., Forces at Work)
+    - Forces at Work:
+      - identify client’s suppliers, customers, competitors, and possible
+        substitute products
+      - identify the changes in each of the categories above, and the impact on
+        client
+      - how will the changes affect the way the client designs, manufactures,
+        distributes, sells, and services its products
+- ... But Every Client is Unique (No Cookie-Cutter Solutions)
+- Don't Make the Facts Fit Your Solution
+- Make Sure Your Solution Fits Your Client
+  #+BEGIN_QUOTE
+  The most brilliant solution, backed up by libraries of data and promising
+  billions in extra profits, is useless if your client or business can’t
+  implement it. Know your client. Know the organization’s strengths,
+  weaknesses, and capabilities—what management can and cannot do. Tailor your
+  solutions with these factors in mind.
+  #+END_QUOTE
+- Sometimes You Have to Let the Solution Come to You
+  - If you cannot think of any Initial Hypothesis, proceed with data gathering
+    to get a better picture of the situation
+- Some Problems You Just Can't Solve... Solve Them Anyway
+  - When the problem seems unsolvable, try the following:
+    - Redefine the problem (early)
+    - Tweak your way to a solution -- if the solution cannot be implemented by
+      the client for any reasons, tweak the solution before implementation
+    - Work through the politics -- if politics is preventing you from
+      formulating / implementing a solution, think about the incentives of
+      various players in the organization, and try to align to such incentives
+*** 80/20 and Other Rules to Live By
+- 80/20
+- Don't boil the ocean -- learn to know what to ignore
+- Find the Key Drivers
+- The Elevator Test -- be able to summarize the key points into a very short
+  and powerful package
+- Pluck the Low-Hanging Fruit
+- Make a Chart Everyday -- make a record of what was learned every day and what
+  insight can be drawn
+- Hit Singles (baseball metaphor) -- don't try to do too much; focus instead of
+  consistently delivering what you are supposed to do; if you set up high
+  expectations and do not achieve it, you will lose any hard-earned credibility
+- Look at the Big Picture -- is what you are doing leading you towards the
+  eventual goal?
+- Just Say, "I Don't Know"
+- Don't Accept "I Have No Idea" -- people always have an idea when probed
+  further; if he or she is not certain, an educated guess can be made
+** /The McKinsey Way of Working to Solve Business Problems/
+*** Selling a Study
+**** How to Sell Without Selling
+- Instead of hardselling, McKinsey markets its brand, such that businesses know
+  who to call when there is a problem to be solved
+- McKinsey markets through publications, having its partners sit on various
+  boards, etc.
+**** Be Careful What You Promise: Structuring an Engagement
+- Be careful about scope, make sure it's achievable
+*** Assembling a Team
+**** Getting the Right Mix
+- Consider raw intellect and also relevant experience
+- Understanding the problem, and get people with the necessary skills. E.g., if
+  the problem requires heavy number crunching and deep analysis, get people who
+  are comfortable with that; if the problem requires big reorganization with
+  many sensitive decisions to be made, get people with good people skills
+**** A Little Team Bonding Goes A Long Way
+- Learn also to respect each team member's time outside work, and avoid taking
+  up those time for bonding activities if possible
+**** Take Your Team's Temperature to Maintain Morale
+- Make sure each team member is happy with what he or she is doing, and take
+  remedial actions immediately if he or she is not
+- Steer a steady course -- don't change your mind about team priorities and
+  analyses all the time
+- Let team members know why they are doing what they are doing
+- Respect
+- Get to know your teammates as people -- whether married, any hobbies, etc.;
+  also share about yourself
+- When things doesn't well: show empathy
+*** Managing Hierarchy
+**** Make Your Boss Look Good
+- Keep information flowing so your boss knows what you are doing
+**** An Aggressive Strategy for Managing Hierarchy
+- In a less hierachical organization, it might be possible to assert equality
+  across seniority level in a positive way: e.g., pointing out your boss's
+  mistakes to earn trust from your boss
+*** Doing Research
+**** Don't Reinvent the Wheel
+**** Specific Research Tips
+- Start with the annual report -- the "Message to Shareholders" or "Chairman's
+  Remarks", when read with healthy amount of skepticism provides a good sense
+  of the company's performance in the past year, and its strategy moving
+  forward
+- Look for outliers
+- Look for best practice -- find out what the best performers in the industry
+  are doing and imitate them
+*** Conducting Interviews
+**** Be Prepared: Write An Interview Guide
+- What are the questions I need answered?
+- What do I really need from this interview? What am I trying to achieve? Why
+  am I talking to this person?
+- Know the background of the interviewee -- is she a prickly CEO? or a middle-level manager whose plea for change have gone unheeded?
+- Start with general questions before going to specific (and more sensitive)
+  questions -- e.g., start with anodyne questions about the industry
+- Ask some questions that I already know the answer to:
+  - To gain further insight about how honest/knowledgeable the interviewee is
+  - To discover any blind spots that I might have
+- End the interview by asking if there's anything else the interviewee would
+  like to add, if if there's any question that I missed
+**** When Conducting Interview, Listen and Guide
+- Allow the interviewee to talk more
+- Indicate interest by leaning in, taking notes, and giving verbal cues (like,
+  "oh, yes", "uh-huh")
+- To get more from the interviewee, try letting the silence dangle after the
+  interviewee has finished, and wait for him to continue talking
+**** Seven Tips for Successful Interviewing
+- Have the interviewee's boss set up the meeting
+- Interview in pairs -- take turns asking questions and taking notes
+- Listen; don't lead -- in most interviews, I will be looking not for yes-or-no
+  answers, but exhaustive answers; ask open-ended questions instead of multiple
+  choice questions
+- Paraphrase, paraphrase, paraphrase -- repeat the answer back to the
+  interviewee (preferrably with stucture applied) to check whether I understood
+  them correctly. This is especially important because when people given
+  impromptu answers, they will not be able to emphasize or provide sufficient
+  structure to the answer
+**** Use the Indirect Approach
+- Being too direct might force the interviewee into a defensive mode, resulting
+  in less information being revealed
+**** Don't Ask Too Much
+- To avoid being inundated by irrelevant information
+- To avoid pressing the interviewee to hard, and closing the door to future
+  interviews / more information
+**** Adopt the Columbo tactic
+- After the interview is over, when everyone is ready to leave (and has his or
+  her guard down), as the important question
+**** Don't Leave the Interviewee Naked
+- Try to allay any fear the interviewee may have; one way to do this is to show
+  how the process (not just the interview, but the whole problem solving
+  process) will benefit him
+- Be willing to share information with the interviewee too. People don't like
+  to be kept in the dark
+**** Difficult Interviews
+- People who are openly aggressive
+  - If my backing is more senior than the difficult person, I can openly
+    challenge him to show that I'm not to be trifled with
+- People who refuse to talk or give access to relevant documents or data
+  - I will need to pull rank, or threaten to do so
+- People who refuse to get to the point
+  - Either find someone else to get the information from, or speak to the
+    person's boss to explain the situation and get the boss to have a word with
+    him
+- People who will likely be fired because of my work
+  - Nothing much I can do
+**** Always Write a Thank You Note
+*** Brainstorming
+**** Proper Prior Preparation
+- Prepare a fact pack, circulate it, and make sure everyone reads it prior to
+  the meeting
+- Decide whether everyone should go to the meeting with a (1) blank slate, or
+  (2) a hypothesis
+**** In a White Room
+- Don't bring any preconceptions into the room
+- There are no bad idea
+- There are no dumb questions
+- Be prepared to kill your babies -- don't be married to my hypothesis
+- Know when to say when -- stop or take a break when productivity drops
+- Get it down on paper
+**** Some Brainstorming Exercises
+- Post-it notes -- everyone write ideas to a post-it note and pass it to the
+  leader, who reads it aloud; this allows quick generation of ideas without
+  being bogged down by discussing the details
+- Flipchart -- put a number of flipchart around the room, each labelled with a
+  different category or issue, and team members go around the room writing down
+  idea in the appropriate flipchart
+- Bellyaches up front -- invite all relevant players into a room to explain
+  what they didn't like about what was presented so far, followed by coming up
+  with things they thought were good, and how such things might be implemented
+  within their own business units
+** /The McKinsey Way of Selling Solutions/
+*** Making Presentations
+**** Be Structured
+**** Remember that there are diminishing marginal returns to effort
+- Try setting a deadline before the actual presentation after which there will
+  be no further amendments to the slide deck
+**** Prewire Everything
+#+BEGIN_QUOTE
+A good business presentation should contain nothing new for the
+audience. Walk all the players at the client through your findings before you
+gather them into one room.
+#+END_QUOTE
+- Before the final presentation at the full meeting, run the solution through
+  the various stakeholders individually in private, in order to spot issues and
+  address any disagreement
+*** Displaying Data with Charts
+**** Keep it Simple---One Message Per Chart
+- Choose a good caption at the top of the chart, conveying the intended message
+- Always put a source attribution to avoid questions like "Where did you get
+  this information?"
+**** Use a Waterfall Chart to Show The Flow
+- Using vertical columns to show how a value is arrived at (e.g., a waterfall
+  chart may start with Net Sales on the far left, followed by various Expenses,
+  Depreciation/Amortization, Interest Income, Taxes etc., ultimately resulting
+  in the Net Income on the far right. This will show how the components
+  resulted in the final value)
+*** Managing Internal Communications
+**** Keep the Information Flowing
+- There are two main ways to keep information flowing: messages and meetings
+- For meetings, always have an agenda and leader
+- One way to ensure everyone attends the meeting is to block out the same
+  timing every week, and cancelling the session (as early as possible) if no
+  meeting is required
+**** Three Keys to an Effective Message
+- brevity, thoroughness and structure
+**** Always Look Over Your Shoulder
+- Be very careful about confidentiality
+*** Working with Clients
+**** Keep the Client Team on Your Side
+- Make their goals my goal
+- Let them understand that this is an opportunity they can make actual change
+  in their organization
+- Let them understand that in any case, it is an opportunity for them to learn
+  and get exposed to things they would not have been exposed to otherwise
+**** How to Deal with "Liability" Client Team Members
+- There are two types of "liability" members on a clietn team: merely useless
+  and actively hostile
+- If possible, try to swap the "liability" members out
+- Otherwise,
+  - if the "liability" member is merely useless, work around the
+    member by giving him non-critical work
+  - if the "liability" member is actively hostile, keep any sensitive
+    information away from the member if possible
+**** Engage the Client in the Process
+- Have frequent and regular updates to keep in touch with clients and keep my
+  projects on "top of mind" for them
+**** Get Buy-In Throughout the Organization
+- After presentation to the board, present to the middle-level managers; also
+  do not neglect the people on the line
+- Target the presentation to the audience
+**** Be Rigorous about Implementation
+- Make sure someone takes responsibility for getting the job done
+- The implementation plan should be specific about what will happen and whe
+** /Surviving at McKinsey/
+- Find Your Own Mentor
+- Surviving on the Road
+- A Good Assistant is a Lifeline
+- Recruiting McKinsey Style: How to Do It (and How to Get Through It)
+- If You Want a Life, Lay Down Some Rules
+* To Internalize /Now/
+- When approaching a problem, try thinking in terms of key drivers and
+  hypothesis
+* To Learn/Do Soon
+- Find resources with examples on how to use McKinsey approach to coming up
+  with the initial hypothesis
+- Find resources with examples on various established problem solving
+  frameworks (e.g., Analysis of Value Added, Business Process Redesign,
+  Product-Market Scan, Forces at Work)
+- Find out what are the various corporate databases available
+* To Revisit When Necessary
+- The topics presented are generally very concise. I should perhaps revisit if
+  I need concrete examples of the concepts presented to jolt my memory.
+* Other Resources Referred To
+- For an in-depth discussion of the square law of computation and other issues
+  of complexity and problem solving, see Gerald M. Weinberg, An Introduction to
+  General Systems Thinking (New York: John Wiley & Sons, 1975)
+- Thomas J. Peters and Robert H. Waterman, Jr., In Search of Excellence:
+  Lessons from America’s Best-Run Companies (New York: Harper&Row, 1982)
+- Gene Zelazny, Say It With Charts: The Executive’s Guide to Successful
+  Presentations (Homewood, IL: Dow-Jones Irwin, 1985)
