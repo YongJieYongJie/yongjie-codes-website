@@ -1,0 +1,560 @@
+---
+short_title: "Fluent Python"
+title: "Fluent Python: Clear, Concise, and Effective Programming (1st Edition)"
+source: Googl-ing for advanced books on Python
+author: Luciano Ramalho
+isbn: 978-1-491-9-46008
+reading_period: 2020.05.15-2020.06.17
+date: 2020-06-25T14:15:31+08:00
+draft: false
+---
+
+* General Review
+- An excellent book on the Python programming langugae, going into the necessary
+  details to understand various language feature. Any Python programmer will be
+  well-served having read this book.
+- The "Further Readings" section of each chapter generally provides many useful
+  links for a greater understanding on the topics (and related topics) covered
+  in the chapter. The author also very helpful points out how each of the
+  further reading are relevant.
+* Specific Takeaways
+** Chapter 2 - An Array of Sequences
+- Instances of ~NamedTuple~ takes exactly the same amount of memory as plain
+  tuples because the field names are stored in the class. They use less memory
+  than regular objects because they don't use per-instance ~__dict__~ to store
+  attributes.
+- It is useful to know about ~Slice~ objects even if I'm not implementing my own
+  class, because I can assign names to ~Slice~ objects to make slicing
+  operations much clearer.
+  - For example:
+    #+BEGIN_SRC python
+      a_list = range(7)
+      every_other = Slice(None, None, 2)
+      sum(a_list[every_other]) # Returns 9, being the sum of 1, 3, and 5
+    #+END_SRC
+- To really understand what is happening in Python, analyze the bytecode by
+  using ~dis.dis(my_func)~, and referencing
+  https://docs.python.org/3/library/dis.html
+  - Note: In the link above, =TOS= means top-of-stack, =TOS1= means item indexed
+    =1= from top-of-stack (i.e., second item from top-of-stack).
+  - Note: In the link above, the number immediately to the left of the opname is
+    the "memory location" of the instruction. From python 3.6 onwards, each
+    instruction take two bytes, so the numbers should be 0, 2, 4, ...
+- Raymond Hettinger has a ~SortedCollection~ class providing a simple API for
+  common use cases of ~bisect.bisect~ and related methods:
+  http://code.activestate.com/recipes/577197-sortedcollection/
+- Use ~array.array~ when a leaner data structure is required than standard
+  ~list~.
+  - ~array.array~ supports ~array.tofile~ and ~array.fromfile~ that are fast and
+    easy to use.
+- ~memoryview~ class is useful for creating a shared-memory sequence type, that
+  allows if reinterpreting the underlying bytes and modifying them in place.
+- To keep a sequence sorted when inserting items, use ~bisect.insort~.
+** Chapter 3 - Dictionary and Sets
+- ~dict~ can be constructed in many ways:
+  - Passing keyword arguments to ~dict()~
+  - Using literal notation with ~{key: value}~
+  - Passing an iterable of key-value pairs to ~dict(zip(keys, values))~
+  - Passing a ~dict~ to ~dict()~
+- ~d.setdefault(k, [default])~ will return the value pointed to by key ~k~ if
+  ~k~ exists, otherwise, it will set ~k~ to ~default~, and return ~default~.
+- ~collections.ChainMap~ is used by the Python interpreter internally for
+  resolution of attribute access etc. progressively through the scope hierarchy
+  by chaining together the scope dictionaries, starting from the innermost
+  scope.
+** Chapter 4 - Text vs Bytes
+- General background on the few common encodings (content below taken directly
+  from the book):
+  - latin1 (AKA iso8859_1)
+    - Important because it is the basis for other encodings, such as cp1252 and
+      Unicode itself (note how the latin1 byte values appear in the cp1252 bytes
+      and even in the code points).
+  - cp1525
+    - A latin1 superset by Microsoft, adding useful symbols like curly quotes
+      and the € (euro); some Windows apps call it “ANSI,” but it was never a
+      real ANSI standard.
+  - cp427
+    - The original character set of the IBM PC, with box drawing
+      characters. Incompat‐ ible with latin1 , which appeared later.
+  - gb2312
+    - Legacy standard to encode the simplified Chinese ideographs used in
+      mainland China; one of several widely deployed multibyte encodings for
+      Asian languages.
+  - utf-8
+    - The most common 8-bit encoding on the Web, by far; backward-compatible
+      with ASCII (pure ASCII text is valid UTF-8).
+  - utf-16
+    - One form of the UTF-16 16-bit encoding scheme; all UTF-16 encodings
+      support code points beyond U+FFFF through escape sequences called
+      “surrogate pairs.”
+- The BOM is either ~\xff\xfe~ (little-endian) or ~\xfe\xff~ (big-endian).
+  - BOM is actually only relevant for UTF-16 or UTF-32, which uses more than one
+    byte per code point.
+  - However, BOM are commonly seen in UTF-8 files, where it is the three
+    character sequence ~\xef\xbb\xbf~.
+- Comparing unicode strings:
+  - There are four ways of normalizing unicode strings in Python:
+    - ~unicodedata.normalize('NFC', a_unicode_string)~
+      - Certain characters may be represented by a single code point, but may
+        also be composed using two code points (e.g., the e with an accent in
+        cafe). The ~NFC~ normalization will normalize the code points to produce
+        the shortest equivalent string.
+      - Think of the ~C~ in ~NFC~ as "compose".
+      - Certain single characters are also normalized to the same characters
+        (e.g., the electrical symbol for ohm is normalized to the Greek
+        uppercase omega).
+    - ~unicodedata.normalize('NFD', a_unicode_string)~
+      - This does the opposite of ~NFC~ by breaking down code points into the
+        longest equivalent string.
+      - Think of the ~D~ in ~NFD~ as "decompose".
+    - ~unicodedata.normalize('NFKC', a_unicode_string)~
+      - This is a stronger form of normalization that will convert single code
+        points like the ½ (the 1/2 fraction as a single character using code
+        point U+00BD) to "1/2".
+      - This may be useful in circumstances like text searches (users searching
+        for "1/2" would likely want to get results for ½ too).
+      - However this form of normalization also results in changes in the
+        meaning of the text because the "4²" (four raised to the power of two,
+        with a superscript 2 character) will be normalized to "42".
+    - ~unicodedata.normalize('NFKD', a_unicode_string)~
+      - This is the opposite of ~NFKD~.
+  - Casefolding
+    - ~str.casefold()~ is a unicode-aware version of essentially converting
+      string to lower case. Note that German Eszett or "sharp s" (ß) becomes
+      "ss".
+  - Generally, when doing case-insensitive comparision of unicode string, use
+    the ~NFC~ normalization with the ~casefold()~ method.
+  - Taking Out Diacritics
+    - Sometimes it might be better to remove diacritics. For example, the URL
+      http://en.wikipedia.org/wiki/Sao_Paulo is likely clearly than
+      http://en.wikipedia.org/wiki/S%C3%A3o_Paulo for the city São Paulo.
+    - This can be achieved by using ~unicodedata.normalize('NFD',
+      a_unicode_string)~ to decompose all characters into base characters and
+      combining marks, removing the combining marks (optionally, only removing
+      the combining marks if they apply to a latin1 base character, because no
+      point removing the accent on έ since the resultant ε is beyond the ascii
+      range of characters anyway), and normalizing it back using ~NFC~.
+  - Sorting unicode strings:
+    - Generally, the accent characters does not affect the alphabetical order,
+      but normal string comparison will treat them very differently.
+    - Sensible unicode sorting may be achieved by using
+      ~locale.setlocale(locale.LC_COLLATE, 'pt_BR.UTF-8')~. The second argument
+      is the relevant locale. Note however that this requires that the locale
+      implementation on the OS correctly handles sorting.
+    - An alternative is to use the ~PyUCA~ library
+** Chapter 5 - First-Class Functions
+- The ~inspect~ module allows convenient introspection of functions, allowing
+  IDE and tools to provide helpful hints etc.
+- The ~itemgetter()~, ~attrgetter()~ and ~methodcaller()~ functions from the
+  ~operator~ package are useful in certain aspect when using the "functional
+  paradigm", e.g., when passed as arguments to ~reduce~, ~map~, or
+  comprehensions.
+** Chapter 6 - Design Patterns with First-Class Functions
+- The existence of first-class functions often eliminates the need to create a
+  full-fledge class that are common is the design patterns of many other
+  languages.
+** Chapter 7 - Function Decorators and Closures
+- ~global~ works by preventing the inner function scope from declaring a new
+  variable, hence any attempt to set the variable with the same name will affect
+  the global variable.
+- ~nonlocal~ is similar to the use of ~global~, save that instead of allowing a
+  function to modify global variable, it allow an inner function to access the
+  scope in the outer function (usually referred to as a closure).
+- A function's scope and closure can be inspected using
+  ~a_function.__code__.co_freevars~ and the contents of
+  ~a_function.__closure__~.
+- ~nonlocal~ is useful when creating decorators, which by their very nature
+  relies on nested functions.
+- ~functools.singledispatch~ decorator allows definition of separate methods
+  that will be called using the same attribute name, depending on the type of
+  the first argument passed in.
+  - This is similar to method overloading, save that the choice of actual method
+    depends only on the type of the first argument passed in, as opposed to the
+    full method signature.
+** Chapter 8 - Object References, Mutability, and Recycling
+- It may be more helpful to think of variable names as labels, and not boxes.
+  - Think of the variable being assigned to the object, as opposed to the object
+    being assigned to the variable. If we consider the assignment operation,
+    this is also accurate because the right-hand side is evaluated first (and
+    the object created) before the assignment occurs.
+- Use the built-in function ~id()~ to check for object ID.
+- The ~copy~ module provides ~copy()~ and ~deepcopy()~ functions for shallow and
+  deep copying respectively. ~deepcopy()~ is able to handle recursive /
+  self-referencing objects.
+- The only mode of parameter passing in Python is /call by sharing/ (similar in
+  some ways to pass by reference). In essence, each function parameter becomes
+  an alias of the actual arguments, and the same general behaviours apply:
+  - Mutating a list via an alias mutates the same list when accessed using the
+    original variable.
+  - Assign to an alias makes it an alias of something else, without affecting
+    the original variable.
+  - Augmented operators on the alias may affect the original variable if the
+    underlying object is mutable.
+- The ~del~ statement deletes names, and not the underlying object. As such, the
+  underlying object will only become eligible for garbage collection when ~del~
+  is called on the last variable referencing the object.
+- In an interactive console section, the ~_~ special variable holds the result
+  of the previous output.
+** Chapter 9 - A Pythonic Object
+- As much as possible, when defining a class, ensure that when ~repr()~ is
+  called on an instance, it outputs a string that creates the same instance if
+  passed to ~eval()~.
+- In the ~__init__()~ method, simple validation can be done using constructors
+  like ~float()~ (as in ~self.x = float(arg_x)~), and constructor of ~list~ /
+  ~tuple~ may be done using ~list()~ / ~tuple()~ respectively.
+- Classmethod is a good way to define alternative constructors.
+- The ~__format__()~ method on a class is actually an alternative to ~__str__()~
+  and ~__repr__()~, and will be automatically called when using the built-in
+  ~format()~ or when called as ~"a_string_with_formatting_charactors".format()~.
+- Attributes with two preceding underscores will be automatically manged by the
+  Python interpretor to prevent shadowing by subclasses.
+- Defining a ~__slots__~ class attribute will reduce the memory footprint for
+  each instance created, but the instance cannot have additional attributes
+  defined on it thereafter. This is because ~__slots__~ will replace ~__dict__~.
+  - ~__slots__~ is not inherited in subclasses.
+  - Instances cannot be target of weak references unless ~'__weakref__'~ is
+    included in slots.
+** Chapter 10 - Sequence Hacking, Hashing, and Slicing
+- Slicing works by creating a ~slice~ object and passing it to the object's
+  ~__getitem__()~ method.
+** Chapter 11 - Interfaces: From Protocols to ABCs
+- ~isinstance()~ checks should generally be used together with abstract base
+  classes or ~str~, the latter because it is currently the only way to
+  distinguish a string from other immutable sequence, which is useful when
+  designing an API that can accept either a string or a list of strings.
+- There is generally no need to define new abstract base classes, unless I am
+  authoring a new framework, and need to provide a hierarchy of classes  with
+  specific APIs for users to subclass and plug back into the framework.
+- Besides directly subclassing from an abstract base class, it is also possible to:
+  - Call the ~register()~ method (or use it as an decorator) on a abstract base
+    class with another class to register that other class as a virtual subclass
+    of the abstract base class.
+  - Define a classmethod ~__subclasshook__()~ on the abstract base class that
+    will receive a type and returns ~True~ if that type is a subclass.
+** Chapter 12 - Inheritance: For Good or For Worse
+- When subclassing built-in types, the code of the built-in (written in C) may
+  not call the special methods overwritten by user-defined classes.
+- Python supports multiple inheritance. Where the diamond problem exists,
+  resolution may depend on the order the parent classes are listed in the
+  subclass's definition.
+- Some guidelines for dealing with multiple inheritance:
+  - *Distinguish interface inheritance from implementation inheritance*
+    - The latter is an implementation detail, and can often be replaced by
+      composition and delegation.
+  - *Make interfaces explicit with ABCs (abstract base classes)*
+  - *Use mixins for code reuse*
+    - A mixin should never be instantiated.
+    - A concrete class should never inherit only from a mixin.
+  - *Make mixins explicit by naming*
+  - *An ABC may also be a mixin; the reverse is not true*
+  - *Don't subclass from more than one concrete class*
+  - *Provide aggregate classes to users*
+    - An aggregate class in a convenience class with a commonly used set of
+      inheritance from a concrete class and one or more mixins.
+  - *"Favor Object Composition Over Class Inheritance."*
+** Chapter 13 - Operator Overloading: Doing It Right
+- Python allows operator overloading, but with certain constraints:
+  - We cannot overload operators for built-in types
+  - We cannot create new operators, only overload existing ones
+  - A few operators cannot be overloaded: ~is~, ~and~, ~or~, and ~not~
+- Unary operators can be overloaded by implementing ~__neg__()~ for ~-~,
+  ~__pos__()~ for ~+~, and ~__invert__()~ for ~~~.
+** Chapter 14 - Iterables, Iterators, and Generators
+- While iterators are iterable, iterables are not iterators. It is important to
+  keep this distinction in mind:
+  - A class that is designed to support iteration (i.e., the class is iterable)
+    should not be made an iterator itself. Instead, a generator function should
+    be defined. This is because if the class itself is made an iterator, it
+    would not be able to support multiple traversals: if user call ~iter()~
+    multiple times on the class, the behaviour might vary depending on which
+    iterator is being iterated on first, whether another ~iter()~ call was made
+    halfway into the iteration of an earlier iterator obtained from an earlier
+    ~iter()~ call, etc.
+- The ~re~ module has a ~finditer()~ method that provides a generator over regex
+  matches.
+- When passing generator expressions as the sole arguments to a function, the
+  surrounding parentheses may be omitted.
+- The ~yield from~ expression allows an iterable to delegate to a
+  sub-iterable. The following two blocks of code are equivalent:
+    #+BEGIN_SRC python
+      # list(chain([1, 2, 3], ['a', 'b', 'c']) --> [1, 2, 3, 'a', 'b', 'c']
+      # for either function below
+
+      def chain(*iterables):
+        for it in iterables:
+          for i in it:
+            yield i
+
+      def chain(*iterables):
+        for it in iterables:
+          yield from it
+    #+END_SRC
+** Chapter 15 - Context Managers and else Blocks
+- The ~__enter__()~ method is invoked when entering a ~with~ block, and the
+  ~__exit__()~ method is invoked when exiting the ~with~ block.
+  - Any object returned by the ~__enter__()~ method may be bound to a variable
+    by using the ~as~ keyword.
+  - Note: The ~__exit__()~ is always invoked on the context manager object
+    itself, and not the object returned by the ~__enter__()~ block.
+  - The ~__exit__()~ method will be passed any exception information, and can
+    signal to the interpreter that it has handled the exception by returning
+    ~True~.
+- The ~@contextlib.contextmanager~ decorator allows creation of context managers
+  using generators.
+  - The ~yield~ statement in the generator should be wrapped in
+    ~try-except-finally~ block for error handling. In particular, the ~finally~
+    block is what ensures resource release even when there is an exception
+    raised within the body of the context manager.
+** Chapter 16 - Coroutines
+- [Coroutines are no longer the recommended way to write asynchronous code in
+  Python.]
+** Chapter 17 - Concurrency with Futures
+- Use ~concurrent.futures.as_completed()~ to retrieve ~Future~ instances as they
+  complete (finished or cancelled).
+  - The ~Future~ instances may be created by different
+    ~concurrent.futures.Executor~ instances.
+- All standard library functions that perform blocking I/O release the GIL when
+  waiting for a result from the OS.
+- A useful idiom when writing ~futures~ code is to create a mapping of ~futures~
+  instances to any corresponding data, so that the data may be retrieved when
+  the ~futures~ instances complete (finished or cancelled).
+  - For example:
+      #+BEGIN_SRC python
+        futures_map = {}
+        for param in params:
+          future = executor.submit(target_task, *param)
+          futures_map[future] = param
+      
+        for completed in futures.as_completed(futures_map):
+          try:
+            result = completed.result()
+            # Do something with the result
+          except SomeException:
+            param = futures_map[completed] # Retrieve corresponding data
+            print('Error running target_task with parameters:', param)
+      #+END_SRC
+** Chapter 18 - Concurrency with asyncio
+- Commandline "animation" can be achieved by moving the cursor backwards using
+  =\x08= and writing over the existing output.
+- Python threads cannot be terminated directly. This is by design. To terminate
+  threads, a signal is sent to the thread (e.g., through a shared global
+  variable).
+  - For coroutines, the ~Task.cancel()~ instance method may be used, and it
+    raises a ~CancelledError~ within the coroutine.
+  - The difference is (partly) due to the fact that threads might be suspended
+    at any point, and cancelling such thread might lead to inconsistent
+    states. Whereas coroutines are only suspended on ~yield~ statements etc.,
+    and have the opportunity to catch the ~CancelledError~.
+- ~time.sleep()~ blocks the thread, but Python will release the GIL, allowing
+  other threads to execute. As such, this may only be used when concurrency is
+  achieved using threads, as opposed to using coroutines.
+  - For coroutines, use ~asyncio.sleep()~
+- Concurrency with coroutines is generally easier compared to concurrency with
+  threads. This is because for threads, the scheduler may interrupt the thread
+  at any time, including halfway through a multi-step operation. As such, locks
+  must be used to prevent other parts of the programs from interfering with such
+  threads suspended on multistep operation. On the other hand, coroutines will
+  run until the next ~yield~, ~yield from~ or ~await~, when it explicitly wants
+  to give up control.
+- ~asyncio~ library doesn't contain file related operations (at least when the
+  book was written) because there is no stable and portable asynchronous file
+  handling api across different operating systems.
+  - An option to do asynchronous file I/O with ~asyncio~ library is to get the
+    default event loop, and use ~run_in_executor()~ on the event loop to
+    schedule the file I/O in the default thread pool. See Example 18-9 for
+    reference.
+- An ~asyncio.Semaphore~ can be used to limit the number of concurrent
+  coroutines.
+- Note that the futures returned from ~asyncio.as_completed()~ are not
+  necessarily the same futures passed into the ~asyncio.as_completed()~ call; as
+  such, it is not possible to use an earlier mapping of futures to corresponding
+  data.
+  - An alternative is to have the futures raise an exception, and pass the data
+    using the exception. (Assuming the data is required for exception handling.)
+- When using ~asyncio~ instead of ~ThreadPoolExecutor~, one must take special
+  care to spot any I/O operations that will block the thread in order to avoid
+  performance issue. This is because in ~asyncio~ code, one thread is shared by
+  the event loop and all ~futures~ instances, whereas in ~ThreadPoolExecutor~,
+  there is are other available worker threads.
+  - Such blocking I/O operations should be hived off to a thread by first
+    calling ~loop = asyncio.get_event_loop()~, followed by
+    ~loop.run_in_executor(None, blocking_func, \*args)~.
+** Chapter 19 - Dynamic Attributes and Properties
+- The ~__new__()~ method is the one responsible for actually creatiing the
+  object in the instantiation process. The object created by ~__new__()~ is what
+  will be passed to ~__init__()~, provided certain conditions are fulfilled
+  (i.e., that the instance created by ~__new__()~ is of the same type of the
+  class on which ~__new__()~ is defined.
+  - The ~__new__()~ method can be used to handle instance construction when
+    different types will be returned depending on the argument passed to
+    ~cls(the_argument)~ (e.g., depending on the actual argument, it may create
+    an instance of ~cls~, a sequence of instances of ~cls~, or a plain Python
+    object).
+- The ~shelve~ module provides key-value object database backed by the ~dbm~
+  module, and works with ~pickle~ module for simple persistence.
+- The ~def __init__(self, \**kwargs): self.__dict__.update(kwargs)~ idiom allows
+  creation of instances with attributes created from keywords arguments.
+- ~Property~ in defined as class attributes, and cannot be shadowed by instance
+  attributes.
+  - ~instance.__dict__['some_key'] = some_value~ is used to directly set an
+    attribute on the instance. However, the attribute will not shadow a property
+    defined on the class, and must be accessed using ~__dict__~ too (unless the
+    property defined on the class is deleted / replaced).
+** Chapter 20 - Attribute Descriptors
+- Descriptor class is a class implementing the description protocol:
+  ~__set__()~, ~__get__()~, and/or ~__delete__()~.
+- Managed class is a class with descriptor instances declared as class
+  attributes.
+- Managed instances are instances of the managed class. Attribute access on the
+  managed instance might be handled by a descriptor instance if the attribute in
+  question is declared on the class with a descriptor instance.
+- Descriptors may be *overriding* or *non-overriding*:
+  - Overriding: ~__set__()~ is implemented, and any assignment to the managed
+    attribute on a managed instance will trigger ~__set__()~. No shadowing will
+    occur even if ~__dict__~ is used to directly set an attribute with the same
+    name as the managed attribute.
+  - Non-overriding: ~__set__()~ is not implemented, and any assignment to the
+    managed attribute will result in shadowing: the assignment will result in an
+    new entry in ~__dict__~ which will shadow the managed attribute, even if
+    ~__get__()~ is implemented.
+    - Methods in Python are implemented as non-overriding descriptors.
+- Descriptor usage tips:
+  - Use ~property~ to keep things simple: The ~property~ built-in provides
+    default implementation of both ~__get__()~ and ~__set__()~. The default
+    ~__set__()~ raises an ~AttributeError~ indicating that the attribute is
+    read-only.
+  - Read-only descriptors require ~__set__()~; otherwise the managed attribute
+    might be shadowed.
+  - Validation descriptors can work with ~__set__()~ only.
+  - Caching can be done efficiently with ~__get__()~ only.
+  - Nonspecial methods can be shadowed by instance attributes.
+** Chapter 21 - Class Metaprogramming
+- A class decorator works similarly as a normal function decorator, but an added
+  consideration is what happens for inherited classes.
+- ~type()~ can be used to create classes: ~type(name, bases, dict)~, where
+  ~name~ is a string representing the name of the class, ~bases~ is a tuple
+  representing the base classes (i.e., inheritance hierarchy), and ~dict~ is a
+  dictionary representing the namespace containing definitions for class body
+  and is copied to a standard dictionary to become the ~__dict__~ attribute.
+  - ~type()~ is called by the interpreted to construct classes when classes are
+    defined.
+  - As such, metaclasses much inherit from ~type~, and implement the
+    ~__init__()~ method.
+- The ~__prepare__()~ special method of a metaclass enable usage of a custom
+  mapping type for the last argument in the ~__init__()~ method in the
+  metaclass. One potential application is to use ~__prepare__()~ to return an
+  ~OrderedDict~ so that the attributes may be accessed in ~__init__()~ in the
+  order they are declared in the source code.
+* To Internalize /Now/
+** Chapter 9 - A Pythonic Object
+- When defining a class / adding features to a class, spend time considering how
+  I can leverage Python's default object model. For example, by defining
+  ~__getattr__()~ and ~__setattr__()~, I can use ~random.shuffle()~ on an
+  instance of the object.
+** Chapter 15 - Context Managers and else Blocks
+- Remember to use ~else~ blocks in the following circumstances:
+  - Running a certain block of code only when ~while~ and ~for~ loops run to
+    completion and are not broken out of.
+  - Move statements from the ~try~ block into the ~else~ block to make it clear
+    which statement(s) will raise the exception that is relevant to the
+    particular ~try-except~ block.
+* To Learn/Do Soon
+- Read [[https://www.oreilly.com/library/view/python-cookbook-3rd/9781449357337/][Python Cookbook by Brian Jones and David Beazley]] for useful Python
+  recipes.
+** Chapter 14 - Iterables, Iterators, and Generators
+- The standard library ~itertools~ provides many useful generator
+  functions. Such functions may be combined to create powerful, simple and
+  performant iterables:
+  - For example, using ~takewhile()~ and ~count()~, it is possible to create an
+    arithmetic progression of any numeric type (see example 14-13).
+- I should review the list of available built-in generators whenever I find
+  myself building some complex loop processing logic.
+  - Also refer to [[https://github.com/more-itertools/more-itertools][more-itertools]] for inspiration.
+** Chapter 15 - Context Managers and else Blocks
+- The ~else~ keyword may be used after a ~for~ block, ~try-except~ block or
+  ~while~ block:
+  - When used after a ~for~ block, the statements in the ~else~ block will only
+    be executed when the ~for~ loop is not broken out of prematurely.
+  - When used after a ~try-except~ block, the statements in ~else~ block will
+    only be executed if no exceptions were raised.
+  - When used afer a ~while~ block, the statements in the ~else~ block will only
+    be executed if the ~while~ block is not broken out of prematurely (i.e., the
+    statements will only be executed when loop end because the condition becomes
+    falsy).
+* To Revisit When Necessary
+** Chapter 9 - A Pythonic Object
+- Refer to this chapter when creating an object to understand how to define the
+  essential methods to leverage on Python's object model.
+** Chapter 10 - Sequence Hacking, Hashing, and Slicing
+- See example 10-2 on how to make use of ~reprlib.repr()~ in the ~__repr__()~
+  method of user-defined classes to produce representations that uses ~...~ if
+  there are too many items to be displayed.
+- See example 10-6 on how to create an object that can be sliced.
+- See example 10-12 on how to define custom hash function using ~reduce()~ and
+  ~operator.xor~.
+** Chapter 11 - Interfaces: From Protocols to ABCs
+- Refer to figure 11-3 for an UML diagram of the abstract base classes in
+  ~collections.abc~.
+** Chapter 12 - Inheritance: For Good or For Worse
+- Refer to this chapter when designing a hierarchy of classes.
+** Chapter 13 - Operator Overloading: Doing It Right
+- Refer to this chapter when overloading operators to understand the contract to
+  abide by (e.g., returning ~NotImplemented~ to allow the interpreter to use
+  ~__radd__()~ of the type on the right of the ~+~ operator.
+- Overloaded operators should generally return a new item, save for augmented
+  assignment operators of mutable types.
+- ~functools.total_ordering~ is a decorator that automatically supplies the rest
+  of the rich comparison odering method, provided that the decorator class
+  define ~__eq__()~, and one of ~__lt__()~, ~__le__()~, ~__gt__()~ or
+  ~__ge__()~.
+** Chapter 15 - Context Managers and else Blocks
+- Visit the section on "The contextlib Utilities" and [[https://docs.python.org/3/library/contextlib.html][contextlib — Utilities for
+  with-statement contexts]] when designing non-trivial context managers to
+  understand what tools are available from the standard library.
+** Chapter 18 - Corcurrency with asyncio
+- Refer to example 18-7 and 18-8 for one use case of the semaphore.
+** Appendix A - Support Scripts
+- Support script for chapter 3 demonstrates how to use ~timeit.repeat()~ to
+  profile how fast the code runs.
+- Support script for chapter 9 demonstrates how to use ~resource.getusage()~ to
+  profile how much memory the code uses.
+- Support script for chapter 14 demonstrates a trick of using
+  ~setdefault(key_that_may_not_exist, [])~ on a ~dict~ to obtain a list to be
+  built upon.
+* Other Resources Referred To
+** Chapter 6 - Design Patterns with First-Class Functions
+- The further reading sections made reference to various resources on Python
+  design patterns.
+** Chapter 15 - Context Managers and else Blocks
+- Refer to [[https://www.youtube.com/watch?v=NfngrdLv9ZQ][PyCon US 2013 Keynote by Raymond Hettinger]] for, among other things,
+  interesting applications of context managers.
+  - [[https://speakerdeck.com/pyconslides/pycon-keynote-python-is-awesome-by-raymond-hettinger?slide=21][Accompanying Slides]]
+** Chapter 16 - Coroutines
+- Refer to this chapter when I need to decipher asynchronous code written in
+  this older coroutine style.
+** Chapter 17 - Concurrency with Futures
+- For a more in-depth treatment of concurrent programming in Python, refer to
+  "Parallel Programming with Python" (Packt), by Jan Palach.
+- For a modern take on concurrency, "Seven Concurrency Models in Seven Weeks",
+  by Paul Butcher (Pragmatic Bookshelf) is recommended by the author as an
+  excellent read.
+** Chapter 18 - Concurrency with asyncio
+- To learn about intergratiing the event loop in ~asyncio~ with the event loop
+  in ~tkinter~, refer to the talk [[https://pyvideo.org/pycon-us-2013/using-futures-for-async-gui-programming-in-python.html][Using futures for async GUI programming in
+  Python 3.3]] by Dino Viehland, and the [[https://github.com/fluentpython/asyncio-tkinter][refactored code]].
+** Chapter 21 Class Metaprogramming
+- Putting Metaclasses to Work: a New Dimension in Object-Oriented Programming,
+  by Ira R. Forman and Scott H. Danforth (Addison-Wesley, 1998)
+  - Received 5 stars review by Guide van Rossum
+      #+BEGIN_QUOTE
+      Too bad this is out of print; I keep referring to it as the best tutorial
+      I know for the difficult subject of cooperative multiple inheritance,
+      supported by Python via the super() function.
+      #+END_QUOTE
+- Machine Beauty by David Gelernter (Basic Books)
+  - Described by the author as an intriguing short book about elegance and
+    aesthetics in works of engineering, from bridges to software.
+** Afterword
+- [[https://www.youtube.com/watch?v=x-kB2o8sd5c][A Python Æsthetic: Beauty and Why I Python]] talk by Brandon Rhodes
+- [[https://www.youtube.com/watch?v=OSGv2VnC0go][Transforming Code into Beautiful, Idiomatic Python]] talk by Raymond Hettinger
+- [[https://david.goodger.org/projects/pycon/2007/idiomatic/presentation.html][Code Like a Pythonista: Idiomatic Python]]
