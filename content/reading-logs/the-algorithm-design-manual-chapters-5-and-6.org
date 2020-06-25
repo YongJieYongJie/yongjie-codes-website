@@ -1,0 +1,126 @@
+---
+short_title: "The Algorithm Design Manual (2nd Edition) - Chapters 5 and 6"
+title: "The Algorithm Design Manual (2nd Edition) - Chapters 5 and 6"
+source: Googl-ing on what is a good book for data structures and algorithms
+author: Steven S. Skiena
+isbn: 978-1-84800-069-8
+reading_period: 2019.11–2019.11
+date: 2020-05-16T21:26:11+08:00
+draft: false
+---
+
+* General Review
+- These chapters touch on not just the classic graph algorithms, but also how
+  different problems might be structured as graph problems, such that these
+  classic graph algorithms might be applied.
+* Specific Takeaways
+** /Chapter 5/
+- When looking a graphs, it might make sense to consider the following properties:
+  - Undirected vs directed
+  - Weighted vs unweighted
+  - Simple vs non-simple (e.g., can a vertex has an edge pointing to itself; can
+    there be more than one directed or undirected edge form vertices /i/ to /j/)
+  - Sparse vs dense
+  - Cyclic vs acyclic
+  - Embedded vs topological (whether the vertices has geographical meaning)
+  - Implicit vs explicit (i.e., certain graphs are not explicitly built and
+    traversed, but are built as we use them)
+  - Labelled vs unlabelled
+- Graphs can be represented as adjacency matrices or adjacency lists, each with
+  different advantages for different operations. Adjacency lists are generally
+  better for most problemse
+- When traversing graphs, it makes sense to keep track of which vertices is
+  undiscovered, discovered, processed. Additionally, for depth-first search, it
+  makes sense to keep track of when each vertex is first entered and exited.
+- A general implementation of breadth-first search and depth-first search
+  includes vertex processing early, followed by edge processing, followed by
+  vertex processing late; by changing what happens in the vertex processing
+  early and vertex processing late, different results may be achieved.
+  - BFS can be used to find shortest path, connected components, for coloring
+    vertices, etc.
+  - DFS can be used to:
+    - find cycles (by finding back edges)
+    - articulation vertices (by keeping track of the earliest reachable ancestor
+      from each vertex)
+    - topological sorting
+    - find strongly connected components
+** /Chapter 6 - Weighted Graph Algorithms/
+- One common problem with weighted graphs is to find the minimum spanning
+  tree. This can be done using various algorithms:
+  - /Prim's Algorithm/:
+    - Starting from an arbitrary vertex, build a spanning tree, adding the next
+      vertex with the shortest distance from the tree each time.
+  - /Kruskal's Algorithm/:
+    - Starting from the shortest edge, connect the two vertices of that edge the
+      form a connected component; skip if the vertices are already in the same
+      component.
+    - The union-find data-structure is used to combine the vertices from two
+      different components to form a single connected component, and also to
+      check whether two vertices are already in the same connected component.
+- Another common proble with weighted graphs is to find the shortest path. This
+  can be done using variosu algorithms:
+  - /Dijkstra's Algorithm/:
+    - The intuition is that in order to find the shortest path from start vertex
+      =s= to target vertex =t=, and assuming the shortest path passes through
+      intermediate vertex =x=, we must first find the shortest path from =s= to
+      =x=.
+    - Starting from =s=, iterate through the edges of =s= and (a) keep track of
+      the shortest distance from =s= to each of the vertices by initializing the
+      shortest distance to be the weight along the edge from =s=, and (b) add
+      the vertex with the shortest distance to the traversal tree
+    - Visit all the edges of the newly added vertex =v=, update the shortest
+      distance from =s= to be the minimum of (a) the current shortest distance
+      to =s=, and (b) the current shortest distance to =v= plus the weight of
+      along the edge from =v= to each of the vertices connected from =v=; then
+      add the next vertex that has the shortest distance to =s=, repeat until
+      =t= is reached.
+  - /Floyd's All-Pairs Shortest Path/:
+    - Using an adjacency matrix, iterate through each vertex =k=, and update the
+      shortest path from =i= to =j= to be the shortest path from =i= to =k=, and
+      =k= to =j=.
+    - At the end of the iteration, we have the shortest path reachable from all
+      pairs of vertices.
+- When framing a problem as a graph-problem, consider the problem of bipartite
+  graph matching, where the problem is to find a set of edges that does not
+  share any vertices.
+  - For example, if we are required to pair off people in a group, and each
+    person may only be paired with particular people, and we want to find the
+    set of pairings where everyone gets paired up.
+  - The largest bipartite pairing can be solved using network flow. For example,
+    if the problem is to match the most people to jobs, we can use network flow
+    by connecting the source to vertices representing each person, and sink to
+    vertices representing each job, the person vertices will be connected to job
+    vertices if that particular person can perform that particular job. The
+    maximum flow that is found indicates the largest bipartite pairing.
+- Algorithm for finding largest network flow in an undirected weighted graph:
+  - Augment the representation of the undirected graph by adding a directed edge
+    (=i=, =j=) and a directed edge (=j=, =i=) for each undirected egde. The
+    directect edge (=i=, =j=) will have an initial residual equals to the weight
+    of the original undirected edge (=i=, =j=) and a flow of =0=, whereas the
+    reverse directed edge (=j=, =i=) will have an initial residual of =0=.
+  - Perform breadth-first search on the graph from source =s= to sink =t=
+  - Obtain the maximum flow volume from the search path from =s= to =t=, being
+    the edge along the path with the lowest capacity
+  - Update the flow, residual of each edge along the path; and update the
+    residual of the reverse edge of each edge along the path
+  - Perform another breadth-first search, ignoring edges with =0=
+    residual. Repeat the process of calculating the maximum flow from the new
+    traversal path and updating the flow and residuals until the subsequent
+    breadth-first search yields no path with volume > =0=.
+* To Internalize /Now/
+- Always try to figure out whether a prblem can be framed as a graph problem,
+  and apply classic graph algorithms to solve the problem.
+* To Learn/Do Soon
+- Read chapters 15 and 16 of The Algorithm Design Manual to see examples of how
+  graph-based problem-solving might be used, and develop an intuition to do so
+  myself.
+* To Revisit When Necessary
+- There is probably no need to revisit these chapters for the algorithms
+  themselves; however, a revisit will be helpful to put things in perspective:
+  how graph structure, graph algorithms, and graph problem solving works, and
+  how the graph algorithms relates to each other depending on graph structure:
+  undirect -> directed -> weighted.
+* Other Resources Referred To
+- Perhaps refer to the resources referred to in the Chapter Notes to learn more
+  about network flow.
+  
