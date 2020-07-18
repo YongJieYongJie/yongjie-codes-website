@@ -1,6 +1,5 @@
 {{ define "main"}}
   <h1>Reading Log: {{ .Params.short_title }}</h1>
-  {{ partial "header.html" . }}
   <!-- date -->
   {{ $singlePageDateFormat := .Site.Params.singlePageDateFormat | default "January 2, 2006"}}
   <p class="date">{{ .Date.Format $singlePageDateFormat }}</p>
