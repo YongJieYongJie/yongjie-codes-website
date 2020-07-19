@@ -1,7 +1,7 @@
 baseURL = "https://yongjie.codes"
 languageCode = "en"
 DefaultContentLanguage = "en"
-title = "Programmer, Lawyer"
+title = "Programmer, Ex-Lawyer"
 theme = "anatole"
 summarylength = 10
 enableEmoji = true
@@ -19,10 +19,10 @@ author = "Yong Jie"
 description = "Call me YJ"
 profilePicture = "img/avatar.jpg"
 keywords = ""
-favicon = "img/favicon.ico"
-customCss = []
+favicon = "img/favicons/"
+customCss = ["css/custom.css"]
 customJs = []
-mainSections = ["post"]
+mainSections = ["posts"] # This determines, among other things, what is on the home page.
 
 ## Math settings
 [params.math]
@@ -59,11 +59,11 @@ url = "mailto:khooyongjie@gmx.com"
 
 [menu]
 
-#  [[menu.main]]
-#  name = "Home"
-#  identifier = "home"
-#  weight = 100
-#  url = "/"
+  [[menu.main]]
+  name = "Home"
+  identifier = "home"
+  weight = 100
+  url = "/"
 
 #  [[menu.main]]
 #  name = "About"

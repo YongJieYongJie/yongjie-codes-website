@@ -1,0 +1,105 @@
+---
+title: "Anaconda sans Internet"
+alternateTitle: "How to set up Conda environment without Internet"
+date: 2020-02-18
+image: "img/post-conda-offline-title.jpg"
+imageCredit: "Robert Anasch (https://unsplash.com/photos/h7dl6upIOOs)"
+draft: false
+---
+
+If you are wondering how to set up Anaconda / Conda environments on a machine
+  without Internet connection (but are allowed to transfer file from a machine
+  that does have Internet connection), read onto see how I did it.
+
+# more
+
+* TL;DR
+I created a custom offline conda channel, copied it to the device without
+  connection, and used that offline channel as my conda channel.
+
+* Background
+At the start of my research at the [[https://www.nni.com.sg/][National Neuroscience Institute]], I had to set
+  up a research computer without being able to connect the computer to the
+  Internet (due to data security) concerns. After scrambling my head for longer
+  than I'm willing to admit, I was able to get the GPUs hymming along doing my
+  machine learning.
+
+* Always Google First
+As usual, Google is always the first go-to when looking for solutions, and I
+  found various potential solutions:
+  - [[https://stackoverflow.com/questions/37391824/simply-use-python-anaconda-without-internet-connection][StackOverflow]]: The various solutions here provided steps for replicating a
+    part of the official Anaconda repository.
+  - [[https://docs.anaconda.com/anaconda-repository/2.31/admin/install-offline/][Anaconda Documentation]]: The solution provided here is the official way of
+    creating an air-gapped repository for entreprise.
+None of the above solutions appealed to me because (a) I already have the
+  environment set up on an Internet-enabled device, and do not want to go
+  through the trouble of setting up another full or partial clone of the
+  official Anaconda repository; and (b) I know that ultimately, dependency
+  management is about have the right files at the right locations and having the
+  right environment variables set, and this is how I'm going to do it.
+
+* Attempt #1: Copying the packages directly
+After some digging around (read: more Google search), I discovered that the
+  packages that Conda downloaded are actually saved to =D:\Miniconda3\pkgs= on
+  my system (yes, I use Windows and also MiniConda).
+
+Great! (or so I thought) Now all I need to do is to:
+  1. Download anaconda installer, and install it on the reseacrh computer,
+  2. Copy the packages from the ~pkg~ folder on my Internet-full device to the
+     ~pkg~ folder on the Internet-deprived research computer,
+  3. On the research computer, run ~conda create --name MyWonderfulEnv
+     tensorflow-gpu=1.10.0 <more dependencies...>~.
+
+Unfortunately, life doesn't work this way, things are never so easy. The
+  current approach has several problems:
+  - By default, conda will try to connect to the Internet even if all the
+    package are available locally. This is fixed easily enough by first creating
+    an empty environment (e.g., ~conda create --name MyWonderfulEnv~) and
+    running the install command with the offline flag (e.g., after activating
+    the relevant environment, run ~conda install tensorflow-gpu=1.10.0 <more
+    dependencies> --offline~).
+  - However, even with the above, Conda will not be able to properly resolve the
+    dependencies, and thus will not be able to install the packages. After a
+    little more digging around, I discovered that there are different types of
+    packages: tarballs (i.e., files ending in ~.tar.bz2~) and conda-specific
+    archives (i.e., files ending in ~.conda~). And there are some processing /
+    indexing done by Conda after downloading the packages that isn't accounted
+    for by my copying.
+
+Hence, I needed a different approach.
+
+* Attempt #2: Creating a custom offline channel
+After more Googl-ing, I found this guide on [[https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/create-custom-channels.html][Creating custom channels]]. This may
+  be just what I need.
+
+Following the instructions, I first need to install ~conda-build~ on the
+  research computer. Installing just a single package is simple enough. I
+  downloaded the relevant package from Anaconda repository ([[https://anaconda.org/main/conda-build/files][here]]), and ran the
+  command ~conda install conda-build-3.18.11-py38_1.tar.bz2 --offline~
+
+Next, I need to organize the packages (on the Internet-enabled device) I want
+  into proper subdirectories. For this, I wrote a simple Python script
+  (available [[https://gist.github.com/YongJieYongJie/b858a162260339c0e6cf8f4999df2d85][here]]). The script is used as follows:
+  #+BEGIN_SRC bash
+    > python conda_offline_channel_creator.py D:\Miniconda3\pkgs
+       my_output_folder
+  #+END_SRC
+
+** Indexing the offline channel and creating the environment
+Finally, I copied the =my_output_folder= to the research computer, and was
+  able to create my environment using:
+  #+BEGIN_SRC shell
+    # To index the custom channel
+    conda index my_output_folder --threads 1
+
+    # To create the environment
+    conda create --name myWonderfulEnv --channel my_output_folder --offline
+  #+END_SRC
+  (Note: The ~--threads `~ was required on my system to avoid certain errors,
+  YMMV.
+
+* Conclusion
+The Internet is a wonderful thing, but things /will/ work without the
+  Internet, if you try hard enough.
+
+Update: A possibly simpler solution might be [[https://stackoverflow.com/a/58103362/5821101][this]].
