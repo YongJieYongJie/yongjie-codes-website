@@ -1,31 +1,21 @@
-{{ define "main"}}
-  <h1>Posts</h1>
-  {{ partial "header.html" . }}
-  <!-- search box -->
-  <div id="searchBox">
-    <input type="text" id="searchBoxInput" placeholder="Search..." />
-    <img id="searchBoxIcon" src="{{ .Site.BaseURL }}/img/search.png" />
-  </div>
-  <!-- search results -->
-  <div id="searchResults"></div>
-  <!-- contents -->
-  <div id="contentsList">
-    {{ $listPageDateFormat := .Site.Params.listPageDateFormat | default "January, 2006"}}
-    {{ range $index, $value := .Pages.GroupByDate $listPageDateFormat }}
-    {{ if (ne $index 0) }}
-    <hr class="separator">
+{{ define "main" }}
+<div class="archive animated fadeInDown">
+    <ul class="list-with-title">
+    {{ range .Data.Pages.GroupByDate "2006" }}     
+        <div class="listing-title">{{ .Key }}</div>
+        {{ range .Pages }}
+            <ul class="listing">
+                <div class="listing-item">
+                    <div class="listing-post"><a href="{{ .Permalink }}" title="{{ .Title }}">{{ .Title }}</a>
+                        {{ if .Params.alternateTitle }}
+                        <br><i>&nbsp;- Serious Title: {{ .Params.alternateTitle }}</i>
+                        {{ end }}
+                        <div class="post-time"><span class="date">{{.Date.Format "Jan 2" }}</span></div>
+                    </div>
+                </div>
+            </ul>
+        {{ end }}
     {{ end }}
-    <p class="date">{{ .Key }}</p>
-    {{ range .Pages }}
-      <p><a href="{{ .Permalink }}">{{ .Title }}</a></p>
-    {{ end }}
-    {{ end }}
-  </div>
-  {{ partial "footer.html" . }}
-  {{ $jquery := resources.Get "js/jquery-3.3.1.min.js" }}
-  {{ $mark := resources.Get "js/jquery.mark.es6.min.js" }}
-  {{ $lunr := resources.Get "js/lunr.js" }}
-  {{ $search := resources.Get "js/search.js" }}
-  {{ $js := slice $jquery $mark $lunr $search | resources.Concat "bundle.js" | resources.Minify | resources.Fingerprint }}
-  <script src="{{ $js.Permalink }}"></script>
+    </ul>        
+</div>
 {{ end }}

@@ -1,0 +1,11 @@
+---
+title: "{{ replace .Name "-" " " | title }}"
+alternateTitle: ""
+date: {{ .Date }}
+Description: ""
+image: ""
+imageCredit: ""
+Tags: []
+Categories: []
+DisableComments: false
+---

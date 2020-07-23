@@ -1,71 +1,90 @@
-baseURL = "https://yongjie.codes/"
-languageCode = "en-us"
-title = "Yong Jie | Codes"
-theme = "pulp"
-    
-canonifyurls = true
-hasCJKLanguage = true
-# pygmentsCodefences = true
-# pygmentsUseClasses = true
+baseURL = "https://yongjie.codes"
+languageCode = "en"
+DefaultContentLanguage = "en"
+title = "Programmer, Ex-Lawyer"
+theme = "anatole"
+summarylength = 10
+enableEmoji = true
+enableRobotsTXT = true
+
+# Enable Disqus
+#disqusShortname = ""
+
+# Google Analytics
 googleAnalytics = "UA-144641266-1"
 
-[taxonomies]
-  series = "series"
-
 [params]
-    author = "Yong Jie"
-    avatar = "avatar.jpg"
-    favicon = "favicon.ico"
-    description = """
-        Programmer | Ex-Lawyer | .*
-    """
-    publicationYear = "2019"
-    # listPageDateFormat = "January, 2006" # See https://gohugo.io/functions/format/
-    # singlePageDateFormat = "January 2, 2006"
-    # custom_css = ["/css/custom.css"]
-    # custom_js = ["/js/custom.js"]
+title = "I'm Yong Jie"
+author = "Yong Jie"
+description = "Call me YJ"
+profilePicture = "img/avatar.jpg"
+keywords = ""
+favicon = "img/favicons/"
+customCss = ["css/custom.css"]
+customJs = []
+mainSections = ["posts"] # This determines, among other things, what is on the home page.
 
-[outputs]
-    section = ["JSON", "HTML"]
+## Math settings
+[params.math]
+enable = false  # options: true, false. Enable math support globally, default: false. You can always enable math on per page.
+use = "katex"  # options: "katex", "mathjax". default is "katex".
 
-#[[menu.main]]
-#    identifier = "blog"
-#    # name = "Blog" #If display text link, cancel comment out
-#    pre = "<i class='fa fa-pen fa-lg'></i>" #Choose your favorite font from Font Awesome
-#    url = "/posts/"
-#    weight = 10
+## Social links
+[[params.socialIcons]]
+icon = "fa-linkedin"
+title = "Linkedin"
+url = "https://www.linkedin.com/in/khooyongjie/"
 
-[[menu.main]]
-    identifier = "reading logs"
-    name = "Reading Logs"
-    pre = "<i class='fa fa-book-open fa-lg'></i>" #Choose your favorite font from Font Awesome
-    url = "/reading-logs/"
-    weight = 10
+[[params.socialIcons]]
+icon = "fa-github"
+title = "GitHub"
+url = "https://github.com/yongjieyongjie"
 
-[[menu.main]]
-    identifier = "github"
-    name = "GitHub"
-    pre = "<i class='fab fa-github fa-lg'></i>"
-    url = "https://github.com/yongjieyongjie"
-    weight = 30
+[[params.socialIcons]]
+icon = "fa-github"
+title = "GitHub"
+url = "https://gitlab.com/yongjieyongjie"
 
-[[menu.main]]
-    identifier = "email"
-    name = "Email"
-    pre = "<i class='fa fa-envelope fa-lg'></i>"
-    url = "mailto:khooyongjie@gmx.com"
-    weight = 40
+# [[params.socialIcons]]
+# icon = "fa-instagram"
+# title = "instagram"
+# url = "https://www.instagram.com/"
 
-[[menu.main]]
-    identifier = "portfolio"
-    name = "Portfolio"
-    pre = "<i class='fa fa-palette fa-lg'></i>"
-    url = "/portfolio/"
-    weight = 50
+[[params.socialIcons]]
+icon = "fa-envelope"
+title = "e-mail"
+url = "mailto:khooyongjie@gmx.com"
 
-[[menu.main]]
-    identifier = "resume"
-    name = "Resume"
-    pre = "<i class='fa fa-file-code fa-lg'></i>"
-    url = "https://bit.ly/yongjie_resume"
-    weight = 60
+## Menu items
+
+[menu]
+
+  [[menu.main]]
+  name = "Home"
+  identifier = "home"
+  weight = 100
+  url = "/"
+
+#  [[menu.main]]
+#  name = "About"
+#  weight = 200
+#  identifier = "about"
+#  url = "/about/"
+
+  [[menu.main]]
+  name = "Posts"
+  weight = 300
+  identifier = "posts"
+  url = "/posts/"
+
+  [[menu.main]]
+  name = "Reading Logs"
+  weight = 300
+  identifier = "reading-logs"
+  url = "/reading-logs/"
+
+  [[menu.main]]
+  name = "Portfolio"
+  weight = 400
+  identifier = "Portfolio"
+  url = "/portfolio/"
