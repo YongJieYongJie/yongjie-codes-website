@@ -1,0 +1,2578 @@
+---
+short_title: "Effective Java"
+title: "Effective Java (Third Edition)"
+source: "Googl-ing for a good Java book"
+author: "Joshua Bloch"
+isbn: 978-0-13-468599-1
+reading_period: 2020.06.02–2020.07.14
+date: 2020-07-23T08:58:47+08:00
+draft: false
+---
+
+* General Review
+- Generally a pleasant book to read---covers a wide range of topics, explaining
+  not just what to do / not to do, but also giving the rationale. Also provides
+  ample code samples to further illustrate the points made.
+- Note however, that the author could have been more careful with choice of
+  words and presentation of materials.
+  - E.g., item 41 is titled "/Use marker interfaces to define types/", but it
+    really should have been title "/Use marker interfaces to define types
+    *instead of marker annotations*/".
+    - The item mainly compares the use of marker interfaces vis-a-vis marker
+      annotations.
+    - The item did not discuss in any detail the scenarios where marker
+      interfaces would be useful, what are the alternative approaches (other
+      than using a marker interface/annotation), and why marker
+      interfaces/annotations would be superior.
+* Specific Takeaways
+** Chapter 1 - Introduction
+- Java supports 4 kinds of types: interfaces (including annotations), classes
+  (including enums), arrays, and primitives.
+- The first 3 are reference types, while the last is a value type.
+- Class instances and arrays are objects, while primitive values are not (and
+  will require boxing).
+- A class's members consist of its fields, methods, member classes, and member
+  interfaces.
+- A method's signature consists of its name and the types of its formal
+  parameters; the signature does not include the method's return type.
+** Chapter 2 - Creating and Destroying Objects
+*** Item 1 - Consider static factory methods instead of constructors
+- One advantage of static factory methods is that, unlike constructors, they
+  have names.
+- A second advantage of static factory methods is that, unlike constructors,
+  they are not required to create a new object each time they're invoked.
+- A third advantage of static factory methods is that, unlike constructors, they
+  can return an object of any subtype of their return type.
+  - For example, ~java.util.Collections~ provides many implementations of its
+    interfaces that are accessible only via static factory methods, while the
+    actual classes are kept non-public.
+- A fourth advantage of static factories is that the class of the returned
+  object can vary from call to call as a function of the input parameters.
+- A fifth advantage of static factories is that the class of the returned object
+  need not exist when the class containing the method is written.
+  - Such static factory methods form the basis of service provide frameworks.
+  - A service provider framework is a system in which providers implement a
+    service, and the system makes the implementations available to clients,
+    decoupling the clients from the implementations.
+    - There are 3 essential components to a service provider framework:
+      - a service interface, which represents an implementation;
+      - a provider registration API, which providers use to register
+        implementations;
+      - and a service access API, which clients use to obtain instances of the
+        service.
+    - The 4th and optional component is a service provider interface, which
+      describes a factory object that produce instances of the service interface
+      (without which, implementations must be instantiated reflectively).
+  - For example, the Java Database Connectivity API (JDBC).
+- The main limitation of providing only static factory methods is that classes
+  without public or protected constructors cannot be subclassed.
+- A second shortcoming of static factory methods is that they are hard for
+  programmers to find.
+*** Item 2 - Consider a builder when faced with many constructor parameters
+- When there is a large number of optional parameters, instead of overloading
+  the constructors with different number of parameters, use a builder pattern:
+  #+BEGIN_SRC java
+    MyClass myClass = new MyClass.Builder(requiredArg1, requiredArg2)
+        .optionArg1(theOptionalArg1)
+        .optionalArg2(theOptionalArg2)
+        .build();
+  #+END_SRC
+*** Item 3 - Enforce the singleton property with a private constructor or an enum type
+- There are 3 main approaches to building a singleton:
+  - A ~Public static final~ field holding the instance
+    - This is usually the clearest, but is less flexible in terms of
+      extensibility because a field is used.
+    - Serialization and deserialization will have to be handled manually.
+  - A static factory method returning the instance
+    - This is flexible, allowing removal of singleton constraint without
+      affecting the API
+    - The method can also be used as a ~Supplier~
+    - Serialization and deserialization will have to be handled manually.
+  - A one-element ~enum~
+    - This approach simple, and provides serialization and deserialization for
+      free.
+*** Item 4 - Enforce noninstantiability with a private constructor
+- Side note: A non-instantiable class that is just a grouping of methods might
+  intuitively feel like a hack, but there are legitimate uses:
+  - To group related methods on primitive values or array, like in
+    ~java.lang.Math~ or ~java.util.Arrays~
+  - To group static methods for objects that implement certain interfaces, like
+    in ~java.util.Collections~
+  - To group methods on a final class, since we cannot subclass it
+*** Item 5 - Prefer dependency injection to hardwiring resources
+- Static utility classes and singletons are inappropriate for classes whose
+  behavior is parameterized by an underlying resource.
+- If dependency injection results in clutter, use a framework like Dagger, Guice
+  or Spring.
+- A useful variant of the pattern is to pass a resource factory to the
+  constructor. For example, a method that makes a mosaic using a client-provided
+  factory to produce each tile may look something like this:
+  - ~Mosaic create(Supplier<? extends Tile> tileFactory) { ... }~
+*** Item 6 - Avoid creating unnecessary objects
+- Where an immutable class provides static factory methods and public
+  constructors, prefer the former as it allows for caching of objects.
+- Object creation may not always be very obvious.
+  - For example, ~String.matches()~ creates a ~Pattern~ instance and uses it
+    only once for the matching, resulting in poor performance if many
+    comparisons are required.
+- On the other hand, when tempted to implement lazy initialization, consider
+  seriously whether the added complexity will translate to real and valuable
+  performance gains.
+- Autoboxing can subtly result in creation of many unnecessary objects. For example:
+    #+BEGIN_SRC java
+      private static long sum() {
+          Long sum = 0L // notice the uppercase "L" in `long` here
+          for (long i = 0; i <= Integer.MAX_VALUE; i++)
+              sum += i; // autoboxing of `i`
+
+          return sum;
+    #+END_SRC
+*** Item 7 - Eliminate obsolete object references
+- Set a variable to ~null~ to enable garbage collection. This is especially
+  relevant when a variable will (a) hold on a reference to an object that is no
+  longer needed, (b) stay in scope for an extended period.
+  - However, the better approach is to let variable go out of scope and let the
+    obsolete reference be automatically eliminated. This is achieved by defining
+    each variable in the narrowest possible scope.
+- Another way to avoid holding onto obsolete object references is by storing the
+  references as keys in ~WeakHashMap~.
+  - ~WeakHashMap~ is a Hash table based implementation of the Map interface,
+    with weak keys. An entry in a WeakHashMap will automatically be removed when
+    its key is no longer in ordinary use.
+*** Item 8 - Avoid finalizers and cleaners
+- Finalizers are deprecated as of Java 9, don't use them.
+- The language specifications makes no guarantee of (a) when the finalizers and
+  cleaners will be runned, and (b) whether they will be runned at all.
+- There is a severe performance penalty for using finalizers and cleaners.
+- When designing an object that encapsulate resources that must be released, have
+  the object implement ~AutoCloseable~, and require client code to call the
+  ~close()~ method, typically with ~try-with-resources~.
+  - Other methods of the object should check if the object is closed, and throw
+    an ~IllegalStateException~ if they are called after the object is closed.
+- One legitimate use of cleaners is as a safeguard to release resouces in case
+  the client code forgets to call the ~close()~ method.
+- A second legitimate use is when an object encapsulates native peers, which
+  will not be automatically garbage collected even when the object itself is.
+  - Note however that if the native peer holds critical resources, it should be terminated promptly using the ~close()~ method.
+*** Item 9 - Prefer ~try~-with-resources to ~try-finally~
+- If an exception is thrown within the body of the ~try~ block, and also while
+  calling the ~close()~ method (which occurs automatically when exiting a
+  ~try-with-resource~ block, the latter exception will be suppressed in favor of
+  the first.
+  - The suppressed exception may be accessed programatically using the
+    ~getSuppressed()~ method.
+- The ~try~ statement acquiring the resource can be paired with a ~catch~ block
+  to handle any exceptions occuring within the ~try~ statement.
+** Chapter 3 - Methods Common to All Objects
+*** Item 10 - Obey the general contract when overriding ~equals~
+- The ~==~ operator tests for instance equality; whereas the ~equals()~ method
+  may be overriden to test fo value equality.
+  - By default, the ~equals()~ method of user-defined classes returns ~True~
+    only if the instances compared are the same.
+- In general, the default implementation of ~equals()~ is appropriate in the following circumstances:
+  - Each instance of the class is inherently unique.
+  - There is no need for the class to provide a “logical equality” test. (E.g.,
+    no need for two equivalent regexes to compare equal if this functionality is
+    not needed by client code.)
+  - A superclass has already overridden equals, and the superclass behavior is
+    appropriate for this class.
+  - The class is private or package-private, and you are certain that its
+    ~equals()~ method will never be invoked.
+- It is generally hard to fulfil the requirement of =symmetry= when creating a
+  subclass with an ~equals()~ method that is interoperable with the super class.
+  - This is because ~subclass.equals(superclass)~ and
+    ~superclass.equals(subclass)~ must be equal, but you may not always be able
+    to change the implementation of the ~equals()~ method in the super class
+    (the likely scenarie since you are subclassing in the first place).
+- The requirement of ~transitivity~ requires that: if ~a.equals(b)~ and
+  ~b.equals(c)~, then ~a.equals(c)~ must be true.
+  - There is no way to extend an instantiable class and add a value component
+    while preserving the equals contract.
+  - This is because for ~class_with_added_value.equals(superclass)~ to be
+    symmetrical to ~superclass.equals(class_with_added_value)~, the ~equals()~
+    method in the subclass must ignore the additional value component when the
+    superclass passed as the argument. However, when comparing one instance of
+    the subclass with another instance of the subclass, the ~equals()~ method
+    will also compare the additional value component. As a result, when
+    ~class_with_added_value_1.equals(superclass)~ and
+    ~class_with_added_value_2.equals(superclass)~ are true,
+    ~class_with_added_value_1.equals(class_with_added_value_2)~ may not be true.
+  - This is unless you're willing to forgo the benefits of object-oriented
+    abstraction.
+- Do not write an ~equals()~ method that depends on unreliable resources (e.g.,
+  IP addresses as opposed to URLs, because DNS look-up may fail).
+- There is usually no need to explicitly test for ~null~ in the ~equals()~
+  method because the standard implementation requires an ~instanceof()~ check,
+  which is specified to return ~false~ if ~null~ is provided.
+  - The standard implementation of ~equals()~ looks something like this:
+    #+BEGIN_SRC java
+      @Override public boolean equals(Object o) {
+          if (!(o instanceof MyType))
+              return false; 
+          MyType mt = (MyType) o;
+          // More code
+      }
+    #+END_SRC
+- The general steps to implement an ~equals()~ method is as follows:
+  - Use the ~==~ operator to check if the argument is a reference to this
+    object.
+  - Use the ~instanceof~ operator to check if the argument has the correct type.
+  - Cast the argument to the correct type.
+  - For each "significant" field in the class, check if that field of the
+    argument matches the corresponding field of this object.
+  - When you are finished writing your equals method, ask yourself three
+    questions: Is it symmetric? Is it transitive? Is it consistent?
+- Some specific guidelines on comparing certain types:
+  - For primitive fields whose type is not ~float~ or ~double~, use the ~==~
+    operator for comparisons; for object reference fields, call the ~equals()~
+    method recursively; for ~float~ fields, use the static ~Float.compare(float,
+    float)~ method; and for ~double~ fields, use ~Double.compare(double,
+    double)~.
+  - For ~array~ fields, apply these guidelines to each element. If every element
+    in an ~array~ field is significant, use one of the ~Arrays.equals()~
+    methods.
+  - Some object reference fields may legitimately contain ~null~. To avoid the
+    possibility of a ~NullPointerException~, check such fields for equality using
+    the static method ~Objects.equals(Object, Object)~.
+- When an object has a canonical form, and the equality comparisons of fields
+  are complex, consider storing a canonical form of the object to be used in the
+  ~equals()~ method. Note that this canonical form would have to be updated if
+  the object is mutable.
+- Performance of the ~equals()~ method depends on the order of the fields being
+  compared. If possible, try to compare fields that are most likely to be
+  different first.
+- Use automatic generation of ~equals()~ and ~hashcode()~ methods provided by ~@AutoValue~ annotation.
+*** Item 11 - Always override hashCode when you override equals
+- Consider lazy initialization if calculation of hashcode is resource intensive
+  and not always required.
+*** Item 12 - Always override ~toString~
+- Provide information of *all* relevant members of the object in the
+  ~toString()~ output.
+- Clearly document whether the output of ~toString()~ should be relied upon
+  (e.g., whether it is subject to change, or whether it is of a certain format
+  that client can parse information from).
+- Always provide programmatic access to the information contained within
+  ~toString()~ to avoid client from relying on ~toString()~ as an API.
+*** Item 13 - Override ~clone~ judiciously
+- Avoid implementing ~Cloneable~ if possible as it a fragile language feature,
+  requiring many extralinguistic factors. It requires the class and all of its
+  superclasses obey a complex, unenforceable, thinly documented protocol.
+- A better approach to object copying is to provide a copy constructor or copy
+  factory.
+- In gist:
+  - All classes that implement ~Cloneable~ should override ~clone~ with a public
+    method whose return type is the class itself. This method should first call
+    ~super.clone~, then fix any fields that need fixing. Typically, this means
+    copying any mutable objects that comprise the internal "deep structure" of
+    the object and replacing the clone's references to these objects with
+    references to their copies.
+  - The only exception is ~arrays~ which should generally be copied using the
+    ~clone()~ method. Note: ~clone()~ still doesn't copy ~arrays~ of 2 or more
+    dimensions deeply.
+*** Item 14 - Consider Implementing ~Comparable~
+- By implementing ~Comparable~ interface, you allow the class to interoperate
+  with all of the generic algorithms and collections that depend on this
+  interface.
+  - For example, instances of the class may be inserted into a ~TreeSet~, with
+    their ordering maintained.
+- As wiith implementing ~equals()~, the same caveat applies: there is no way to
+  extend an instantiable class with a new value component while preserving the
+  ~compareTo()~ contract, unless you are willing to forgo the benefits of
+  object-oriented abstraction.
+  - I.e., to preserve the ~compareTo()~ contract in a subclass, the
+    ~compareTo()~ must be implemented in a way such that objects can only ever
+    be compared to other objects of the exact same class, hence violating Liskov
+    substitution principle.
+- The results returned by ~equals()~ and ~compareTo()~ should generally be
+  consistent; however, there are legitimate instance where they might differ.
+  - For example, ~BigDecimal("1.0")~ and ~BigDecimal("1.00")~ compares unequal
+    when using the ~equals()~ method but compares equal when using the
+    ~compareTo()~ method. As a result, after inserting both into a ~TreeSet~,
+    there will only be one element. Whereas after inserting both into a
+    ~Hashset~, there will be two elements. This is because ~TreeSet~ and
+    ~HashSet~ uses ~compareTo()~ and ~equals()~ respectively for comparison.
+- If a class has multiple significant fields, the order in which you compare
+  them is critical. Start with the most significant field and work your way
+  down.
+- Do not use comparison that rely on the fact that the difference between two
+  values is negative if the first value is less than the second, zero if the two
+  values are equal, and positive if the first value is greater: e.g., ~return instance_a.value - instance_b.value~.
+  - This approach suffers from the dangers relating to integer overflows and
+    artifacts from floating point arithmetic. Use the static compare method
+    instead: e.g., ~Integer.compare(instance_a.value, instance_b.value)~.
+- Use of relational operators (e.g., ~<~ and ~>~) in ~compareTo()~ methods are
+  not recommended because static ~compare()~ methods have been added to all
+  boxed primitive classes.
+** Chapter 4 - Classes and Interfaces
+*** Item 15 - Minimize the accessibility of classes and members
+- For top-level (non-nested) classes and interfaces, there are only two possible
+  access levels: /package-private/ and /public/
+  - If a top-level class or interface can be made package-private, it should
+    be. By making it package-private, you make it part of the implementation
+    rather than the exported API, and you can modify it, replace it, or
+    eliminate it in a subsequent release without fear of harming existing
+    clients.
+  - If a package-private top-level class or interface is used by only one class,
+    consider making the top-level class a private static nested class of the
+    sole class that uses it.
+- For members (fields, methods, nested classes, and nested interfaces), there
+  are four possible access levels, listed here in order of increasing
+  accessibility:
+  - *private* — The member is accessible only from the top-level class where it
+    is declared.
+  - *package-private* — The member is accessible from any class in the package
+    where it is declared. Technically known as default access, this is the
+    access level you get if no access modifier is specified (except for
+    interface members, which are public by default).
+  - *protected* — The member is accessible from subclasses of the class where it
+    is declared (subject to a few restrictions) and from any class in the
+    package where it is declared.
+  - *public* — The member is accessible from anywhere.
+- Both private and package-private members are part of a class's implementation
+  and do not normally impact its exported API. These fields can, however, "leak"
+  into the exported API if the class implements ~Serializable~.
+- A protected member of an exported (i.e., public) class represents a public
+  commitment to an implementation detail. The need for such protected members
+  should be relatively rare.
+- Instance fields of public classes should rarely be public.
+  - If an instance field is nonfinal or is a reference to a mutable object, then by making it public, you give up the ability to:
+    - limit the values that can be stored in the field
+    - enforce invariants involving the field
+    - take any action when the field is modified, so classes with public mutable fields are not generally thread-safe.
+- Note that a nonzero-length array is always mutable, so it is wrong for a class
+  to have a public static final array field, or an accessor that returns such a
+  field.
+  - Some IDEs generate accessors that return references to private array fields,
+    resulting in exactly this problem.
+  - There are generally two ways around it:
+    - Make the array private, and let the accessor return an immutable ~List~
+      (e.g., construct one using
+      ~Collections.unmodifiableList(Arrays.asList(THE_ARRAY))~.
+    - Make the array private, and let the accessor return a copy of the array
+      using ~clone()~.
+- The ~module~ system introduce 2 implicit access levels.
+  - A module is a grouping of packages, like a package is a grouping of classes.
+  - A module may explicitly export some of its packages via export declarations
+    in its module declaration (which is by convention contained in a source file
+    named =module-info.java=).
+  - Public and protected members of unexported packages in a module are
+    inaccessible outside the module; within the module, accessibility is
+    unaffected by export declarations.
+  - Public and protected members of public classes in unexported packages give
+    rise to the two implicit access levels, which are intramodular analogues of
+    the normal public and protected levels. The need for this kind of sharing is
+    relatively rare and can often be eliminated by rearranging the classes
+    within your packages.
+*** Item 16 - In public classes, use accessor methods, not public fields
+*** Item 17 - Minimize mutability
+- To make a class immutable, follow these five rules:
+  - Don't provide methods that modify the object's state
+  - Ensure that the class can't be extended
+  - Make all fields final
+    - Exceptions may be made as long as there are no externally visible change
+      in the object's state. One example is to have a nonfinal field serve as
+      cache for the result of the an expensive computation.
+  - Make all fields private
+  - Ensure exclusive access to any mutable components
+    - If the class has any fields that refer to mutable objects, ensure that
+      clients of the class cannot obtain references to these objects.
+    - Never initialize such a field to a client-provided object reference or
+      return the field from an accessor.
+    - Make defensive copies in constructors, accessors, and ~readObject()~
+      methods.
+- The major disadvantage of immutable classes is that they require a separate
+  object for each distinct value. Creating these objects can be costly,
+  especially if they are large.
+  - One way around this is to provide a package-private / public mutable
+    companion class. The main example of this approach in the Java platform
+    libraries is the ~String~ class, whose mutable companion is ~StringBuilder~.
+- Note that it was not widely understood that immutable classes had to be effectively final when ~BigInteger~ and ~BigDecimal~ were written, so all of their methods may be overridden.
+  - Unfortunately, this could not be corrected after the fact while preserving backward compatibility.
+  - If you write a class whose security depends on the immutability of a
+    ~BigInteger~ or ~BigDecimal~ argument from an untrusted client, you must
+    check to see that the argument is a "real" ~BigInteger~ or ~BigDecimal~ ,
+    rather than an instance of an untrusted subclass.
+- If you choose to have your immutable class implement ~Serializable~ and it
+  contains one or more fields that refer to mutable objects, you must provide an
+  explicit ~readObject~ or ~readResolve~ method, or use the
+  ~ObjectOutputStream.writeUnshared~ and ~ObjectInputStream.readUnshared~
+  methods, even if the default serialized form is acceptable. Otherwise an
+  attacker could create a mutable instance of your class.
+- Constructors should create fully initialized objects with all of their
+  invariants established.
+*** Item 18 - Favor composition over inheritance
+- Unlike method invocation, inheritance violates encapsulation.
+  - When overriding a method, you cannot be sure whether the behavior any of the
+    (non-overriden) methods changed, because the implementation of such other
+    methods might depend on the overriden method.
+- A subclass can acquire new methods in subsequent releases when new methods
+  are introduced to the parent class.
+  - Such new methods may allow interaction of the subclass in unexpected /
+    previously prohibited ways. E.g., the parent class may add a public setter
+    to a private field, essentially making the class publicly mutable.
+- Use /composition/ and /forwarding/ instead:
+  - *composition*: Create a new class that has as its member an instance of the
+    existing class (i.e., the class that would otherwise be extended).
+  - *forwarding*: Instead of having the new class hold a direct reference to the
+    existing class, have it hold a reference to a forward class -- another class
+    that has the same public API as the existing class, and wraps the existing
+    class by simply forwarding each call to the actual method on the instance of
+    the existing class.
+    - This also prevents the additional of new methods on the existing class
+      from having any impact on the new class.
+- When designing a class for extension, consider provding a forwarding class.
+  - Yong Jie: This point is not explained clearly in the book. If the API vendor
+    provides both the base class and the forwarding class, what should happen to
+    the forwarding class if a new method is to be added to the base class in a
+    subsequent release? Should the new method be added to the forwarding class
+    too? If so, that will bring us back to the problem with inheritance.
+    - The example given in the book is of the forwarding classes provided by the
+      [[https://guava.dev/][Guava]] core Java libraries provided Google. However, the forwarding classes
+      in Guava is more properly seen as a convenience wrapper class that
+      forwards each method in the public API such that overriding any single one
+      of the method will not subtly affect the behavior of other methods.
+      - Original problem: ~base_class~ has public methods ~method_a()~ and
+        ~method_b()~, and ~method_b()~ calls to ~method_a()~ internally; if a
+        subclass overrides ~method_a()~ it'll be changing the behavior of
+        ~method_b()~ too.
+      - Solution provided by Guava's forwarding class: ~forwarding_class~ has
+        public methods ~method_a()~ and ~method_b()~ that calls /only/ to
+        ~base_class.method_a()~ and ~base_class.method_b()~ respectively (note:
+        it is crucial that ~forwarding_class.method_a()~ and
+        ~forwarding_class.method_b()~ does not call to each other); when a
+        subclass extends ~forwarding_class~ and overrides ~method_a()~, it will
+        not affect ~forwarding_class.method_b()~, avoiding the problem mentioned
+        above.
+*** Item 19 - Design and document for inheritance or else prohibit it
+- Document precisely the effects of overriding any method.
+  - I.e., document any self-use of overridable methods.
+  - The description is to be put in a special section of the specification,
+    labeled "Implementation Requirements," which is generated by the Javadoc tag
+    ~@implSpec~. The documentation should be in the method calling the
+    overridable method, explaining how the overridable method is used.
+  - See for example, the ~[[https://docs.oracle.com/en/java/javase/14/docs/api/java.base/java/util/AbstractCollection.html#remove(java.lang.Object)][java.util.AbstractCollection.remove()]]~ method.
+- To allow programmers to write efficient subclasses without undue pain, a class
+  may have to provide hooks into its internal workings in the form of
+  judiciously chosen protected methods.
+  - For example, see the ~[[https://docs.oracle.com/en/java/javase/14/docs/api/java.base/java/util/AbstractList.html#removeRange(int,int)][java.util.AbstractList.removeRange()]]~ method that may
+    be overriden by a subclass such that client code can have a more efficient
+    implementation of ~clear()~.
+- The only way to test a class designed for inheritance is to write subclasses.
+- Constructors must not invoke overridable methods, directly or indirectly.
+  - Because constructor of superclass are called before the constructor of the
+    subclass is done initializing the entire class, if the constructor of the
+    superclass calls an overriden method that depends on certain state of the
+    class having been set up by the constructor of the subclass, the class may
+    not behave as expected.
+- If you do decide to implement either ~Cloneable~ or ~Serializable~ in a class
+  that is designed for inheritance, you should be aware that because the
+  ~clone()~ and ~readObject()~ methods behave a lot like constructors, a similar
+  restriction applies: neither ~clone()~ nor ~readObject()~ may invoke an
+  overridable method, directly or indirectly.
+  - In the case of ~readObject()~, the overriding method will run before the
+    subclass's state has been deserialized. In the case of ~clone()~, the
+    overriding method will run before the subclass's ~clone()~ method has a
+    chance to fix the clone's state.
+- If you decide to implement ~Serializable~ in a class designed for inheritance
+  and the class has a ~readResolve()~ or ~writeReplace()~ method, you must make
+  the ~readResolve()~ or ~writeReplace()~ method protected rather than
+  private. If these methods are private, they will be silently ignored by
+  subclasses.
+- To enable safer subclassing, it is possible to eliminate a class's self-use of
+  overridable methods mechanically, without changing its behavior:
+  - Move the body of each overridable method to a private "helper method" and
+    have each overridable method invoke its private helper method. Then replace
+    each self-use of an overridable method with a direct invocation of the
+    overridable method's private helper method.
+*** Item 20 - Prefer interfaces to abstract classes
+- Java permits only single inherinance.
+- Existing classes can be retrofitted to implement a new interface.
+- Interfaces are ideal for designing mixins.
+  - A mixin can be thought of as a type that a class can implement in addition
+    to its "primary type", to declare that it provides some optional behavior
+- Intefaces allow for the construction of nonhierarchical type frameworks.
+- Interfaces enable safe, powerful functionality enhancements via the wrapper
+  class idiom.
+  - A wrapper class is one that (a) holds a reference to the base class to be
+    extended, (b) implements the interface of the base class, and (c) forwards
+    any methods on the interface to the methods on the base class held as
+    reference.
+  - If abstract classes were used instead, the programmer who wants to add
+    functionality has no choice but to use inheritance instead, which is more
+    fragile.
+- When there is an obvious implementation of an interface method in terms of
+  other interface methods, consider providing implementation assistance to
+  programmers in the form of a default method.
+- Interfaces are limited in certain aspects: e.g., inability to provide default
+  implementations for ~hashCode()~ or ~equals()~ method, and inability to
+  contain instances field or nonpublic static members.
+  - An accompanying abstract skeletal implementation class may be provided
+    alongside the interface to assist with implementation of the interface. The
+    abstract skeletal implementation class can contain methods that could not be
+    implemented on the interface itself.
+- By convention, skeletal implementation classes are called Abstract
+  /Interface/, where Interface is the name of the interface they implement. For
+  example, the Collections Framework provides a skeletal implementation to go
+  along with each main collection interface: ~AbstractCollection~,
+  ~AbstractSet~, ~AbstractList~, and ~AbstractMap~.
+- The general process of writing an implementation class is as follows:
+  - First, study the interface and decide which methods are the primitives in
+    terms of which the others can be implemented. These primitives will be the
+    abstract methods in your skeletal implementation.
+  - Next, provide default methods in the interface for all of the methods that
+    can be implemented directly atop the primitives, but recall that you may not
+    provide default methods for ~Object~ methods such as ~equals()~ and
+    ~hashCode()~.
+  - If the primitives and default methods cover the interface, you're done, and
+    have no need for a skeletal implementation class.
+  - Otherwise, write a class declared to implement the interface, with
+    implementations of all of the remaining interface methods. The class may
+    contain any nonpublic fields ands methods appropriate to the task.
+*** Item 21 - Design interfaces for posterity
+- Java 8 introduced default methods and allowed addition of new methods to
+  existing interfaces.
+  - However, there is no guarantee that these methods will work in all
+    pre-existing implementations.
+- It is not always possible to write a default method that maintains all
+  invariants of every conceivable implementation.
+- In the presence of default methods, existing implementations of an interface
+  may compile without error or warning but fail at runtime.
+*** Item 22 - Use interfaces only to define types
+- Do not use ~constant interface~: an interface that no methods, and consists
+  solely of static final fields, each exporting a constant.
+  - Use an ~enum~ or noninstantiable utility class instead.
+    - Static import may be used to avoid the need to qualify the constants with
+      the class name each time: i.e., using ~CONSTANT~ directly instead of
+      ~UtilityClass.CONSTANT~.
+*** Item 23 - Prefer class hierarchies to tagged classes
+- A tagged class is one that stores a "tag" variable indicating the "flavor" of
+  the class, and many of the class methods will switch based on the tag.
+*** Item 24 - Favor static member classes over nonstatic
+- There are four kinds of nested classes: static member classes, nonstatic
+  member classes, anonymous classes, and local classes.
+- One common use of a static member class is as a public helper class: e.g., an
+  inner enum describing the operations supported by the outer calculator class.
+- Each instance of a nonstatic member class is implicitly associated with an
+  enclosing instance of its containing class.
+  - Within instance methods of a nonstatic member class, you can invoke methods
+    on the enclosing instance or obtain a reference to the enclosing instance
+    using the /qualified this/ construct: i.e., ~EnclosingType.this~.
+- One common use of a nonstatic member class is to define an /Adapter/ that
+  allows an instance of the outer class to be viewed as an instance of some
+  unrelated class.
+  - For example, an iterator might be a nonstatic member class implementing the
+    ~Iterator~ inteface.
+- If you declare a member class that does not require access to an enclosing
+  instance, always put the static modifier in its declaration, making it a
+  static rather than a nonstatic member class.
+  - A common use of private static member classes is to represent components of
+    the object represented by their enclosing class.
+  - For example, consider a ~Map~ instance, which associates keys with
+    values. Many ~Map~ implementations have an internal ~Entry~ object for each
+    key-value pair in the map. While each entry is associated with a map, the
+    methods on an entry (~getKey()~, ~getValue()~ , and ~setValue()~) do not
+    need access to the map.
+- In gist, there are four different kinds of nested classes, and each has its
+  place.
+  - If a nested class needs to be visible outside of a single method or is too
+    long to fit comfortably inside a method, use a member class.
+  - If each instance of a member class needs a reference to its enclosing
+    instance, make it nonstatic; otherwise, make it static.
+  - Assuming the class belongs inside a method, if you need to create instances
+    from only one location and there is a preexisting type that characterizes
+    the class, make it an anonymous class; otherwise, make it a local class.
+    - Note: Local class is one that is defined within a method or a scope block.
+*** Item 25 - Limit source files to a single top-level class
+- Having multiple top-level classes would mean that the file name cannot be made
+  correspond to the class(es) defined within that file. Consequently, it would
+  not be immediately obvious when multiple classes of the same name are defined
+  in different files in a particular project. This would lead to hard-to-debug
+  problems where a different class might be compiled into the =.jar= file
+  depending on the argument passed to =javac=.
+** Chapter 5 - Generics
+*** Item 26 - Don't use raw types
+- In Java, generics is a way to imbue additional type information to various
+  code elements (classes, methods, types) to enable compile-time type checking.
+  - Most (but not all) generic type parameter is removed and replaced with
+    ~Object~ in the compilation via the /erasure/ process: e.g., ~List<T>~
+    becomes ~List<Object>~; and ~List<T extends MyClass>~ becomes
+    ~List<MyClass>~.
+- When raw types are used, the compiler is unable to perform compile-time type
+  checking, resulting in the risk of runtime errors (usually a
+  ~ClassCastException~ due to implicit cast inserted by the compiler that is a
+  few steps removed from where the raw type is used).
+- The difference between using a raw type ~List~ and a parameterized type
+  ~List<Object>~, loosely speaking, is that the former has opted out of the
+  generic type system, while the latter has explicitly told the compiler that it
+  is capable of holding objects of any type.
+- Use unbounded wildcard type (e.g., ~set<?>~) when the type is unknown and
+  doesn't matter (e.g., when processing a collection of items using solely
+  methods on the collection itself)
+- There are still some limitations / inconsistencies with generics:
+  - Class literals can only be used with raw types: i.e., ~List.class~,
+    ~String[].class~ and ~int.class~ are allowed but not ~List<SomeType>.class~
+    or ~List<?>.class~.
+  - ~instanceof~ operator only works with raw types, and unbounded wildcard
+    type: i.e., ~if (o instanceof Set) { Set<?> s = (Set<?>) o; ...~
+- Important terminologies:
+  | Term                    | Example                            |
+  |-------------------------+------------------------------------|
+  | Parameterized type      | ~List<String>~                     |
+  | Actual type parameter   | ~String~                           |
+  | Generic type            | ~<List>~                           |
+  | Formal type parameter   | ~E~                                |
+  | Unbounded wildcard type | ~List<?>~                          |
+  | Raw type                | ~List~                             |
+  | Bounded type parameter  | ~<E extends Number>~               |
+  | Recursive type bound    | ~<T extends Comparable<T>>~        |
+  | Bounded wildcard type   | ~List<? extends Number>~           |
+  | Generic method          | ~static <E> List<E> asList(E[] a)~ |
+  | Type token              | ~String.class~                     |
+*** Item 27 - Eliminate unchecked warnings
+- Always eliminate unchecked warnings, unless it is not possible *AND* you can
+  prove that the code that provoked the warning is typesafe, in which case you
+  suppress the warning with an ~@SuppressWarning("uncheck")~ annotation.
+  - Always use the annotation on the smallest scope possible.
+  - Always add an explanation why the code is typesafe.
+*** Item 28 - Prefer list to arrays
+- Arrays are /covariant/: ~String[]~ is a subtype of ~Object[]~
+- Lists are /invariant/: ~List<String>~ and ~List<Object>~ are unrelated types
+  - This is logically because "a bag of apples" is not "a bag of fruits", it
+    would be legal to put an orange into the latter but not the former. As such,
+    we cannot say that the former may be used whenever the latter is expected
+    (i.e., the Liskov substitution principle does not hold).
+- It is illegal to create a generic array because it would not be typesafe
+  (i.e., meaning that the program may fail at runtime due to type related
+  errors).
+  - Suppose that generic array is legal, we would thus be able to create an
+    array of ~List~ of ~String~: ~List<String>[] stringLists = new
+    List<String>[];~.
+  - We could then assign the array of ~List~ of ~String~ to an array of ~Object~
+    because arrays are covariant: ~Object[] objects = stringLists;~.
+  - Next, we would be able to assign a ~List~ of ~Integer~ into an indexed
+    element on the array of ~Object~, even though the actual instance pointed to
+    by the array of ~Object~ expects a ~List~ of ~String~: ~object[0] =
+    List.of(42);~.
+  - Finally, when attempting to obtain a string from a ~List~ in the original
+    ~List~ of ~String~, there would be a ~ClassCastException~: ~String s =
+    stringLists[0].get(0);~.
+- Types such as ~E~, ~List<E>~ and ~List<String>~ are techincally known as
+  non-reifiable types because their runtime representation contains less
+  information than its compile time representation due to /erasure/.
+- When you get a generic array creation exception or an unchecked cast warning
+  on a cast to an array type, the best solution is generally to use ~List<E>~
+  instead of ~E[]~.
+*** Item 29 - Favor generic types
+- Generic types remove the need for client code to cast from ~Object~ back to
+  the desired type, reducing chances of ~ClassCastException~ at runtime.
+- It is possible to make a non-generic class generic after-the-fact, without
+  requiring change to client code. This is because generics are backwards
+  compatible.
+- Generic primitives are not legal, so used boxed primitives in generic types.
+*** Item 30 - Favor generic methods
+- Use bounded wildcard types to make generic methods more flexible.
+  - For example, instead of having ~public <E> Set<E> union(Set<E> s1, Set<E>
+    s2) {...}~, use ~public <E> Set<E> union(Set<? extends E> s1, Set<? extends
+    E> s2) {...}~.
+- An example of recursive type bound would be ~<E extends Comparable<E>>~.
+  - One use case of recursive type bound is to express mutual comparability of
+    elements in a collection: ~public static <E extends Comparable<E>> E
+    max(Collection<E> c);~.
+*** Item 31 - Use bounded wildcards to increase API flexibility
+- Generally, we want the behaviour that ~List<ChildClass>~ is not a subtype of
+  ~List<ParentClass>~ and hence the former cannot be used in places where the
+  latter is expected. For example, you can add a ~ParentClass~ to the latter but
+  not the former.
+  - As such, ~public <E> static myMethod(List<E> l1, List<E> l2);~ would not be
+    able to accept ~List<ChildClass>~ as one argument, and ~Lists<ParentClass>~
+    as the other.
+- However, in certain situations, we are interested solely in the type parameter
+  itself and the former /is/ substitutable where the latter is expected. For
+  example, if we are just iterating over the ~List~ and calling some methods
+  defined on the ~ParentClass~.
+  - In such a situation, we would define the method as: ~public <E> static
+    myMethod(List<E extends ParentClass> l1, List<E extends ParentClass> l2);~.
+- The general rule is that we want to use wildcards types on input parameters
+  that represent producers or consumers, following the mnemonic PECS:
+  producer-extends, consumer-super.
+  - Suppose we have a generic class parameterized by type ~E~ with a method
+    ~storeInClass~ that extracts elements from a ~List~ and store in within some
+    fields on the instance, we would define the method as: ~public <E>
+    storeInClass(List<?  extends E> inputList);~.
+  - Suppose we have a generic class parameterized by type ~E~ with a method
+    ~fillList~ that takes the elements stored in the instance and add it to a
+    ~List~, we would define the method as: ~public <E> fillList(List<? super E>
+    outputList)~.
+- Another general rule of thumb when using wildcard types as part of API is:
+  /If the user of a class has to think about wildcard types, there is probably
+  something wrong with its API./
+- In rare circumstances, explicit type parameters might be required on methods
+  with bounded wildcard types. For example, see the ~.<Number>~ in ~Set<Number>
+  numbers = Union.<Number>union(integers, doubles);~.
+- When declaring a method that accepts a type that extend ~Comparable~,
+  generally prefer using bounded wildcard as the type parameter for the method:
+  i.e., prefer extending using ~public static <T extends Comparable<? super T>>
+  myMethod~ to ~public static <T extends Comparable<T>> myMethod~.
+  - The latter (and albeit simpler) declaration will only accept types that
+    extends ~Comparable~ directly, but not subtypes that indirectly extends
+    ~Comparable~.
+  - E.g., ~ScheduledFuture~ is a subtype of ~Delayed~, which implements
+    ~Comparable<Delayed>~, using the latter simpler declaration it would not be
+    able to accept a ~ScheduledFuture~ whereas the former declaration would.
+- Generally, there is a duality between type parameters and wildcards, and many
+  methods can be declared using one or the other. For example, here are two
+  possible declarations for a static method to swap two indexed items in a list:
+  - ~public static <E> void swap(List<E> list, int i, int j);~
+  - ~public static void swap(List<?> list, int i, int j);~
+  - Generally, as a rule, if a type parameter appears only once in a method
+    declaration, consider replacing it with a wildcard.
+*** Item 32 - Combine generics and varargs judiciously
+- Varargs is a way for methods to accept a variable number of arguments in
+  relation to a particular parameter. The syntax is as follows: ~static void
+  myMethod(List<String>... stringLists)~.
+- The author describes varargs (as a Java language feature) as a leaky
+  abstraction which does not shield users of the Java language from the
+  implementation details---that varargs works by converting the arguments into
+  an array.
+- Recall that it is illegal to create an array of generic type because it's not
+  typesafe (see item 28).
+  - But by using a varargs of generic type, an array of generic type will be
+    created, resulting in violation of type safety.
+- Use the ~@SafeVarargs~ annotation manually to indicate that a varargs of
+  generic type is typesafe, after manually determining that the usage is
+  typesafe.
+  - A usage of varargs with generic types is *safe* if:
+    - The method doesn't store anything into the array (which would overwrite
+      the parameters);
+    - Doesn't allow a reference to the array to escape (which would enable
+      untrusted code to access the array);
+    - In other words, if the varargs parameter array is used only to transmit a
+      variable number of arguments from the caller to the method---which is,
+      after all, the purpose of varargs---then the method is safe.
+  - It is *unsafe* to:
+    - Give another method access to a generic varargs parameter array (unless
+      (a) the other method is correctly marked ~@SafeVarargs~; or the other
+      method is a non varargs method that merely computes some function of the
+      content of the array);
+*** Item 33 - Consider typesafe heterogeneous containers
+- A typesafe heterogeneous container is essentially one that uses types as
+  elements of the container.
+  - This is as opposed to normal generic container where one or more types are
+    used to parameterize the container so only instances of the parameterised
+    type(s) may be stored in the container.
+  - An example of a typesafe heterogeneous container would be a mapping of type
+    to an instance of that type:
+    - E.g., A mapping of type to default value could be initialized with calls
+      to ~SetDefaultValue(String.Class, "")~ and
+      ~SetDefaultValue(String.Integer, 0)~, and the mapping may be used by
+      calling ~GetDefaultValue(String.Class)~ to return the empty string, and
+      calling ~GetDefaultValue(String.Integer)~ to return 0.
+    - The implementation may look something like this:
+      #+BEGIN_SRC java
+        public class Defaulter {
+        private Map<Class<?>, Object> defaults = new HashMap<>();
+            public <T> void SetDefaultValue(Class<T> type, T value) {
+                defaults.put(Objects.requireNonNull(type), value);
+            }
+            public <T> T GetDefaultValue(Class<T> type) {
+                return type.cast(defaults.get(type));
+            }
+        }
+      #+END_SRC
+  - The example is heterogeneous because it can contain multiple types.
+  - The example is typesafe because it will never return an ~Integer~ when you
+    ask for a ~String~.
+- The use of ~<Class<?>>~ in the example implementation above is known as /type
+  token/.
+- Note: ~String.class~ is of type ~Class<String>~, hence the above code example
+  works.
+- In applications that mixes generics and raw types, the use of collection
+  wrappers in ~java.util.Collections~ (~checkedSet~, ~checkedList~ and
+  ~checkedMap~) provides runtime type safety by throwing ~ClassCastException~ if
+  an incorrectly type element is passed in by client code.
+** Chapter 6 - Enums and Annotations
+*** Item 34 - Use enums instead of ~int~ constants
+- enums are full-fledged Java class, providing a singleton for each enum
+  item, which may optionally be associated with instance methods and fields.
+  - The enum class may also declare abstract method that must be implemented by
+    each enum item.
+- To associate data with enum constants, declare instance fields and write a
+  constructor that takes the data and stores it in the fields.
+- If an enum is generally useful, it should be a top-level class; if its use is
+  tied to a specific top-level class, it should be a member class of that
+  top-level class.
+- Avoid defining a method on the enum class that switches on the value of the
+  enum (i.e., switching on ~this~).
+  - This is because the switch statement may not be immediately beside where
+    each item of the enum is defined, and there is a real possibility that new
+    items may be added to the enum without accounting for it in the switch
+    statement.
+  - Instead, define an abstract method on the enum class, and have each enum
+    method provide the implementation. For example:
+    #+BEGIN_SRC java
+      public enum Operation {
+          PLUS {public double apply(double x, double y){return x + y;}},
+          MINUS {public double apply(double x, double y){return x - y;}},
+          TIMES {public double apply(double x, double y){return x * y;}},
+          DIVIDE{public double apply(double x, double y){return x / y;}};
+          public abstract double apply(double x, double y);
+      }
+    #+END_SRC
+  - One limitation of the above approach is the inability to share
+    implementation because each item much define its own method.
+    - A workaround is to have nested enum to encapsulate the implementation that
+      are repeated (see page 166 for example).
+  - Switich in enum values are appropriate when (a) you don't control the enum,
+    or (b) even if you control the enum, the logic of the switch doesn't beling
+    within the enum class.
+- Consider overriding a ~toString()~ method if there is a more natural string
+  representation of the enum items other than their identifier.
+  - Consider implementing a ~fromString()~ method if ~toString()~ is overriden.
+- It is not necessary that the set of constants in an enum type stay fixed for
+  all time. The enum feature was specifically designed to allow for binary
+  compatible evolution of enum types.
+*** Item 35 - Use instance fields instead of ordinals
+- Ordinal is the "index" of the enum item within the enum definition.
+  - Avoid using this as it is a maintenance nightmare (e.g., when the order of
+    enum items are changed, code using ordinals must be changed too).
+- Just use instance fields to store the required information.
+*** Item 36 - Use ~EnumSet~ instead of bit fields
+- Bit fields are usually ~int~ used to represent options at different bit value,
+  and the options might be combined using bitwise or.
+- ~EnumSet~ are useful for options flag. For example, in a class ~Text~, there
+  might be a nested ~enum~ named ~Style~ with instances ~BOLD~, ~ITALIC~,
+  ~UNDERLINE~, ~STRIKETHROUGH~. To represent a combined style, use
+  ~EnumSet.of(Style.BOLD, Style.ITALIC)~.
+*** Item 37 - Use ~EnumMap~ intsead of ordinal indexing
+- When grouping elements into collections based on an associated enum value, it
+  might be tempting to create an array of collections, with the array index
+  corresponding to the ordinal of the enum value. This approach is not the best
+  practice for several reason: (a) the ordinal is an ~int~ and provides no
+  information regarding the associated enum value, (b) any ~int~ might be passed
+  to the array, including those that are out-of-bounds vis-a-vis the ordinals of
+  the enum.
+- The better way is to use an ~EnumMap~, where the key has to be a valid value
+  of the enum.
+- When using stream processing to build a map where the keys are enum values,
+  the three-parameter overload of ~groupingBy()~ is required in order to pass
+  ~() -> ew EnumMap<>(MyEnum.class)~ as the second argument to provide the map
+  instance.
+*** Item 38 - Emulate extensible enums with interfaces
+- Generally, it is a good idea that enums are not extensible because it would be
+  confusing if some enum items below to the subclass and some to other classes
+  further up the hierarchy.
+- However, one legitimate use case would be opcodes: a vendor might provide a
+  standard set of opcodes, and at the same time allow user to add additional
+  opcodes as required.
+- Extensibility of enums may be emulated by declaring the required methods on an
+  interface, and have the base enums and "extended" enums implement the
+  interface.
+*** Item 39 - Prefer annotations to naming patterns
+- An example of using naming pattern might be the use of ~TestMyMethod()~ to
+  indicate to a testing framework that this is a test method.
+  - This approach is fragile because simple typographical errors may silently
+    prevent the test from being executed.
+  - This approach is also limited because it is not possible to associate
+    parameter(s) with the naming pattern, other than to create yet another
+    (longer) naming pattern incorporating the parameter (e.g.,
+    ~TestRetryThreeTimesMyMethod()~.
+- An annotation might be defined as follows:
+  #+BEGIN_SRC java
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.METHOD)
+    public @interface Test {... }
+  #+END_SRC
+  - The ~@Retention(RetentionPolicy.RUNTIME)~ indicates that ~Test~ annotation
+    should be retained at run time.
+  - The ~@Target(ElementType.METHOD)~ indicates that ~Test~ annotations may only
+    be applied to method declarations.
+- One way for a class to make use of annotations is to (see page 182 for
+  example):
+  - Have its own ~public static void main~ method which takes as parameter a
+    class name,
+  - Use reflection to obtain the class and store inside a ~Class<?>~,
+  - Use reflection to iterate over the methods (or other elements of the class),
+  - Check whether the relevant annotation is present,
+  - Do the necessary processing.
+- Annotations may also have parameter, which may be a single value or a list of
+  values.
+*** Item 40 - Consistently use the ~Override~ annotation
+- One common software error avoidable by consistent use of ~@Override~
+  annotation is the failure to override the ~equals()~ method of ~Object~ due to
+  wrong parameter type. E.g., ~public boolean equals(MyType other)~ will not
+  override the method on ~Object~, which has the signature ~public boolean
+  equals(Object other)~. By using the ~@Override~ annotation, the Java compiler
+  will generate an error message because no method is beincg overriden.
+*** Item 41 - Use marker interfaces to define types
+- A marker interface is an interface that contains no method declarations but
+  merely designates (or "marks") a class that implements the interface as having
+  some property.
+- This item 41 is mainly comparing the use of marker interfaces vis-a-vis the
+  use of marker annotations, and the relative tradeoffs.
+  - *This item is not saying the use of marker interfaces is a good practice in
+    general.*
+- Note: According to [[https://www.baeldung.com/java-marker-interfaces][Baeldung's Article on Marker Interfaces in Java]], use of
+  marker interfaces may be a code smell.
+- Marker interfaces/annotations might be useful in the following circumstances:
+  - To add additional information about the type itself (rather than instances
+    of the type) to allow tools to react appropriately. The classic example
+    would be test annotations.
+  - When there is a default behavior in relation to an element (either inherited
+    or defined by frameworks or tools), and there is a need for particular
+    element to opt in/out of the default behavior. E.g.:
+
+    +----------------+----------------------------------+--------------------------+
+    |                | Default behavior                 |      Opt In or Out       |
+    +----------------+----------------------------------+--------------------------+
+    |Serializable    |JVM has a default way of          |Opt in to confirm that the|
+    |interface       |serializing typical fields, but it|default implementation    |
+    |                |is not implemented solely as      |works.                    |
+    |                |calling on defined as methods on  |                          |
+    |                |the object, hence using a         |                          |
+    |                |conventional interface would not  |                          |
+    |                |be sufficient, and additional     |                          |
+    |                |information on the type is needed |                          |
+    |                |to signal to the JVM.             |                          |
+    +----------------+----------------------------------+--------------------------+
+    |Deletable       |The base ~Entity~ object          |Opt in to confirm that the|
+    |Interface       |implements a ~delete(Object obj)~ |default implementation    |
+    |(example on     |method, which first checks that   |works.                    |
+    |Baeldung's      |the ~obj~ implements ~Deletable~  |                          |
+    |article)        |before using the default          |A class might implement   |
+    |                |implementation.                   |the interface, and any    |
+    |                |                                  |subclass woud             |
+    |                |                                  |automatically be opted in.|
+    +----------------+----------------------------------+--------------------------+
+** Chapter 7 - Lambda and Streams
+*** Item 42 - Prefer lambdas to anonymous class
+- Use of anonymous class instance as a function object is obsolete.
+- Lambda expressions are actually specific instance of the functional
+  interface---i.e., interfaces with a single abstract method.
+- Omit the types of all lambda parameters unless their presence makes your
+  program clearer.
+- Unlike methods and classes, lambdas lack names and documentation; if a
+  computation isn't self-explanatory, or exceeds a few lines, don't put it in a
+  lambda.
+- Lambdas share with anonymous classes the property that you can't reliably
+  serialize and deserialize them across implementations. Therefore, you should
+  rarely, if ever, serialize a lambda (or an anonymous class instance).
+- Don't use anonymous classes for function objects unless you have to create
+  instances of types that aren't functional interfaces.
+*** Item 43 - Prefer method references to lambdas
+- A way to generate function objects that are more succinct than lambdas is to
+  use /method references/.
+  - For example, instead of ~map.merge(key, 1, (count, incr) -> count + incr);~,
+    use ~map.merge(key, 1, Integer::sum);~. (Recall that the third argument
+    specifies what to do if ~map~ already contains ~key~.)
+- One instance where lambdas might be more concise that method references is
+  when the method is in the same class.
+  - For example, instead of
+    ~service.execute(GoshThisClassNameIsHumongous::action);~, use
+    ~service.execute(() -> action());~, assuming this line occurs within the
+    ~GoshThisClassNameIsHumongous~ class.
+- The different types of method references and their lambda equivalent are as follows:
+
+| Method Reference Type | Example                | Lambda Equivalent                                  |
+|-----------------------+------------------------+----------------------------------------------------|
+| Static                | Integer::parseInt      | str -> Integer.parseInt(str)                       |
+| Bound                 | Instant.now()::isAfter | Instant then = Instant.now(); t -> then.isAfter(t) |
+| Unbound               | String::toLowerCase    | str -> str.toLowerCase()                           |
+| Class Constructor     | TreeMap<K, V>::new     | () -> new TreeMap<K, V>                            |
+| Array Constructor     | int[]::new             | len -> new int[len]                                |
+
+- Where method references are shorter and clearer, use them; where they aren't,
+  stick with lambdas.
+*** Item 44 - Favor the use of standard functional interfaces
+- The /Template Method/ pattern, wherein a subclass overrides a primitive method
+  (i.e., one that is relied on by other methods) to specialize the behavior of
+  its superclass, is less attractive.
+  - The modern alternative is to provide a static factory or constructor that
+    accepts a function object to achieve the same effect.
+- ~LinkedHashMap~ has a protected method ~removeEldestEntry()~ that is called
+  everytime an element is inserted. If the method returns ~true~, thee eldest
+  entry is removed.
+  - A modern approach might be to use declare a functional interface and accept
+    a function object. The functional interface might look something like this:
+    #+BEGIN_SRC java
+      @FunctionalInterface interface EldestEntryRemovalFunction<K,V>{
+          boolean remove(Map<K,V> map, Map.Entry<K,V> eldest);
+      }
+    #+END_SRC
+  - Note however that the above custom functional interface is not required
+    because the ~java.util.function~ package provides a large collection of
+    standard functional interfaces for use. (Think of functional interfaces as
+    types for anonymous function / method references.)
+- There are mult functional interfaces provided in ~java.util.function~,
+  generally belong to one of the following six basic variations:
+  | Interface         | Function Signature  | Example             |
+  |-------------------+---------------------+---------------------|
+  | UnaryOperator<T>  | T apply(T t)        | String::toLowerCase |
+  | BinaryOperator<T> | T apply(T t1, T t2) | BigInteger::add     |
+  | Predicate<T>      | boolean test(T t)   | Collection::isEmpty |
+  | Function<T, R>    | R apply(T t)        | Arrays:asList       |
+  | Supplier<T>       | T get()             | Instant::now        |
+  | Consumer<T>       | void accept(T t)    | System.out::println |
+  - There are also three variants to the six basic variations above that operate
+    on the primitive types ~int~, ~long~ and ~double~. Examples include
+    ~IntPredicate~ which returns ~int~, ~LongBinaryOperator~ which returns
+    ~long~, and ~LongFunction<int[]>~ that takes a ~long~ and return an ~int[]~.
+    - Presumably such variations are needed to avoid the need for boxing of the
+      primitives (together with the decreased performance that comes along).
+    - Note that only the ~...Function~ interface above is parameterized. There
+      are nine more variations such as ~DoubleToIntFunction~ that takes a
+      ~double~ and returns an ~int~. There are nine variations beacause each
+      primitive might be paired with the remaining two primitives plus the
+      ~object~ type. (Note that there is on ~IntToIntFunction~ because that
+      would be an ~IntUnaryOperator~).
+      - YJ: The author mentioned a function name ~DoubleToObjFunction()~ that
+        doesn't seem to exist at all.
+  - There are also two-argument variants of the ~Predicate~, ~Function~, and
+    ~Consumer~ interfaces: ~BiPredicate~, ~BiFunction~, and ~BiConsumer~.
+    - There are also two-argement variants that works with primitive types
+      (either typing them as one of the arguments, or returning them as
+      results).
+- Sometimes even when an existing functional interface provide the necessary
+  function signature, it might be a good idea to still create your own. An
+  example would be the ~Comparator<T>~ interface, which compatible with
+  ~ToIntBiFunction<T, T>~, but is nonetheless better created as a separate
+  interface because:
+  - It is commonly use and benefit from a descriptive name.
+  - It has a strong contract associated with it (i.e., specific behaviors
+    required for a ~Comparator~ to work where it is expected as an input).
+  - It benefits from custom default methods.
+- Always annotate your functional interfaces with the ~@FunctionalInterface~
+  annotation.
+- Do not provide a method with multiple overloadings that take different
+  functional interfaces in the same argument position if it could create a
+  possible ambiguity in the client.
+*** Item 45 - Use streams judiciously
+- A stream pipeline consists of a source stream followed by zero or more
+  intermediate operations and one terminal operation.
+- Stream pipelines are evaluated lazily: evaluation doesn,t start until the
+  terminal operation is invoked, and data elements that aren't required in order
+  to complete the terminal operation are never computed.
+- By default, stream pipelines run sequentially. Making a pipeline execute in
+  parallel is as simple as invoking the parallel method on any stream in the
+  pipeline, but it is seldom appropriate to do so.
+- In the absence of explicit types, careful naming of lambda parameters is
+  essential to the readability of stream pipelines.
+- Using helper methods is even more important for readability in stream
+  pipelines than in iterative code because pipelines lack explicit type
+  information and named temporary variables.
+  - I.e., instead of using lambda expressions, consider whether it would be
+    clearer to extract the logic into a separate method, and pass the method
+    reference into the stream code.
+- Java does not support primitive ~char~ streams, and ~String.chars()~ actually
+  produces an ~int~ stream.
+- Refrain from using streams to process char values.
+- Some ways to decide whether to use stream pipelines (i.e., function objects)
+  or iterative code blocks:
+  - There are restrictions in relation to function objects:
+    - From a code block, you can read or modify any local variable in scope;
+      from a lambda, you can only read final or effectively final variables, and
+      you can't modify any local variables.
+      - YJ: Is it really true that you can only read final or effectively final
+        variables from a lambda?
+    - From a code block, you can return from the enclosing method, break or
+      continue an enclosing loop, or throw any checked exception that this
+      method is declared to throw; from a lambda you can do none of these
+      things.
+  - Streams are usually useful for the following tasks:
+    - Uniformly transform sequences of elements
+    - Filter sequences of elements
+    - Combine sequences of elements using a single operation (for example to add
+      them, concatenate them, or compute their minimum)
+    - Accumulate sequences of elements into a collection, perhaps grouping them
+      by some common attribute
+    - Search a sequence of elements for an element satisfying some criterion
+- One other limitation of streams is that the value available at an earlier
+  stage of the stream is not available to later stage.
+  - For example, if a certain variable is passed through several other
+    downstream operations for processing, and the final operation requires the
+    original variable in order to create a mapping of the original value to the
+    transformed value, the original value will not be available.
+  - Some workarounds include: deriving the original value from the final value
+    (provided there is an efficient way); passing a pair of values ~(original,
+    transformed)~ down each processing layer.
+*** Item 46 - Prefer side-effect-free functions in streams
+- Beware of iterative code masquerading as streams code.
+  - E.g.:
+    #+BEGIN_SRC java
+      Map<String, Long> freq = new HashMap<>();
+      try (Stream<String> words = new Scanner(file).tokens()) {
+          words.forEach(word -> {
+          freq.merge(word.toLowerCase(), 1L, Long::sum);
+          });
+      }
+    #+END_SRC
+    a proper streams-based implementation might look something like:
+    #+BEGIN_SRC java
+      Map<String, Long> freq = new HashMap<>();
+      try (Stream<String> words = new Scanner(file).tokens()) {
+          freq = words.collect(groupingBy(String::toLowerCase, counting()));
+      }
+    #+END_SRC
+  - One code smell for this is the use of ~forEach()~ as the terminal operation
+    that does anything more than presenting the result of the computation.
+    - The forEach operation should be used only to report the result of a stream
+      computation, not to perform the computation.
+- In relation to the ~Collectors~ API:
+  - The ~Collector~ interface can be thought of as an opaque object that
+    encapsulates a reduction strategy (i.e., combining elements of a stream into
+    a single object, like a ~Set~).
+  - Methods in ~Collectors~ include ~toList()~, ~toSet()~,
+    ~toCollection(collectionFactory)~, and many variations of ~toMap()~ and
+    ~groupingBy()~.
+  - ~toMap()~ creates a mapping where each key is mapped to a single value;
+    whereas ~groupingBy()~ creates a mapping where key is mapped to a single of
+    values.
+- It is customary and wise to statically import all members of ~Collectors~
+  because it makes stream pipelines more readable.
+- There are three basic variations of the ~toMap()~ method:
+  - Two-argument version: ~toMap(keyMapper, valueMapper)~: Each stream element
+    must be mapped only to a single key, if multiple stream elements map to the
+    same key, the pipeline will terminate with an ~IllegalStateException~.
+  - Three-argument version: ~toMap(keyMapper, valueMapper, mergeFunction)~: The
+    third argument is used to handle the situation where more than one stream
+    elements map to the same key; e.g., ~maxBy()~ can be used to retain only the
+    maximum value, and the lambda expression ~(v1, v2) -> v2~ can be used to
+    retain the last processed value.
+  - Four-argument version: ~toMap(..., mapFactor)~: The fourth argument is used
+    to provide the specific mapping implementation to be used (e.g., ~EnumMap~,
+    ~TreeMap~).
+- There are multiple variations of the ~groupingBy()~ collector:
+  - One-argument version: ~groupingBy(classifier)~: Stream elements are grouped
+    into ~List~ base on the return value of the ~classfier~.
+  - Two-argument verison: ~groupingBy(classifier, downstreamCollector)~: Stream
+    elements of the same keys are grouped using ~downstreamCollector~ (instead
+    of being group into ~List~ in the one-argument verison).
+  - Three-argument version: ~groupingBy(classifier, mapFactory,
+    downstreamCollector)~: Stream elements are grouped into the ~Map~
+    implementation provided by ~mapFactory~ (e.g., ~TreeMap~).
+  - ~groupingByConcurrent()~: Similarly to each of the three above, but runs
+    efficiently in parallel, and produces ~ConcurrentHashMap~ instances.
+- There are several collector factory in ~java.util.Collectors~ that are only
+  ever intended for use as downstream collectors; so don't use it like:
+  ~.collect(counting())~. Example of such collector factories are:
+  - Methods starting with ~summing~, ~averaging~, and ~summarizing~.
+  - ~reducing~, ~filtering~, ~mapping~, ~flatMapping~, and ~collectingAndThen~.
+- The remaining methods in ~java.util.Collectors~ are:
+  - ~maxBy()~ and ~minBy()~: For returning a ~Collector~ that produces only the
+    maximum / minimum element.
+  - ~joining()~: For returning a ~Collector~ that joins elements into a
+    ~String~. There are additional overloads to add delimiters and prefix /
+    suffix.
+*** Item 47 - Prefer Collection to Stream as return type
+- Prior to Java 8 (before introduction of streams), when returning a sequence
+  type, there are generally 3 main options:
+  - ~Collection~ and its subclasses ~Set~, ~List~: This is the default choice.
+  - ~Iterable~: This is chosen when the return value is meant solely to enable
+    ~for-each~ loop, or if certain ~Collection~ method couldn't be implemented
+    (usually if the sequence contains ~Object~).
+  - arrays: When the return values are primitives, or when there are stringent
+    performance requirements.
+- Post Java 8, ~Collection~ or an appropriate subtype is generally the best
+  return type for a public, sequence-returning method.
+  - This is because the ~Collection~ interface is a subtype of ~Iterable~ and
+    has a stream method, so it provides for both iteration and stream access.
+  - Arrays also provide for easy iteration and stream access with the
+    ~Arrays.asList~ and ~Stream.of~ methods.
+  - Do not store a large sequence in memory just to return it as a collection.
+  - One limitation of returning ~Collection~ is that the ~.size()~ method
+    returns an ~int~, which is limited to ~Interger.MAX_VALUE~, which might or
+    might no be sufficiently large.
+    - If the sequence you're returning is large but can be represented
+      concisely, consider implementing a special-purpose collection.
+- A ~Stream~ is not directly iterable using the ~for-each~ statement, and a
+  adapter is required:
+  #+BEGIN_SRC java
+  public static <E> iterable<E> iterableOf(Stream<E> stream) {
+      return stream::iterator;
+  }
+  #+END_SRC
+- When reading from a file, ~Files.lines~ is superior to ~scanner~ because the
+  latter silently swallows any errors encountered while reading the
+  file. However, ~Files.lines~ cannot replace ~scanner~ because it returns a
+  ~Stream~ and does not support ~for-each~ statement.
+  - YJ: Couldn't we use the adapter above to make ~Files.lines~ amenable to
+    ~for-each~ statements?
+- When stream processing is desired on an ~Iterable~ the following adapter may
+  be used:
+  #+BEGIN_SRC java
+  public static <E> Stream<E> streamOf(Iterable<E> iterable) {
+      // The stream() methods creates a new stream from a spliterator, the
+      //   second argument is to specify whether it'll be parallel.
+      return StreamSupport.stream(iterable.spliterator(), false);
+  }
+  #+END_SRC
+- In gist:
+  #+BEGIN_QUOTE
+  In summary, when writing a method that returns a sequence of elements,
+  remember that some of your users may want to process them as a stream while
+  others may want to iterate over them. Try to accommodate both groups. If it's
+  feasible to return a collection, do so. If you already have the elements in a
+  collection or the number of elements in the sequence is small enough to
+  justify creating a new one, return a standard collection such as
+  ~ArrayList~. Otherwise, consider implementing a custom collection as we did
+  for the power set. If it isn't feasible to return a collection, return a
+  stream or iterable, whichever seems more natural. If, in a future Java
+  release, the ~Stream~ interface declaration is modified to extend ~Iterable~,
+  then you should feel free to return streams because they will allow for both
+  stream processing and iteration.
+  #+END_QUOTE
+*** Item 48 - Use caution when making streams parallel
+- Parallelizing a pipeline is unlikely to increase its performance if the source
+  is from ~Stream.iterate()~, or the intermediate operation ~limit()~ is used.
+- As a rule, performance gains from parallelism are best on streams over
+  ~ArrayList~, ~HashMap~, ~HashSet~, and ~ConcurrentHashMap~ instances;
+  ~arrays~; ~int~ ranges; and ~long~ ranges.
+  - What these data structures have in common is that they can all be accurately
+    and cheaply split into subranges of any desired sizes, which makes it easy
+    to divide work among parallel threads.
+  - The abstraction used by the streams library to perform this task is the
+    ~spliterator~, which is returned by the ~spliterator()~ method on ~Stream~
+    and ~Iterable~.
+- The nature of a stream pipeline's terminal operation also affects the
+  effectiveness of parallel execution. If a significant amount of work is done
+  in the terminal operation compared to the overall work of the pipeline and
+  that operation is inherently sequential, then parallelizing the pipeline will
+  have limited effectiveness.
+  - The best terminal operations for parallelism are reductions, where all of
+    the elements emerging from the pipeline are combined using one of ~Stream~'s
+    reduce methods, or prepackaged reductions such as ~min~, ~max~, ~count~, and
+    ~sum~. The short-circuiting operations ~anyMatch~, ~allMatch~, and
+    ~noneMatch~ are also amenable to parallelism.
+  - The operations performed by ~Stream~'s ~collect~ method, which are known as
+    mutable reductions, are not good candidates for parallelism because the
+    overhead of combining collections is costly.
+- When parallelizing stream processing and order must be preserved at the
+  terminal stage, the ~forEach()~ terminal operation must be replaced with
+  ~forEachOrdered()~.
+- To get a good speed up from parallelizing, as a very rough estimate, the
+  number of elements in the stream times the number of lines of code executed
+  per element should be at least a hundred thousand.
+- When parallelizing a stream of random numbers, start with ~SplittableRandom~
+  instead of ~ThreadLocalRandom~.
+** Chapter 8 - Methods
+*** Item 49 - Check parameters for validity
+- Clearly document all restrictions on the method parameters and enforce them
+  with checks at the beginning of the method body.
+- For public and protected methods, use the Javadoc ~@throws~ tag to document
+  the exception that will be thrown if a restriction on parameter values is
+  violated.
+- Use class-level comment to document restrictions in relation to parameters
+  common to all (or most) of the class's public methods.
+- The ~Objects.requireNonNull()~ method, added in Java 7, is flexible and
+  convenient, so there's no reason to perform null checks manually anymore.
+- In Java 9, a range-checking facility was added to ~java.util.Objects~. This
+  facility consists of three methods: ~checkFromIndexSize()~,
+  ~checkFromToIndex()~, and ~checkIndex()~.
+- For an unexported method, you, as the package author, control the
+  circumstances under which the method is called, so you can and should ensure
+  that only valid parameter values are ever passed in. Therefore, nonpublic
+  methods can check their parameters using assertions.
+  - Unlike normal validity checks, assertions have no effect and essentially no
+    cost unless you enable them, which you do by passing the ~-ea~ (or
+    ~-enableassertions~) flag to the java command.
+- It is particularly important to check the validity of parameters that are not
+  used by a method, but stored for later use.
+  - This is especially true for constructors.
+- An exception to the rule that arguments should be checked prior to computation
+  involving the arguments is when the validity check would be expensive or
+  impractical /and/ the check is performed implicitly in the process of doing
+  the computation.
+  - E.g., The processing of sorting will check that each element can be compared
+    with one another.
+- Use the /exception translation/ idiom to translate exceptions thrown by
+  computation into an appropriate exception for the context.
+- All the above notwithstanding, methods should be designed to be general,
+  without placing too many arbitrary restrictions on the parameters.
+*** Item 50 - Make defensive copies when needed
+- ~Date~ is obsolete and should no longer be used in new code.
+  - Use ~Instant~ and other classes in ~java.time~ instead.
+- It is essential to make a defensive copy of each mutable parameter to the constructor.
+  - Defensive copies are made before checking the validity of the parameters,
+    and the validity check is performed on the copies rather than on the
+    originals. This is to prevent timing attacks.
+  - Do not use the ~clone()~ method to make defensive copies of a non-final
+    class because the actual instance might be implemented to allow access
+    (e.g., via private static fields on the class) despite of the copying.
+- Return defensive copies of mutable internal fields.
+- Defensive copying of parameters is not just for immutable classes.
+  - Any time you write a method or constructor that stores a reference to a
+    client-provided object in an internal data structure, think about whether
+    the client-provided object is potentially mutable.
+  - If it is, think about whether your class could tolerate a change in the
+    object after it was entered into the data structure.
+  - If the answer is no,
+    you must defensively copy the object and enter the copy into the data
+    structure in place of the original.
+- When it is not appropriate to make a defensive copy of a mutable parameter
+  before integrating it into an object, provide a method or constructor for the
+  client code to explicitly handoff the mutable parameter to the relevent class.
+  - It should be clearly documented that the client code should perform the
+    necessary mutation prior to handing off, and not modify the object directly
+    after.
+*** Item 51 - Design method signatures carefully
+- Choose method name carefully.
+  - Your primary goal should be to choose names that are understandable and
+    consistent with other names in the same package.
+  - Your secondary goal should be to choose names consistent with the broader
+    consensus, where it exists.
+- Don't go overboard in providing convenience methods.
+  - When in doubt, leave it out.
+- Avoid long parameter lists.
+  - Long sequences of identically typed parameters are especially harmful.
+  - There are three techniques for shortening overly long parameter lists:
+    - Break the method up into multiple methods, each of which requires only a
+      sub-set of the parameters. (I.e., consider designing the methods as
+      building blocks on which to construct more complex computations, each
+      building block only takes the arguments it requires.)
+    - Create helper classes to hold groups of parameters. Typically these helper
+      classes are static member classes.
+    - Adapt the Builder pattern (Item 2) from object construction to method
+      invocation. Create an object to represent all the parameters, and provide
+      setters on the object to set the relevant options before invoking the
+      "~execute()~" method on the object.
+- For parameter types, favor interfaces over classes.
+- Prefer two-element enum types to boolean parameters, unless the meaning of the
+  boolean is clear from the method name.
+*** Item 52 - Use overloading judiciously
+- The choice of which overloading to invoke is made at compile time.
+  - I.e., The compiler will infer which of the overloaded method to be invoked
+    at compile time, based on the available information (e.g., types and numbers
+    of arguments / parameters).
+  - This might be counterintuitive because selection among overloaded methods is
+    static, while selection among overridden methods is dynamic.
+- A safe, conservative policy is never to export two overloadings with the same
+  number of parameters.
+  - Give the methods different names instead.
+- Beware of the confusing situation in relation to the ~remove()~ method on
+  ~List<E>~, which has two similar overloads: ~remove(int)~ and ~remove(E)~. The
+  former removes item by index, while the latter removes the specified
+  item. However, if ~E~ is ~Integer~, the client code must be especially careful
+  which overloading is intended.
+- Do not overload methods to take different functional interfaces in the same
+  argument position.
+  - Used the command line switch ~-Xlint:overloads~ to let the Java compiler
+    warn you about this sort of problematic overload.
+*** Item 53 - Use varargs judiciously
+- When writing a method that requires one or more arguments of some type, rather
+  than zero or more, use something like: ~static int min(int firstArg,
+  int... remainingArgs)~ instead of ~static int min(int... args)~.
+- Exercise care when using varargs in performance-critical situations. Every
+  invocation of a varargs method causes an array allocation and initialization.
+  - If you have determined empirically that you can't afford this cost but you
+    need the flexibility of varargs, provide overloadings for the specific
+    number of varargs:
+    - E.g., Suppose you've determined that 95 percent of the calls to a method
+      have three or fewer parameters. Then declare five overloadings of the
+      method, one each with zero through three ordinary parameters, and a single
+      varargs method for use when the number of arguments exceeds three. Note
+      that varargs method should take three ordinary parameters, follow by the
+      varargs.
+*** Item 54 - Return empty collections or array, not nulls
+- One way to return a possibly empty collection is as follows: ~return new
+  ArrayList<>(cheesesInStock);~. If ~cheeseInStock~ is empty, an empty
+  ~ArrayList~ will be return.
+  - If it is determined that allocating an empty collection is harming
+    performance, use the immutable empty collections:
+    #+BEGIN_SRC java
+      publis List<Cheese> getCheeses() {
+          return cheesesInStock.isEmpty() ? Collections.emptyList()
+              : new ArrayList<>(cheesesInStock);
+      }
+    #+END_SRC
+- To return a possibly empty array, use the following:
+  #+BEGIN_SRC java
+    public Cheese[] getCheeses() {
+        return cheesesInStock.toArray(new Cheese[0]);
+    }
+  #+END_SRC
+  - Note: The documentation for the ~toArray()~ method is as follows: Returns
+    an array containing all of the elements in this list in proper sequence
+    (from first to last element); the runtime type of the returned array is that
+    of the specified array. If the list fits in the specified array, it is
+    returned therein. Otherwise, a new array is allocated with the runtime type
+    of the specified array and the size of this list.
+  - If you believe that allocating zero-length arrays is harming performance,
+    you can return the same zero-length array repeatedly because all zero-length
+    arrays are immutable. This is achieved by storing an internal private static
+    final reference to the zero-length array, and passing it to the ~toArray()~
+    call.
+- When using the ~toArray()~ overload which accepts an array, do not preallocate
+  the size of the array passed as argument. Studies have shown that it is
+  counterproductive to performance:
+  - https://shipilev.net/blog/2016/arrays-wisdom-ancients/
+  - https://web.archive.org/web/20200513072559/https://shipilev.net/blog/2016/arrays-wisdom-ancients/
+*** Item 55 - Return optionals judiciously
+- Prior to Java 8, there were two approaches you could take when writing a
+  method that was unable to return a value under certain circumstances. Either
+  you could throw an exception, or you could return null (assuming the return
+  type was an object reference type).
+  - Neither of these approaches is perfect. Exceptions should be reserved for
+    exceptional conditions, and throwing an exception is expensive because the
+    entire stack trace is captured when an exception is created.
+  - On the other hand, if a method returns null, clients must contain
+    special-case code to deal with the possibility of a null return, unless the
+    programmer can prove that a null return is impossible. If a client neglects
+    to check for a null return and stores a null return value away in some data
+    structure, a ~NullPointerException~ may result at some arbitrary time in the
+    future, at some place in the code that has nothing to do with the problem.
+- In Java 8, there is a third approach to writing methods that may not be able
+  to return a value. The ~Optional<T>~ class represents an immutable container
+  that can hold either a single non-null ~T~ reference or nothing at all.
+- Never return a null value from an ~Optional~-returning method
+- There are various methods defined on ~Optional~ to deal with the scenario when
+  there is no value: ~orElse(defaultValue)~,
+  ~orElseThrow(RelevantExecption::new)~, ~stream()~, etc.
+- The idiom for converting ~Stream<Optional<T>>~ and to require a ~Stream<T>~
+  containing only the available values is as follows:
+  #+BEGIN_SRC java
+    streamOfOptionals.filter(Optional::isPresent).map(Optional::get);
+  #+END_SRC
+- Container types, including collections, maps, streams, arrays, and optionals
+  should not be wrapped in optionals.
+- As a rule, you should declare a method to return ~Optional<T>~ if it might not
+  be able to return a result and clients will have to perform special processing
+  if no result is returned.
+- An ~Optional~ is an object that has to be allocated and initialized, and
+  reading the value out of the optional requires an extra indirection. This
+  makes optionals inappropriate for use in some performance-critical situations.
+- Never return an optional of a boxed primitive type, with the possible
+  exception of the "minor primitive types," ~Boolean~, ~Byte~, ~Character~,
+  ~Short~, and ~Float~.
+  - Use ~OptionalInt~, ~OptionalLong~ or ~OptionalDouble~ instead.
+- It is almost never appropriate to use an optional as a key, value, or element
+  in a collection or array.
+*** Item 56 - Write doc comments for all exposed API elements
+- Refer to Oracle's article /[[https://www.oracle.com/technical-resources/articles/java/javadoc-tool.html][How to Write Doc Comments for the Javadoc Tool]]/ and
+  this item for the best practices when writing doc comments. The author noted
+  that the article is good but dated, and does not include the recent doc tags
+  added.
+- To document your API properly, you must precede every exported class,
+  interface, constructor, method, and field declaration with a doc comment.
+  - If a class is serializable, you should also document its serialized form.
+- The doc comment for a method should describe succinctly the contract between
+  the method and its client.
+  - With the exception of methods in classes designed for inheritance, the
+    contract should say what the method does rather than how it does its job.
+  - *Preconditions* and *postconditions* should be enumerated and made clear in the
+    doc comment.
+    - Generally, a ~@throws~ tag indicates violation of precondition. The
+      ~@throws~ tag should also cover both checked and unchecked exceptions.
+    - Preconditions can also be specified in the ~@param~ tag together with the
+      parameter if relevant.
+  - *Side effects* should also be documented clearly.
+- Use HTML tags (e.g., ~<p>~ and ~<i>~) to apply the necessary formatting.
+- The ~{@code myDocCommentText}~ tag will cause ~myDocCommentText~ to be
+  rendered in code font (usually some mono-spaced font), and will suppress
+  processing of HTML markup.
+  - To insert multiline code fragment, surround ~{@code ...}~ with ~<pre>~ tags.
+- Use ~@implSpec~ tag to document /self-use/, i.e., use of another exposed
+  method by the current method. This doc comment is crucial for implementing
+  subclasses.
+- Use ~{@literal myLiteralDocCommentText}~ to suppress the processing of
+  HTML. The content will be rendered in normal font, as opposed to code font
+  when using ~{@code}~.
+- Doc comments should be readable both in the source code and in the generated
+  documentation. If you can't achieve both, the readability of the generated
+  documentation trumps that of the source code.
+- The first "sentence" of each doc comment becomes the summary description of
+  the element to which the comment pertains.
+  - To avoid confusion, no two members or constructors in a class or interface
+    should have the same summary description.
+  - Be careful if the intended summary description contains a period, because
+    the period can prematurely terminate the description. Use the ~{@literal}~
+    tag to avoid premature termination.
+- Use the ~{@index additionalIndexKeyword}~ to include additional keywords that
+  appear in the doc commen to the search index. API elements, such as classes,
+  methods, and fields, are indexed automatically.
+- When documenting a generic type or method, be sure to document all type
+  parameters.
+- When documenting an enum type, be sure to document the constants as well as
+  the type and any public methods.
+  - Note that you can put an entire doc comment on one line if it's short.
+- When documenting an annotation type, be sure to document any members as well
+  as the type itself.
+- Package-level doc comments should be placed in a file named
+  ~package-info.java~. In addition to these comments, ~package-info.java~ must
+  contain a package declaration and may contain annotations on this
+  declaration. Similarly, if you elect to use the module system, module-level
+  comments should be placed in the ~module-info.java~ file.
+- Whether or not a class or static method is thread-safe, you should document
+  its thread-safety level.
+- Use ~{@inheritDoc}~ to inherit doc comments from supertypes.
+- Reduce the likelihood of errors in doc comments by running the HTML files
+  generated by Javadoc through an HTML validity checker.
+** Chapter 9 - General Programming
+*** Item 57 - Minimize the scope of local variables
+- Declare the variable where it is first used.
+- Nearly every local variable declaration should contain an initializer. If you
+  don't yet have enough information to initialize a variable sensibly, you
+  should postpone the declaration until you do.
+- The for loop, in both its traditional and ~for-each~ forms, allows you to
+  declare loop variables, limiting their scope to the exact region where they're
+  needed. (This region consists of the body of the loop and the code in
+  parentheses between the for keyword and the body.) Therefore, prefer for loops
+  to while loops, assuming the contents of the loop variable aren't needed after
+  the loop terminates.
+- Keep methods small and focused.
+*** Item 58 - Prefer for-each loop to traditional for loops
+- For reference, the ~for-each~ loop looks like this:
+  #+BEGIN_SRC java
+    for (Element e : elements) { ... // Do something with e }
+  #+END_SRC
+  and the traditional for loop looks like this:
+  #+BEGIN_SRC java
+    for (Iterator<E> i = elements.iterator(); i.hasNext(); ) {
+        e = i.next();
+        ... // Do something with e
+    }
+  #+END_SRC
+- There are three common situations where you can't use for-each:
+  - *Destructive filtering* — If you need to traverse a collection removing
+    selected elements, then you need to use an explicit iterator so that you can
+    call its ~remove()~ method. You can often avoid explicit traversal by using
+    ~Collection~'s ~removeIf()~ method, added in Java 8.
+  - *Transforming* — If you need to traverse a list or array and replace some or
+    all of the values of its elements, then you need the list iterator or array
+    index in order to replace the value of an element.
+  - *Parallel iteration* — If you need to traverse multiple collections in
+    parallel, then you need explicit control over the iterator or index variable
+    so that all iterators or index variables can be advanced in lockstep (as
+    demonstrated unintentionally in the buggy card and dice examples above).
+*** Item 59 - Know and use the libraries
+- The random number generator of choice is now ~ThreadLocalRandom~.
+- Every programmer should be familiar with the basics of ~java.lang~, ~java.util~,
+  and ~java.io~, and their subpackages.
+- If you can't find what you need in Java platform libraries, your next choice
+  should be to look in high-quality third-party libraries, such as Google's
+  excellent, open source Guava library.
+*** Item 60 - Avoid ~float~ and ~double~ if exact answers are required
+- The ~float~ and ~double~ types are particularly ill-suited for monetary
+  calculations.
+- Use ~BigDecimal~, ~int~, or ~long~ for monetary calculations.
+  - There are two disadvantages to using ~BigDecimal~: it's a lot less
+    convenient than using a primitive arithmetic type, and it's a lot slower.
+- In gist:
+  - Don't use ~float~ or ~double~ for any calculations that require an exact
+    answer.
+  - Use ~BigDecimal~ if you want the system to keep track of the decimal point
+    *and* you don't mind the inconvenience and cost of not using a primitive
+    type.
+    - Using ~BigDecimal~ has the added advantage that it gives you full control
+      over rounding, letting you select from eight rounding modes whenever an
+      operation that entails rounding is performed. This comes in handy if
+      you're performing business calculations with legally mandated rounding
+      behavior.
+  - If performance is of the essence, you don't mind keeping track of the
+    decimal point yourself, and the quantities aren't too big, use ~int~ or
+    ~long~.
+    - If the quantities don't exceed nine decimal digits, you can use ~int~; if
+      they don't exceed eighteen digits, you can use ~long~. If the quantities
+      might exceed eighteen digits, use ~BigDecimal~.
+*** Item 61 - Prefer primitive types to boxed primitives
+- There are three major differences between primitives and boxed primitives:
+  - First, primitives have only their values, whereas boxed primitives have
+    identities distinct from their values. In other words, two boxed primitive
+    instances can have the same value and different identities.
+  - Second, primitive types have only fully functional values, whereas each
+    boxed primitive type has one nonfunctional value, which is ~null~, in
+    addition to all the functional values of the corresponding primitive type.
+  - Last, primitives are more time- and space-efficient than boxed primitives.
+- Applying the ~==~ operator to boxed primitives is almost always wrong.
+- In practice, use ~Comparator.naturalOrder()~ when you need a comparator to
+  describe a type's natural order.
+- Consider extracting the primitive values from the boxed versions prior to
+  computations (comparison, addition, subtraction etc.) and boxing them after.
+- Beware of possible ~NullPointerException~ when unboxing.
+- Places to use boxed primitives:
+  - The first is as elements, keys, and values in collections. You can't put
+    primitives in collections, so you're forced to use boxed primitives.
+  - You must use boxed primitives as type parameters in parameterized types and
+    methods, because the language does not permit you to use primitives.
+  - Finally, you must use boxed primitives when making reflective method
+    invocations.
+*** Item 62 - Avoid strings where other types are more appropriate
+- Strings are poor substitutes for other value types.
+  - Convert string data from external sources into the appropriate types (e.g.,
+    ~int~, ~float~ or ~BigInteger~ for numeric types, and ~enum~ or ~boolean~
+    for values representing the answer to a yes-or-no question. Write a more
+    appropriate type if it does not exist.
+  - The exception is when the value is naturally textual in nature.
+- Strings are poor substitutes for enum types.
+  - I.e., don't manage control flow using on ~String~ types (e.g., ~switch~ -ing
+    on ~String~ values).
+- Strings are poor substitutes for aggregate types.
+  - I.e., don't use strings to store compound values, and parse the values when
+    operating on them.
+*** Item 63 - Beware the performance of string concatenation
+- Using the string concatenation operator repeatedly to concatenate n strings
+  requires time quadratic in n.
+- To achieve acceptable performance, use a ~StringBuilder~ in place of a
+  ~String~ to store the statement under construction.
+*** Item 64 - Refer to objects by their interfaces
+- If appropriate interface types exist, then parameters, return values,
+  variables, and fields should all be declared using interface types.
+  - The only time you really need to refer to an object's class is when you're
+    creating it with a constructor.
+  - Using interfaces makes the program more flexible by allowing the actual
+    implementation to change, as long as the implementation class implements the
+    required interface.
+- It is entirely appropriate to refer to an object by a class rather than an
+  interface if no appropriate interface exists.
+  - E.g., ~String~, ~BigInteger~, and other value classes.
+- If there is no appropriate interface, just use the least specific class in the
+  class hierarchy that provides the required functionality.
+*** Item 65 - Prefer interface to reflection
+- Reflection allows one class to use another, even if the latter class did not
+  exist when the former was compiled.
+  - However, this has three major drawbacks:
+    - You lose all the benefits of compile-time type checking.
+    - The code required to perform reflective access is clumsy and verbose.
+    - Performance suffers.
+  - A way to minimize the drawbacks is to create instances reflectively and
+    access them normally via their interface or superclass.
+- A legitimate, if rare, use of reflection is to manage a class's dependencies
+  on other classes, methods, or fields that may be absent at runtime. This can
+  be useful if you are writing a package that must run against multiple versions
+  of some other package. The technique is to compile your package against the
+  minimal environment required to support it, typically the oldest version,
+  and to access any newer classes or methods reflectively.
+*** Item 66 - Use native methods judiciously
+- The Java Native Interface (JNI) allows Java programs to call native methods,
+  which are methods written in native programming languages such as C or C++.
+- It is rarely advisable to use native methods for improved performance.
+  - For most tasks, it is now possible to obtain comparable performance in Java.
+  - If you aren't careful, native methods can decrease performance because the
+    garbage collector can't automate, or even track, native memory usage, and
+    there is a cost associated with going into and out of native code.
+*** Item 67 - Optimize judiciously
+- Strive to write good programs rather than fast ones.
+- Strive to avoid design decisions that limit performance.
+  - Implementation problems can be fixed by later optimization, but *pervasive
+    architectural flaws that limit performance can be impossible to fix* without
+    rewriting the system.
+  - The components of a design that are most difficult to change after the fact
+    are those specifying interactions between components and with the outside
+    world. Chief among these design components are *APIs*, *wire-level
+    protocols*, and *persistent data formats*.
+- Consider the performance consequences of your API design decisions.
+  - E.g., Making a public type mutable may require a lot of needless defensive
+    copying.
+  - E.g., Using inheritance in a public class where composition would have been
+    appropriate ties the class forever to its superclass, which can place
+    artificial limits on the performance of the subclass.
+  - E.g., Using an implementation type rather than an interface in an API ties
+    you to a specific implementation, even though faster implementations may be
+    written in the future.
+  - Concrete example:
+    #+BEGIN_QUOTE
+    The effects of API design on performance are very real. Consider the
+    ~getSize()~ method in the ~java.awt.Component~ class. The decision that this
+    performance- critical method was to return a ~Dimension~ instance, coupled
+    with the decision that ~Dimension~ instances are mutable, forces any
+    implementation of this method to allocate a new ~Dimension~ instance on
+    every invocation. Even though allocating small objects is inexpensive on a
+    modern VM, allocating millions of objects needlessly can do real harm to
+    performance.
+    #+END_QUOTE
+- It is a very bad idea to warp an API to achieve good performance.
+  - The performance issue that caused you to warp the API may go away in a
+    future release of the platform or other underlying software, but the warped
+    API and the support headaches that come with it will be with you forever.
+- Use profiling tools to measure performance before optimizing.
+  - Also consider using microbenchmark tools like [[http://openjdk.java.net/projects/code-tools/jmh/][JMH]].
+  - The need to measure the effects of attempted optimization is even greater in
+    Java than in more traditional languages such as C and C++, because Java has
+    a weaker performance model: The relative cost of the various primitive
+    operations is less well defined. The "abstraction gap" between what the
+    programmer writes and what the CPU executes is greater, which makes it even
+    more difficult to reliably predict the performance consequences of
+    optimizations.
+*** Item 68 - Adhere to generally accepted naming conventions
+- The typographical conventions in Java are as below:
+  | Identifier Type    | Examples                                              |
+  |--------------------+-------------------------------------------------------|
+  | Package or module  | ~org.junit.jupiter.api~, ~com.ggole.common.collect~   |
+  | Class or Interface | ~Stream~, ~FutureTask~, ~LinkedHashMap~, ~HttpClient~ |
+  | Method or Field    | ~remove~, ~groupingBy~, ~getCrc~                      |
+  | Constant Field     | ~MIN_VALUE~, ~NEGATIVE_INFINITY~                      |
+  | Local Variable     | ~i~, ~denom~, ~houseNum~                              |
+  | Type Parameter     | ~T~, ~E~, ~K~, ~V~, ~X~, ~R~, ~U~, ~V~, ~T1~, ~T2~    |
+- Type parameter names usually consist of a single letter. Most commonly it is
+  one of these five:
+  - ~T~ for an arbitrary typee
+  - ~E~ for the element type of a collection.
+  - ~K~ and ~V~ for the key and value types of a map.
+  - ~X~ for an exception.
+- The return type of a function is usually ~R~.
+- A sequence of arbitrary types can be ~T~, ~U~, ~V~ or ~T1~, ~T2~, ~T3~.
+** Chapter 10 - Exceptions
+*** Item 69 - Use exceptions only for exceptional conditions
+- Because exceptions are designed for exceptional circumstances, there is little
+  incentive for JVM implementors to make them as fast as explicit tests.
+- Placing code inside a try-catch block inhibits certain optimizations that JVM
+  implementations might otherwise perform.
+- The standard idiom for looping through an array doesn't necessarily result in
+  redundant checks. Many JVM implementations optimize them away.
+  - YJ: This point relates to the fact that in a usual ~for(int i = 0; i < n;
+    i++)~ loop, there is a conditional check in every loop iteration, and there
+    is a temptation to implement the loop without the bounds check, and catch
+    the exception when the loop counter goes out of bounds.
+- Exceptions are, as their name implies, to be used only for exceptional
+  conditions; they should never be used for ordinary control flow.
+- A well-designed API must not force its clients to use exceptions for ordinary
+  control flow.
+  - A class with a "state-dependent" method that can be invoked only under
+    certain unpredictable conditions should generally have a separate
+    "state-testing" method indicating whether it is appropriate to invoke the
+    state-dependent method.
+  - E.g., the ~Iterator~ interface has the method ~hasNext()~ for checking
+    whether the call to ~next()~ will succeed.
+- An alternative to providing a separate state-testing method is to have the
+  state-dependent method return an empty optional or a distinguished value such
+  as ~null~ if it cannot perform the desired computation.
+  - When deciding among which of the two ("state-testing method" vs optional or
+    ~null~)to use, consider the following:
+    - Concurrency: If the object will be accessed concurrently, its internal
+      state might have changed in the time between the call to the
+      "state-testing method" and the actual state-dependent method. In such a
+      case, either synchronization is required, or return an optional or ~null~.
+    - Performance: If the "state-testing method" would duplicate much of the
+      operations of the state-dependent method, it might be better to return an
+      optional or ~null~.
+*** Item 70 - Use checked exceptions for recoverable conditions and runtime exceptions for programming errors
+- Use checked exceptions for conditions from which the caller can reasonably be
+  expected to recover.
+  - By throwing a checked exception, you force the caller to handle the
+    exception in a catch clause or to propagate it outward.
+  - Each checked exception that a method is declared to throw is therefore a
+    potent indication to the API user that the associated condition is a
+    possible outcome of invoking the method.
+- Use runtime exceptions to indicate programming errors.
+  - The great majority of runtime exceptions indicate precondition violations.
+- If it is not clear whether the error is recoverable or is due to programming
+  error, prefer runtime exceptions.
+  - E.g., in the case of resource exhaustion, it might be due to a lack of
+    resource on the system, which may be recoverable; alternatively, it might be
+    a programming error that results in a huge allocation of resources. In such
+    circumstances, prefer runtime exception (see item 71).
+- There is a strong convention that ~Error~ are reserved for use by the JVM.
+  - Don't define ~Error~ subclass, and don't throw ~Error~ or its subclass (with
+    the exception of ~AssertionError~).
+*** Item 71 - Avoid unnecessary use of checked exceptions
+- Methods throwing checked exceptions can't be used directly in streams.
+- When deciding whether to use checked or unchecked exceptions, consider this:
+  if the best way that a user of the API can handle the error is either to
+  rethrow it or log it, then an unchecked exception is probably the way to go.
+- The easiest way to eliminate a checked exception is to return an optional of
+  the desired result type.
+  - The disadvantage of this technique is that the method can't return any
+    additional information detailing its inability to perform the desired
+    computation.
+- Another way to turn a checked exception into an unchecked exception is to
+  split the method into two: one to check whether the exception will be thrown,
+  another to do the actual computation.
+  - Instead of:
+    #+BEGIN_SRC java
+      // Invocation with checked exception
+      try {
+          obj.action(args);
+      } catch (TheCheckedException e) {
+          ... // Handle exceptional condition 
+      }
+    #+END_SRC
+    it will be:
+    #+BEGIN_SRC java
+      // Invocation with state-testing method and unchecked exception
+      if (obj.actionPermitted(args)) {
+          obj.action(args);
+      } else {
+          ... // Handle exceptional condition
+      }
+    #+END_SRC
+  - Note however that the usual concurrency issues in relation to
+    time-of-check-to-time-of-use applies.
+*** Item 72 - Favor use of standard exceptions
+- The Java libraries provide a set of exceptions that covers most of the
+  exception-throwing needs of most APIs.
+- Common exceptions include:
+  - ~IllegalArgumentException~
+  - ~IllegalStateException~
+  - ~NullPointerException~ (use this in preference to ~IllegalArgumentException~
+    where both are applicable)
+  - ~IndexOutOfBoundsException~ (use this in preference to
+    ~IllegalArgumentException~ where both are applicable)
+  - ~ConcurrentModificationException~
+  - ~UnsupportedOperationException~
+- A summary of the common exceptions:
+  | Exception                         | Occasion for Use                                                              |
+  |-----------------------------------+-------------------------------------------------------------------------------|
+  | ~IllegalArgumentException~        | Non-null parameter value is inappropriate                                     |
+  | ~IllegalStateException~           | Object state is inappropriate for method invocation                           |
+  | ~NullPointerException~            | Parameter value is null where prohibited                                      |
+  | ~IndexOutOfBoundsException~       | Index parameter value is out of range                                         |
+  | ~ConcurrentModificationException~ | Concurrent modification of an object has been detected where it is prohibited |
+  | ~UnsupportedOperationException~   | Object does not support method                                                |
+- Throw ~IllegalStateException~ if no argument values would have worked,
+  otherwise throw ~IllegalArgumentException~.
+*** Item 73 - Throw exception appropriate to the abstraction
+- Higher layers should catch lower-level exceptions and, in their place, throw
+  exceptions that can be explained in terms of the higher-level
+  abstraction. This idiom is known as exception translation.
+- Where relevant, the lower-level exception may be passed as argument to the
+  higher-level exception's constructor, and be made available via ~getCause()~
+  method on the higher-level exception.
+- While exception translation is superior to mindless propagation of exceptions
+  from lower layers, it should not be overused.
+*** Item 74 - Document all exceptions thrown by each method
+- Always declare checked exceptions individually, and document precisely the
+  conditions under which each one is thrown using the Javadoc ~@throws~ tag.
+- It is essential that every public method's documentation describe its
+  preconditions, and documenting its unchecked exceptions is the best way to
+  satisfy this requirement.
+- Use the Javadoc ~@throws~ tag to document each exception that a method can
+  throw, but do not use the ~throws~ keyword on unchecked exceptions.
+  - This way, the documentation generated by the Javadoc ~@throws~ tag without a
+    corresponding ~throws~ clause in the method declaration provides a strong
+    visual cue to the programmer that an exception is unchecked.
+- If an exception is thrown by many methods in a class for the same reason, you
+  can document the exception in the class's documentation comment.
+*** Item 75 - Include failure-capture information in detail messages
+- It is critically important that the exception's ~toString()~ method return as
+  much information as possible concerning the cause of the failure.
+  - This is because when a program fails due to an uncaught exception, the
+    system automatically prints out the exception's stack trace.
+  - Frequently this is the only information that programmers or site reliability
+    engineers will have when investigating a software failure.
+  - If the failure is not easily reproducible, it may be difficult or impossible
+    to get any more information.
+- To capture a failure, the detail message of an exception should contain the
+  values of all parameters and fields that contributed to the exception.
+  - One caveat concerns security-sensitive information -- do not include
+    passwords, encryption keys, and the like in detail messages.
+- Avoid lengthy prose description for exception message.
+  - The detail message of an exception should not be confused with a user-level
+    error message, which must be intelligible to end users.
+  - Unlike a user-level error message, the detail message is primarily for the
+    benefit of programmers or site reliability engineers, when analyzing a
+    failure.
+- One way to ensure that exceptions contain adequate failure-capture information
+  in their detail messages is to require this information in their constructors
+  instead of a string detail message.
+  - E.g., the ~IndexOutOfBoundsException~ has a constructor that takes the index
+    as the parameter.
+*** Item 76 - Strive for failure atomicity
+- Generally speaking, a failed method invocation should leave the object in the
+  state that it was in prior to the invocation.
+- There are several ways to achieve this effect.
+  - The simplest is to design immutable objects.
+  - For methods that operate on mutable objects, the most common way to achieve
+    failure atomicity is to check parameters for validity before performing the
+    operation.
+  - A closely related approach to achieving failure atomicity is to order the
+    computation so that any part that may fail takes place before any part
+    that modifies the object.
+  - A third approach to achieving failure atomicity is to perform the operation
+    on a temporary copy of the object and to replace the contents of the object
+    with the temporary copy once the operation is complete.
+  - A last and far less common approach to achieving failure atomicity is to
+    write recovery code that intercepts a failure that occurs in the midst of an
+    operation, and causes the object to roll back its state to the point before
+    the operation began.
+*** Item 77 - Don't ignore exceptions
+- An empty catch block defeats the purpose of exceptions.
+- There are situations where it is appropriate to ignore an exception.
+  - For example, it might be appropriate when closing a ~FileInputStream~. You
+    haven't changed the state of the file, so there's no need to perform any
+    recovery action, and you've already read the information that you need from
+    the file, so there's no reason to abort the operation in progress.
+- If you choose to ignore an exception, the catch block should contain a comment
+  explaining why it is appropriate to do so, and the variable should be named
+  ignored.
+** Chapter 11 - Concurrency
+*** Item 78 - Synchronize access to shared mutable data
+- One purpose of synchronization is as a means of mutual exclusion, to prevent
+  an object from being seen in an inconsistent state by one thread while it's
+  being modified by another.
+- An often-ignored purpose of synchonization is for reliable communication
+  between threads as well as for mutual exclusion.
+  - For example, the language specification guarantees that reading or writing a
+    variable is atomic unless the variable is of type ~long~ or ~double~. In
+    other words, reading a variable other than a ~long~ or ~double~ is
+    guaranteed to return a value that was stored into that variable by some
+    thread, even if multiple threads modify the variable concurrently and
+    without synchronization.
+  - However, the language specification does not guarantee that a value written
+    by one thread will be visible to another.
+    - E.g., Without synchronization, the compiler may assume a linear code
+      execution, and inline / pre-compute certain variables with the effect that
+      modification of those variables on another thread would not be visible.
+- Sidenote: Do not use ~Thread.stop()~, it is deprecated.
+  - A recommended way to stop one thread from another is to have the first
+    thread poll a boolean field that is initially false but can be set to true
+    by the second thread to indicate that the first thread is to stop itself.
+- Synchronization is not guaranteed to work unless both read and write
+  operations are synchronized.
+- Use the ~volatile~ keyword on a field to guarantee that any thread that reads
+  the field will see the most recently written value.
+  - Note however that the ~volatile~ keyword does not guarantee mutual
+    exclusion.
+- Consider using classes like ~AtomicLong~, which is part of
+  ~java.util.concurrent.atomic~. This package provides primitives for lock-free,
+  thread-safe programming on single variables.
+  - E.g.:
+    #+BEGIN_SRC java
+        private static final AtomicLong nextSerialNum = new AtomicLong();
+        public static long generateSerialNumber() {
+            return nextSerialNum.getAndIncrement();
+        }
+    #+END_SRC
+    In the code fragment above, without the ~.getAndIncrement()~ method, one
+    might have to use ~nextSerialNum++~, which is comprises a read and an
+    assignment operation, thus requiring the ~generateSerialNumber()~ method to
+    be synchronized.
+- One way to avoid the headaches in relation to concurrency is to confine
+  mutable data to a single thread.
+  - I.e., Make (and document) it such that it is only acceptable for one thread
+    to modify a data object for a while and then to share it with other threads,
+    synchronizing only the act of sharing the object reference.
+- When multiple threads share mutable data, each thread that reads or writes the
+  data must perform synchronization.
+*** Item 79 - Avoid excessive synchronization
+- To avoid liveness and safety failures, never cede control to the client within
+  a synchronized method or block.
+- Locks in the Java programming language are reentrant -- meaning that a thread
+  that already holds the lock may acquire the lock again without blocking /
+  deadlock.
+- Use the ~CopyOnWriteArrayList~ when traversal operations vastly outnumber
+  mutations, and is useful when you cannot or don't want to synchronize
+  traversals, yet need to preclude interference among concurrent threads.
+- As a rule, you should do as little work as possible inside synchronized
+  regions.
+- When writing a mutable class, you have two options:
+  - You can omit all synchronization and allow the client to synchronize
+    externally if concurrent use is desired,
+  - Or you can synchronize internally, making the class thread-safe.
+  - You should choose the latter option only if you can achieve significantly
+    higher concurrency with internal synchronization than you could by having
+    the client lock the entire object externally.
+*** Item 80 - Prefer executors, tasks, and streams to threads
+- The executor framework allow easy handling off of tasks to an executor for
+  execution. The specific executor implemantion can be chosen by calling the
+  appropriate static constructor (e.g., ~Executors.newSingleThreadExecutor()~,
+  ~Executors.newCachedThreadPool()~, ~Executors.newFixedThreadPool()~, etc.)
+- Choosing the executor service for a particular application can be tricky.
+  - For a small program, or a lightly loaded server,
+    ~Executors.newCachedThreadPool()~ is generally a good choice because it
+    demands no configuration and generally "does the right thing."
+  - But a cached thread pool is not a good choice for a heavily loaded
+    production server! In a cached thread pool, submitted tasks are not queued
+    but immediately handed off to a thread for execution. If no threads are
+    available, a new one is created. If a server is so heavily loaded that all
+    of its CPUs are fully utilized and more tasks arrive, more threads will be
+    created, which will only make matters worse.
+  - Therefore, in a heavily loaded production server, you are much better off
+    using ~Executors.newFixedThreadPool()~, which gives you a pool with a fixed
+    number of threads, or using the ~ThreadPoolExecutor~ class directly, for
+    maximum control.
+- Not only should you refrain from writing your own work queues, but you should
+  generally refrain from working directly with threads.
+- Consider whether to use ~ForkJoinPool~ for concurrent tasks. It may be more
+  performant that using an executor backed by a thread pool.
+*** Item 81 - Prefer concurrency utilities to ~wait~ and ~notify~
+- Since Java 5, the platform has provided higher-level concurrency utilities
+  that do the sorts of things you formerly had to hand-code atop ~wait~ and
+  ~notify~. Given the difficulty of using ~wait~ and ~notify~ correctly, you
+  should use the higher-level concurrency utilities instead.
+- It is impossible to exclude concurrent activity from a concurrent collection
+  (e.g., ~ConcurrentHashMap~); locking it will only slow the program.
+  - Because you can't exclude concurrent activity on concurrent collections, you
+    can't atomically compose method invocations on them either.
+  - As such, make use of the provided methods on such concurrent collections:
+    like ~putIfAbsent(key, value)~ on ~ConcurrentHashMap()~ instead of acquiring
+    a lock to check of existence of key before putting a value.
+- Some collection interfaces in ~java.util.concurrent~ has blocking operations,
+  which wait (or block) until they can be successfully performed.
+  - For example, ~BlockingQueue~ extends Queue and adds several methods,
+    including ~take()~, which removes and returns the head element from the
+    queue, waiting if the queue is empty. This allows blocking queues to be used
+    for work queues (also known as producer-consumer queues), to which one or
+    more producer threads enqueue work items and from which one or more consumer
+    threads dequeue and process items as they become available.
+- There are various synchronizers that enable one thread to wait for another:
+  - ~CountDownLatch~
+  - ~Semaphore~
+  - ~CyclicBarrier~
+  - ~Exchanger~
+  - ~Phaser~
+- Of the five listed above, ~CountDownLatch~ and ~Semaphore~ are more commonly
+  used.
+- If a worker thread catches an ~InterruptedException~, it should reasserts the
+  interrupt using the idiom ~Thread.currentThread().interrupt()~ and returns
+  from its run method. This allows the executor to deal with the interrupt as it
+  sees fit.
+- When using thread-based concurrency, take note the number of available threads
+  should be at least equal to the concurrency level.
+  - I.e., if it is expected to have three concurrent tasks each running on a
+    thread potentially waiting for each other, there should be at least three
+    threads to support the tasks.
+- Always use the wait loop idiom to invoke the wait method; never invoke it
+  outside of a loop:
+  #+BEGIN_SRC java
+    // The standard idiom for using the wait method
+    synchronized (obj) {
+        while (<condition does not hold>)
+            obj.wait(); // (Releases lock, and reacquires on wakeup)
+        ... // Perform action appropriate to condition
+    }
+  #+END_SRC
+  - Testing the condition before waiting and skipping the wait if the condition
+    already holds are necessary to ensure liveness. If the condition already
+    holds and the notify (or notifyAll) method has already been invoked before a
+    thread waits, there is no guarantee that the thread will ever wake from the
+    wait.
+  - Testing the condition after waiting and waiting again if the condition does
+    not hold are necessary to ensure safety. If the thread proceeds with the
+    action when the condition does not hold, it can destroy the invariant
+    guarded by the lock.
+- Choosing between calling ~notify()~ or ~notifyAll()~:
+  - It is a reasonable and conservative advice to always default to using
+    ~notifyAll()~ as it will always yield correct results.
+  - As an optimization, you may choose to invoke ~notify()~ instead of
+    ~notifyAll()~ if all threads that could be in the wait-set are waiting for
+    the same condition and only one thread at a time can benefit from the
+    condition becoming true.
+*** Item 82 - Document Thread Safety
+- Do not use the synchonized modifier as a way to signal that a method is thread
+  save to user of the API.
+  - The presence of the synchronized modifier in a method declaration is an
+    implementation detail, not a part of its API.
+- To enable safe concurrent use, a class must clearly document what level of
+  thread safety it supports.
+- The common levels of thread-safety are as follows:
+  - *Immutable* — Instances of this class appear constant. No external
+    synchronization is necessary. Examples include ~String~, ~Long~, and
+    ~BigInteger~.
+  - *Unconditionally thread-safe* — Instances of this class are mutable, but the
+    class has sufficient internal synchronization that its instances can be used
+    concurrently without the need for any external synchronization. Examples
+    include ~AtomicLong~ and ~ConcurrentHashMap~.
+  - *Conditionally thread-safe* — Like unconditionally thread-safe, except that
+    some methods require external synchronization for safe concurrent
+    use. Examples include the collections returned by the
+    *Collections.synchronized* wrappers, whose iterators require external
+    synchronization.
+  - *Not thread-safe* — Instances of this class are mutable. To use them
+    concurrently, clients must surround each method invocation (or invocation
+    sequence) with external synchronization of the clients' choosing. Examples
+    include the general-purpose collection implementations, such as ~ArrayList~
+    and ~HashMap~.
+  - *Thread-hostile* — This class is unsafe for concurrent use even if every
+    method invocation is surrounded by external synchronization. Thread
+    hostility usually results from modifying static data without
+    synchronization. No one writes a thread-hostile class on purpose; such
+    classes typically result from the failure to consider concurrency. When a
+    class or method is found to be thread-hostile, it is typically fixed or
+    deprecated.
+- Lock fields should always be declared ~final~.
+- Consider whether lock should be publicly available or kept private.
+  - If made publicly available, it is possible for client code to execute a
+    sequence of method invocations atomically, but may also result in contention
+    / deadlock due to carelessness / malicious use.
+  - The private lock object idiom is particularly well-suited to classes
+    designed for inheritance, to avoid subclasses from using the lock from the
+    base class and interfering with the base class's operation.
+*** Item 83 - Use lazy initialization judiciously
+- Don't do it unless you need to.
+  - Lazy initialization is a double-edged sword. It decreases the cost of
+    initializing a class or creating an instance, at the expense of increasing
+    the cost of accessing the lazily initialized field.
+  - If a field is accessed only on a fraction of the instances of a class and it
+    is costly to initialize the field, then lazy initialization may be
+    worthwhile.
+- In the presence of multiple threads, lazy initialization is tricky. If two or
+  more threads share a lazily initialized field, it is critical that some form
+  of synchronization be employed, or severe bugs can result.
+  - E.g.:
+    #+BEGIN_SRC java
+      // Lazy initialization of instance field - synchronized accessor
+      private FieldType field;
+      private synchronized FieldType getField() {
+          if (field == null) field = computeFieldValue();
+          return field;
+      }
+    #+END_SRC
+- If you need to use lazy initialization for performance on a static field, use
+  the lazy initialization holder class idiom. This idiom exploits the guarantee
+  that a class will not be initialized until it is used.
+  - E.g.:
+    #+BEGIN_SRC java
+      // Lazy initialization holder class idiom for static fields
+      private static class FieldHolder {
+          static final FieldType field = computeFieldValue();
+      }
+
+      private static FieldType getField() { return FieldHolder.field; }
+    #+END_SRC
+  - The beauty of this idiom is that the getField method is not synchronized and
+    performs only a field access, so lazy initialization adds practically
+    nothing to the cost of access. A typical VM will synchronize field access
+    only to initialize the class. Once the class is initialized, the VM patches
+    the code so that subsequent access to the field does not involve any testing
+    or synchronization.
+- If you need to use lazy initialization for performance on an instance field,
+  use the double-check idiom. This idiom avoids the cost of locking when
+  accessing the field after initialization.
+  - E.g.:
+    #+BEGIN_SRC java
+      // Double-check idiom for lazy initialization of instance fields
+      private volatile FieldType field;
+      private FieldType getField() {
+          FieldType result = field;
+          if (result == null) { // First check (no locking)
+              synchronized(this) {
+                  if (field == null) // Second check (with locking)
+                      field = result = computeFieldValue();
+                  }
+              }
+          return result;
+      }
+    #+END_SRC
+  - While you can apply the double-check idiom to static fields as well, there
+    is no reason to do so: the lazy initialization holder class idiom is a
+    better choice.
+  - If the field can tolerate repeated initialization, the synchronization and
+    the inner check may be dispensed with.
+  - If you don’t care whether every thread recalculates the value of a field,
+    and the type of the field is a primitive other than ~long~ or ~double~, then
+    you may choose to remove the volatile modifier from the field declaration in
+    the single-check idiom. This variant is known as the /racy single-check/
+    idiom. It speeds up field access on some architectures, at the expense of
+    additional initializations (up to one per thread that accesses the
+    field). This is definitely an exotic technique, not for everyday use.
+*** Item 84 - Don't depend on the thread scheduler
+- Any program that relies on the thread scheduler for correctness or performance
+  is likely to be nonportable.
+- The best way to write a robust, responsive, portable program is to ensure that
+  the average number of runnable threads is not significantly greater than the
+  number of processors. This leaves the thread scheduler with little choice: it
+  simply runs the runnable threads till they're no longer runnable.
+- Threads should not run if they aren't doing useful work.
+- Threads should not busy-wait.
+- Avoid using ~Thread.yield~ to fix the issue that certain threads are not
+  receiving sufficient CPU threads compared to others.
+  - The same ~yield~ invocations that improve performance on one JVM
+    implementation may make it worst on a second and have no effect on a third.
+  - ~Thread.yield~ has no testable semantics.
+  - A better course of action is to restructure the application to reduce the
+    number of concurrently runnable threads.
+- Thread priorities are among the least portable features of Java.
+  - Thread priorities may be used sparingly to improve the quality of service of
+    an already working program, but they should never be used to "fix" a program
+    that barely works.
+** Chapter 12 - Serialization
+*** Item 85 - Prefer alternatives to Java serialization
+- Java serialization presents copious amount of security concerns.
+- There is no reason to use Java serialization in any new system you write.
+  - There are other mechanisms for translating between objects and byte
+    sequences that avoid many of the dangers of Java serialization, while
+    offering numerous advantages, such as cross-platform support, high
+    performance, a large ecosystem of tools, and a broad community of expertise.
+  - Options include protocol buffers and JSON.
+- If Java serialization is unavoidable, never deserialize untrusted data.
+  - Never accept RMI (remote method invocation) traffic from untrusted sources.
+- Use the object deserialization filtering to whitelist / blacklist the classes
+  that may be deserialized from a data stream.
+  - A tool called Serial Whitelist Application Trainer (SWAT) can be used to
+    automatically prepare a whitelist for your application
+*** Item 86 - Implement ~Serializable~ with great caution
+- Allowing a class's instances to be serialized can be as simple as adding the
+  words implements Serializable to its declaration.
+  - This is deceptively easy, and the programmer may fail to consider deeper
+    implications.
+- When a class implements ~Serializable~, its byte-stream encoding (or
+  serialized form) becomes part of its exported API.
+  - As such, a major cost of implementing ~Serializable~ is that it decreases
+    the flexibility to change a class's implementation once it has been
+    released.
+  - Furhtermore, if you accept the default serialized form, the class's private
+    and package-private instance fields become part of its exported API.
+- If you opt to make a class serializable, you should carefully design a
+  high-quality serialized form that you're willing to live with for the long
+  haul.
+- Normally, objects are created with constructors; serialization is an
+  extralinguistic mechanism for creating objects.
+- Implementing ~Serializable~ increases the testing burden associated with
+  releasing a new version of a class.
+  - When a serializable class is revised, it is important to check that it is
+    possible to serialize an instance in the new release and deserialize it in
+    old releases, and vice versa.
+- Classes designed for inheritance should rarely implement ~Serializable~, and
+  interfaces should rarely extend it.
+  - Otherwise, users who are creating subclasses and/or implementing the
+    interface would have to ensure they due properly with the implications of
+    ~Serializable~.
+- Inner classes should not implement ~Serializable~.
+  - They use compiler-generated synthetic fields to store references to
+    enclosing instances and to store values of local variables from enclosing
+    scopes. How these fields correspond to the class definition is unspecified,
+    as are the names of anonymous and local classes. Therefore, the default
+    serialized form of an inner class is ill-defined.
+  - A static member class can, however, implement ~Serializable~.
+*** Item 87 - Consider using a custom serialized form
+- Do not accept the default serialized form without first considering whether it
+  is appropriate.
+  - Generally speaking, you should accept the default serialized form only if it
+    is largely identical to the encoding that you would choose if you were
+    designing a custom serialized form.
+- The ideal serialized form of an object contains only the logical data
+  represented by the object. It is independent of the physical representation.
+  - E.g.: If a custom class ~StringsList~ contains an ordered list of string,
+    implemented using a doubly-linked list, its serialized form should not
+    contain details required only due to the doubly-linked implementation (e.g.,
+    nodes and a reference to the first item). A reasonable serialized form may
+    be a comma separated list of double-quoted strings.
+- Even if you decide that the default serialized form is appropriate, you often
+  must provide a readObject method to ensure invariants and security.
+- Using the default serialized form when an object's physical representation
+  differs substantially from its logical data content has four disadvantages:
+  - It permanently ties the exported API to the current internal representation.
+  - It can consume excessive space.
+  - It can consume excessive time.
+  - It can cause stack overflows.
+- Use the transient modifier to indicate that an instance field is to be omitted
+  from a class's default serialized form.
+- An example of a custom serializable class:
+  #+BEGIN_SRC java
+    // StringList with a reasonable custom serialized form 
+    public final class StringList implements Serializable {
+        private transient int size = 0;
+        private transient Entry head = null;
+
+        // No longer Serializable!
+        private static class Entry {
+            String data;
+            Entry next;
+            Entry previous;
+        }
+
+        // Appends the specified string to the list
+        public final void add(String s) { ... }
+
+        /**
+         * Serialize this {@code StringList} instance.
+         *
+         * @serialData The size of the list (the number of strings
+         * it contains) is emitted ({@code int}), followed by all of
+         * its elements (each a {@code String}), in the proper
+         * sequence.
+         */
+        private void writeObject(ObjectOutputStream s) throws IOException {
+            s.defaultWriteObject();
+            s.writeInt(size);
+
+            // Write out all elements in the proper order.
+            for (Entry e = head; e != null; e = e.next)
+                s.writeObject(e.data);
+        }
+
+        private void readObject(ObjectInputStream s) throws IOException,
+                ClassNotFoundException {
+            s.defaultReadObject();
+            int numElements = s.readInt();
+
+            // Read in all elements and insert them in list
+            for (int i = 0; i < numElements; i++)
+                add((String) s.readObject());
+            }
+
+            ... // Remainder omitted 
+        }
+  #+END_SRC
+  - Note that the first thing ~writeObject()~ does is to invoke
+    ~defaultWriteObject()~, and the first thing ~readObject()~ does is to invoke
+    ~defaultReadObject()~, even though all of the class fields are transient.
+    - The presence of these calls makes it possible to add nontransient instance
+      fields in a later release while preserving backward and forward
+      compatibility.
+- You must impose any synchronization on object serialization that you would
+  impose on any other method that reads the entire state of the object.
+- Regardless of what serialized form you choose, declare an explicit serial
+  version UID in every serializable class you write.
+  - This eliminates the serial version UID as a potential source of
+    incompatibility.
+  - The UID may be generated by running the serialver utility on the class, but
+    it's also fine to pick a number out of thin air.
+- Do not change the serial version UID unless you want to break compatibility
+  with all existing serialized instances of a class.
+*** Item 88 - Write ~readObject~ methods defensively
+- Loosely speaking, ~readObject()~ is a constructor that takes a byte stream as its
+  sole parameter.
+- When an object is deserialized, it is critical to defensively copy any field
+  containing an object reference that a client must not possess.
+- A simple litmus test for deciding whether the default readObject method is
+  acceptable for a class: /Would you feel comfortable adding a public/
+  /constructor that took as parameters the values for each nontransient field/
+  /in the object and stored the values in the fields with no validation/
+  /whatsoever?/
+  - If not, you must provide a ~readObject()~ method, and it must perform all
+    the validity checking and defensive copying that would be required of a
+    constructor.
+  - Alternatively, you can use the serialization proxy pattern. This pattern is
+    highly recommended because it takes much of the effort out of safe
+    deserialization.
+- Here, in summary form, are the guidelines for writing a readObject method:
+  - For classes with object reference fields that must remain private,
+    defensively copy each object in such a field. Mutable components of
+    immutable classes fall into this category.
+  - Check any invariants and throw an ~InvalidObjectException~ if a check
+    fails. The checks should follow any defensive copying.
+  - If an entire object graph must be validated after it is deserialized, use
+    the ~ObjectInputValidation~ interface (not discussed in the book).
+  - Do not invoke any overridable methods in the class, directly or indirectly.
+*** Item 89 - For instance control, prefer enum types to ~readResolve~
+- A singleton class that works by restricting access to its constructor and
+  providing access via a static final instance will no longer be a singleton if
+  the words ~implements Serializable~ were added to its declaration.
+  - This is because ~readResolve()~ feature allows you to substitute another
+    instance for the one created by ~readObject()~.
+  - The ~readResolve()~ must be overriden to retain the singleton guarantee:
+    #+BEGIN_SRC java
+      private Object readResolve() {
+          // Return the original singleton INSTANCE and let the garbage
+          // collector take care of the one created by readObject().
+          return INSTANCE;
+      }
+    #+END_SRC
+  - The recommended approach to creating a singleton is still to use an ~Enum~.
+- If you depend on ~readResolve()~ for instance control (e.g., singleton
+  pattern), all instance fields with object reference types must be declared
+  ~transient~. Otherwise, it is possible for a determined attacker to secure a
+  reference to the deserialized object before its ~readResolve()~ method is run.
+- If you write your serializable instance-controlled class as an enum, Java
+  guar- antees you that there can be no instances besides the declared
+  constants, unless an attacker abuses a privileged method such as
+  ~AccessibleObject.setAccessible()~.
+- The accessibility of ~readResolve()~ is significant. If you place a
+  ~readResolve()~ method on a final class, it should be private.
+  - If a ~readResolve()~ method is protected or public and a subclass does not
+    override it, deserializing a subclass instance will produce a superclass
+    instance, which is likely to cause a ~ClassCastException~.
+*** Item 90 - Consider serialization proxies instead of serialized instances
+- The serialization proxy pattern is as follows:
+  - First, design a private static nested class that concisely represents the
+    logical state of an instance of the enclosing class. This nested class is
+    known as the serialization proxy of the enclosing class.
+  - It should have a single constructor, whose parameter type is the enclosing
+    class. This constructor merely copies the data from its argument: it need
+    not do any consistency checking or defensive copying.
+  - By design, the default serialized form of the serialization proxy is the
+    perfect serialized form of the enclosing class.
+  - Both the enclosing class and its serialization proxy must be declared to
+    implement ~Serializable~.
+  - The ~writeReplace()~ method of the enclosing class will then be the
+    following:
+    #+BEGIN_SRC java
+      // writeReplace method for the serialization proxy pattern
+      private Object writeReplace() {
+          return new SerializationProxy(this);
+      }
+    #+END_SRC
+  - The ~readObject()~ method of enclosing class will be as follows:
+    #+BEGIN_SRC java
+      // readObject method for the serialization proxy pattern
+      private void readObject(ObjectInputStream stream)
+              throws InvalidObjectException {
+          throw new InvalidObjectException("Proxy required");
+      }
+    #+END_SRC
+  - Finally, provide a ~readResolve()~ method on the SerializationProxy class
+    that returns a logically equivalent instance of the enclosing class. The
+    presence of this method causes the serialization system to translate the
+    serialization proxy back into an instance of the enclosing class upon
+    deserialization.
+- Another benefit of the serialization proxy pattern is that it allows the
+  deserialized instance to have a different class from the original serialized
+  instance.
+  - E.g., An ~EnumSet~ has no public constructor and only static
+    factories. Depending on the size of the underlying enum type, the static
+    factories may return either a ~RegularEnumSet~ or ~JumboEnumSet~, though
+    both are still referred to in client code as ~EnumSet~. Using the
+    serialization proxy pattern, it is possible that an ~EnumSet~ that was
+    actually a ~RegularEnumSet~ when serialized to be deserialized into a
+    ~JumboEnumSet~ if the number of items in the underlying enum type increased
+    passed five.
+- The serialization proxy pattern has two limitations.
+  - It is not compatible with classes that are extendable by their users.
+  - Also, it is not compatible with some classes whose object graphs contain
+    circularities.
+- The added power and safety of the serialization proxy pattern are not free.
+  - It may be more expensive to serialize and deserialize instances with
+    serialization proxies than it is with defensive copying.
+* To Internalize /Now/
+- Everything seemed relevant, since this is a best practice book, and I'm /very/
+  rusty with Java.
+* To Learn/Do Soon
+- How to (and why) implement the ~Serializable~ interface (and how does
+  ~readResolve()~ and ~writeReplace()~ works?
+- How the stream API works, and when would it be useful?
+- Read up on the ~Collectors~ API, and understand how it might be use as in
+  streams processing.
+- Learn about Mercurial to better understand / browse Java source code:
+  https://www.mercurial-scm.org/wiki/UnderstandingMercurial.
+- Download Java source code locally for easy browsing / reference.
+- Build a simple application for easy browsing of JEP (official index appears to
+  be available at http://openjdk.java.net/jeps/0).
+  - Purpose is to understand why each language feature is originally
+    implemented, and how to best use each.
+- Learn about other special collections classes like ~CopyOnWriteArrayList~: in
+  what situation would each be called for.
+- Find examples and use cases of how synchronizers are used in Java:
+  ~CountDownLatch~, ~Semaphore~, ~CyclicBarrier~, ~Exchanger~, ~Phaser~.
+* To Revisit When Necessary
+** Chapter 2 - Creating and Destroying Objects
+*** Item 2 - Consider a builder when faced with many constructor parameters
+- Refer to sample code here on how to implement a basic builder pattern.
+*** Item 8 - Avoid finalizers and cleaners
+- Refer to this item for a simple reference implementation of cleaner being used
+  as a safeguard to ensure resources are released even if the client code omits
+  to call the ~close()~ method.
+** Chapter 3 - Methods Common to All Objects
+*** Item 10 - Obey the general contract when overriding ~equals~
+- Refer to this item when implementing the ~equals()~ method for the contract to
+  be fulfilled.
+*** Item 11 - Always override hashCode when you override equals
+- Refer to this item when implementing the ~hashcode()~ method.
+*** Item 13 - Override ~clone~ judiciously
+- Refer to this item when encountering code that implements the ~Cloneable~
+  interface.
+*** Item 14 - Consider Implementing ~Comparable~
+- Refer to this item when implementing the ~compareTo()~ method as part of the
+  ~Comparable~ interface for the contract to be fulfilled.
+** Chapter 4 - Classes and Interfaces
+*** Item 15 - Minimize the accessibility of classes and members
+- Refer to this item for a refresher on the various accessibility levels in
+  Java, and the implications and recommendations.
+*** Item 17 - Minimize mutability
+- Refer to this item on how exactly to create immutable classes in Java (there
+  are some gotchas, like the need to make the class ~final~ to be truly
+  immutable).
+*** Item 18 - Favor composition over inheritance
+- Refer to this item for reference code on how to use /composition/ and
+  /forwarding/ instead of inheritance.
+*** Item 19 - Design and document for inheritance or else prohibit it
+- Refer to this item for things to consider when designing a class for
+  inheritance.
+*** Item 20 - Prefer interfaces to abstract classes
+- Refer to this item for an example of an abstract skeletal implementation
+  class: ~AbstractMapEntry~.
+*** Item 24 - Fovor static member classes over nonstatic
+- Refer to this item when defining nested classes to refresh my memory of the
+  various nuances of nested classes (e.g., if a nested class is not declared
+  ~static~, it will be nonstatic by default and will hold a reference to the
+  enclosing class, potentially preventing the garbage collection of said
+  enclosing class).
+** Chapter 5 - Generics
+*** Item 29 - Favor generic types
+- Refer to this item for an example on how to convert a non-generic
+  class into one that is generic.
+*** Item 31 - Use bounded wildcards to increase API flexibility
+- Refer to this item for example how to solve the issue that we can only ~null~
+  into a ~List<?>~. (The solution is to use a private helper method to /capture/
+  the wildcard type and sidestep the issue of assigning to ~List<?>~.)
+  - This problem generally occurs when trying to design a simple public API that
+    uses wildcard types instead of type parameters.
+*** Item 32 - Combine generics and varargs judiciously
+- Refer to this item when I'm trying to avoid creating a varargs of generic
+  type, or really have to do so.
+*** Item 33 - Consider typesafe heterogenous containers
+- Refer to this item on how to use type tokens, what are the limitations (e.g.,
+  inability to pass in non-refiable types as as the type token), and what are
+  some limitations that do have workarounds (e.g., use of ~asSubClass()~ to cast
+  an object of type ~<Class<?>>~ to ~<Class<? extends SomeRequiredClass>>~.
+** Chapter 6 - Enums and Annotations
+*** Item 34 - Use enums instead of ~int~ constants
+- Refer to this item for an illustration of the capabilities of Java's enum type
+  (including instance-specific fields and behaviors).
+*** Item 37 - Use ~EnumMap~ instead of ordinal indexing
+- Refer to this item for an intrincate example of creating an enum where each
+  enum value are relation to each other, and the relationships themselves are
+  potentially enums.
+  - The example provided relates to states of matter (solid, liquid, gas,
+    plasma) as the first level enum, and transitian between states (e.g.,
+    melting, freezing, sublimation) as the second level enum.
+*** Item 38 - Emulate extensible enums with interfaces
+- Refer to this item on how to implement "extensible" enums.
+*** Item 39 - Prefer annotations to naming patterns
+- Refer to this item on how to:
+  - Create different types of annotation (parameterless, single-item parameter,
+    multiple-item parameter using array, multiple-item parameter using
+    ~@Repeatable~);
+  - Process annotations.
+*** Item 41 - Use marker interfaces to define types
+- When implementing an involved type hierarchy or framework that provides a
+  default behavior, and yet not all client objects might be able to work with
+  the default despite implementing certain interfaces or extending certain
+  class, consider consulting this item again and the related topics to see how
+  to design the API.
+** Chapter 7 - Lambda and Streams
+*** Item 43 - Prefer method references to lambdas
+- Refer to this item when coding extensively with function objects to see how to
+  make to the code more concise.
+*** Item 44 - Favor the use of standard function interfaces
+- Refer to this item for a refresher on the functional interfaces available (to
+  use as types for the assignment target of lambda expressions and method
+  references).
+*** Item 46 - Prefer side-effect-free functions in streams
+- Refer to this item for a comprehensive look at the ~java.util.Collectors~ API.
+*** Item 47 - Prefer Collection to Stream as return type
+- Refer to this item when deciding which type to return a sequence as.
+** Chapter 8 - Methods
+*** Item 51 - Design method signatures carefully
+- Refer to this item for a compilation list of recommendations in relation to
+  API design.
+*** Item 56 - Write doc comments for all exposed API elements
+- Refer to this item for a reminder the various best practicse when I'm trying
+  to comprehensively document certain class.
+** Chapter 9 - General Programming
+*** Item 65 - Prefer interfaces to reflection
+- Refer to this item for an example of reflection code used to instantiate an
+  arbitrarity class based on command-line argument, and the exception handling
+  required.
+*** Item 68 - Adhere to generally accepted naming conventions
+- Refer to this item on the various naming conventions.
+** Chapter 10 - Exceptions
+*** Item 72 - Favor use of standard exceptions
+- Refer to this item for short list of the common exceptions and when to use
+  each of them.
+** Chapter 11 - Concurrency
+*** Item 78 - Synchronize access to shared mutable data
+- Refer to this item on the basic considerations in relation to concurrency and
+  mutable data.
+*** Item 81 - Prefer concurrency utilities to ~wait~ and ~notify~
+- When tempted to use ~wait~ and ~notify~ refer to this item to see whether such
+  use may be avoided in favor of higher level and more specialized methods., or
+  is truly justified.
+*** Item 83 - Use lazy initialization judiciously
+- Refer to this items for how to do lazy initialization.
+** Chapter 12 - Serialization
+*** Item 86 - Implement Serializable with great caution 
+- Refer to this item to be reminded of the specific pitfalls of trying to
+  implement ~Serializable~.
+*** Item 87, 88, 89
+- Refer to these items for examples and details on how to implement
+  ~Serializable~.
+*** Item 90
+- Refer to this item for an example of how to implement the serialization proxy
+  pattern, the limitations, and advantages / disadvantages.
+* Other Resources Referred To
+- I should check out the following references made in the book:
+  - Java Concurrency in Practice---for better understanding of writting
+    concurrent code in Java.
+  - The Art of Multiprocessor Programming by Herlihy, Maurice, and Nir Shavit.
+  - The release notes for each version of Java to see what is new, what changed,
+    and what has been replaced.
+  - [[http://gee.cs.oswego.edu/dl/html/StreamParallelGuidance.html][When to use parellel streams]]
