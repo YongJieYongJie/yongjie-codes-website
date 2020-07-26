@@ -98,7 +98,7 @@ Finally, I copied the =my_output_folder= to the research computer, and was
   (Note: The ~--threads `~ was required on my system to avoid certain errors,
   YMMV.
 
-* Conclusion
+* Lessons Learnt
 The Internet is a wonderful thing, but things /will/ work without the
   Internet, if you try hard enough.
 

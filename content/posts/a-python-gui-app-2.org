@@ -8,56 +8,78 @@ draft: false
 ---
 
 This is the second part of my adventure in building a pure Python GUI
-  application with Python's Tkinter library. Useful Tkinter resources and basic
-  UI layout are discussed in the first post. If you are looking build simple GUI
-  application in Python Tkinter and distribute it to your friends, but are
-  having problems navigating the greek documentation, look no further, read on
-  for how I did it.
+  application with Python's Tkinter library.
+
+If you are looking to build simple GUI application in Python Tkinter and
+  distribute it to your friends, but are having problems navigating the greek
+  documentation, look no further, read on for how I did it.
 
 # more
 
 * TL;DR
-I automated my interaction with a website, but needed to pass on my duty to
-  non-techincal colleague, so I built a GUI application in Tkinter.
+GUI applications are a good way to share tools that you have built with
+  non-technical friends / colleagues. And in Python, the standard library
+  contains [[https://docs.python.org/3/library/tkinter.html][Tkinter]] ("Tk interface") for building GUI applications.
 
-Use ~namedtuple~ to group the different components of an action (the widget to
-  listen on, the event to listen for, and the action to perform) into a single
-  entity for ease of handling.
+To keep a GUI application responsive, any task that doesn't return immediately
+  should be hived off to a background thread.
 
-For any action that'll not complete immediately, split the action into two: the
-  main method doing the computation, and a helper method that spawn a background
-  thread to run the main action. The helper method will be the method that is
-  bound to a widget as an event handler.
+-  This may be achieve by first defining a function for the actual task:
+  #+BEGIN_SRC python
+    def _my_slow_task():
+        # processing...
+  #+END_SRC
+  and letting the event handler start the function in a thread like so:
+  #+BEGIN_SRC python
+    def my_slow_task():
+        threading.Thread(target=_my_slow_task(), daemon=True).start()
+
+    # elsewhere
+    my_widget.bind('<Button-1>', my_slow_task, '+')
+  #+END_SRC
 
 * Background
 
 (/This is the same as in the first post, please skip ahead as necessary/.)
 
 As part of Covid-19 response, I was involved in collecting information via a
-  government website called FormSG. I was administering over 20 forms, with
-  multiple versions of each form, and need to do daily reporting.
+  government website called [[https://form.gov.sg/][FormSG]]. I was administering over 20 forms, with
+  multiple versions of each form, and needed to do daily reporting.
 
-Naturally, I automated the task (initially using TagUI, but very quickly
-  switching to the trusty Selenium).
+- In short, there was a lot of manual work involved and naturally, I automated
+  the task using Selenium.
 
-Eventually, there was additional manpower (or womanpower to be accurate) to
-  share my daily load of running the scripts. So I needed to build something
-  that is more user-friendly. (Note: I initially used batch files, and taught my
-  colleague how to the batch files.)
+However, while I am comfortable running the automation script from commandline,
+  I needed a way to share the tool with my colleague. And that's when I started
+  taking a closer look at Tkinter. (Note: I initially shared the scripts used
+  batch files, and taught my colleague how to the batch files.)
 
 * Previously...
-In the first post, I talked about the mini-dsl I created using ~namedtuple~
-  and a simple loop to allow us to declare the UI layout without bothering with
-  separate methods call to constructor, and then to the geometry placement
-  methods.
+In the first post, I talked about the mini-DSL I created using ~namedtuple~ and
+  a simple loop to allow us to declare the UI layout with a simplified code.
 
-In this post, we will continue and explore defining actions, binding the
-  actions to our widgets, and also adding some asynchronous goodness.
+In this post, we will continue on the good work that we have done, and the
+  following:
 
-* Actions
-To define an action, simply define a method. Because I have chosen to store the
-  appliciton state as instance member variables, the methods have to be defined
-  within the main ~App~ class too.
+  - explore defining actions,
+  - binding the actions to our widgets, and
+  - also adding some asynchronous goodness.
+
+* Creating Actions
+
+An /action/ (my personal terminology) is a piece of code that reacts to user
+interaction.
+
+- This may be known as callbacks or event handlers in other frameworks. But by
+  using the word /action/, we can think of it from the user's perspective: when
+  I (the user) clicks a button, I expects this /action/ to be performed.
+
+To define an action, simply define a method.
+
+- Note that the method must have access to the necessary state of the
+  application.
+- As such, the method is conventionally defined as an instance method on the
+  root application (the ~App~ class in our case).
 
 In the example code fragment below, ~import_forms()~ is the action, and it
   prompts user for the path to the credential file, and proceeds to load the
@@ -87,47 +109,81 @@ In the example code fragment below, ~import_forms()~ is the action, and it
                   self._add_form(form)
   #+END_SRC
 
-To bind the action, I again used a mini-dsl:
+* Binding Actions
+To bind the action, I again used a mini-DSL similar to the one I used for
+  declaring UI state (A+ for consistency for me!)
 
+- First, we use ~namedtuple~ from the standard library to define what an
+  ~Action~ comprise, namely: (a) ~widget_name~, being the name of the widget to
+  bind to, (b) ~event~, being the user interaciton event to listen for, and (c)
+  ~callback~, being the actual callback to invoke:
   #+BEGIN_SRC python
-  # Part 1
-  Action = namedtuple('Action', 'widget_name event callback')
-
-  def App:
-  
-      def __init__(self):
-  
-          ...
-          self.bind_actions()
-          ...
-  
-      def bind_actions(self):
-
-         # Part 2
-         ACTIONS = [
-             Action('button_load-forms', '<Button-1>',
-                 lambda _: self.import_forms()),
-             ... (more actions)
-         ]
-  
-         # Part 3
-         for widget_name, event, callback in ACTIONS:
-             self.widgets[widget_name].bind(event, callback, '+')
+    Action = namedtuple('Action', 'widget_name event callback')
   #+END_SRC
 
-  The code fragment above has three main parts:
+- Secondly, we define the a ~list~ of ~Actions~ (two are shown in the example
+  below):
+  #+BEGIN_SRC python
+    class App:
 
-  1. The first line uses ~namedtuple~ to define what information must an ~Action~
-    contain: i.e., the name of the widget to attached, the event to listen for,
-    and the actual callback function to trigger.
+        def bind_actions(self):
 
-  2. The next relevant part is the declaration and assignment the variable
-    ~ACTIONS~, which is a list of all the actions in the application at launch.
+            # list of actions defined here
+            ACTIONS = [
+                Action('button_load-forms', '<Button-1>',
+                    lambda _: self.import_forms()),
+                Action('button_download-submissions', '<Button-1>',
+                    lambda _: self.download_all_forms()),
+            ]
 
-  3. Finally, the last part is the last two lines, being the loop that actually
-    binds the ~Action~ to the widgets.
+        # other methods...
+  #+END_SRC
 
-The main benefit (at least to me) of using this mini-dsl is two-fold:
+- Finally, we loop through each ~Action~ and actually bind them to the widgets:
+  #+BEGIN_SRC python
+    class App:
+    
+        def bind_actions():
+
+            ACTIONS = [...] # list of actions
+
+            # loop to actually bind the actions
+            for widget_name, event, callback in ACTIONS:
+                self.widgets[widget_name].bind(event, callback, '+')
+  #+END_SRC
+  (Note: The ~'+'~ passed as the last argument in the ~bind()~ method call means
+  that each new action is added to the widget instead of replacing the
+  previous. If there is a need for this to be configurable in the DSL, it could
+  be evolved accordingly.)
+
+Putting everything together, we have this:
+#+BEGIN_SRC python
+# Step 1
+Action = namedtuple('Action', 'widget_name event callback')
+
+def App:
+
+    def __init__(self):
+
+        ...
+        self.bind_actions()
+        ...
+
+    def bind_actions(self):
+
+       # Step 2
+       ACTIONS = [
+           Action('button_load-forms', '<Button-1>',
+               lambda _: self.import_forms()),
+           ... (more actions)
+       ]
+
+       # Step 3
+       for widget_name, event, callback in ACTIONS:
+           self.widgets[widget_name].bind(event, callback, '+')
+#+END_SRC
+
+The main benefit (at least to me) of using this mini-DSL is two-fold:
 
   - First, the ~Action~ object gives a single name to several objects that
     logically forms an action: the widget, the event, and the callback. This
@@ -141,18 +197,92 @@ The main benefit (at least to me) of using this mini-dsl is two-fold:
 * Hello Asynchronous Programming My Old Friend
 The next challenge that arise is to keep the UI responsive (and interactable)
   even when the application is doing some computation / IO in the
-  background. The solution I chose is to have main ~Action~ method spawn a
-  background thread to do the processing, and the background thread will disable
-  and enable the appropriate UI elements.
+  background.
 
-In the code fragment below, ~download_all_forms()~ is bound directly to a
-  widget, and when triggered, it'll spawn a thread in the background to run
-  ~_download_all_forms()~, which is the main processing method:
+The solution I chose is to have the main ~Action~ method spawn a background
+  thread to do the processing, and the background thread will disable and enable
+  the appropriate UI elements.
+
+- First, I wrote the method to perform the slow computation, which in our case
+  is a method that uses Selenium to interact with a headless browser to download
+  certain files:
+  #+BEGIN_SRC python
+    def _download_all_forms(self):
+  
+        self.disable_all_widgets()
+  
+        # Initialize selenium_gui
+        selenium_gui._set_forms_details(self.forms)
+        selenium_gui._init(
+            self.download_path.get(),
+            self.chrome_driver_path.get(), force=True)
+  
+        # Log into form.gov.sg
+        self.login_to_formsg()
+  
+        # Download data for each form
+        for form in self.forms:
+            try:
+                selenium_gui.download_csv(form.name)
+            except selenium.common.exceptions.WebDriverException as e:
+                print(f'[!] Error downloading data from form: {form}.')
+                print(e)
+        print('[*] Download finished!')
+  
+        self.enable_all_widgets()
+  #+END_SRC
+  One thing to note about the above code fragment is how ~_download_all_forms()~
+  calls ~self.disable_all_widgets()~ at the start to disable the widgets, and
+  ~self.enable_all_widgets()~ at the end to re-enable the widgets.
+
+  Because our application does only one thing, we can get away with disabling
+  all widgets. In a bigger applications, only the relevant widgets should be
+  disabled.
+
+  We could have provided a "Cancel" button that would remain enabled which when
+  clicked will terminate the current process. But this shall be left as an
+  exercise for the interested reader.
+
+- Secondly, we create the ~Action~ that will be bound to a widget. This ~Action~ will start the method we defined above in a separate thread in order to keep the UI responsive:
+  #+BEGIN_SRC python
+class App:
+
+    # the actual method that will be bound to a widget
+    def download_all_forms(self):
+
+        threading.Thread(target=self._download_all_forms, daemon=True).start()
+
+    def bind_actions(self):
+
+        ACTIONS = [
+            Action('button_download-all-forms', '<Button-1>',
+                lambda _: self.download_all_forms()),
+            # more Actions...
+        ]
+
+        for widget_name, event, callback in ACTIONS:
+            self.widgets[widget_name].bind(event, callback, '+')
+        
+  #+END_SRC
+
+Putting everything together:
 
   #+BEGIN_SRC python
   class App:
   
       ...
+
+      def bind_actions(self):
+
+          ACTIONS = [
+              Action('button_download-all-forms', '<Button-1>',
+                  lambda _: self.download_all_forms()),
+              # more Actions...
+          ]
+
+          # loop to actually bind the actions
+          for widget_name, event, callback in ACTIONS:
+              self.widgets[widget_name].bind(event, callback, '+')
 
       def download_all_forms(self):
   
@@ -183,19 +313,14 @@ In the code fragment below, ~download_all_forms()~ is bound directly to a
           self.enable_all_widgets()
   #+END_SRC
 
-  Notice how ~_download_all_forms()~ calls ~self.disable_all_widgets()~ at the
-  start, and ~self.enable_all_widgets()~ at the end to re-enable the widgets. In
-  a larger application, the method would only disable widgets that relates to
-  the processing in question, and allow user to continue performing other
-  action. Since our app only does one thing, it is alright to disable
-  everything.
+Sidenote: If you are interested in see how a background thread can synchronously
+  pass control back to the user (perhaps for a confirmation), refer to the
+  method [[https://github.com/YongJieYongJie/form-sg-downloader/blob/cefabe0338ac8e0a705993be02fc5c5a98e95ae0/formsgdownloader/gui.py#L474][~login_to_formsg()~]].
 
-Sidenote: If you are interested in see how a background thread can
-  synchronously pass control back to the user (perhaps for a confirmation),
-  refer to the method [[https://github.com/YongJieYongJie/form-sg-downloader/blob/cefabe0338ac8e0a705993be02fc5c5a98e95ae0/formsgdownloader/gui.py#L474][~login_to_formsg()~]].
-
-* Conclusion
+* Lessons Learnt
 It is always helpful to be able to build some sort of frontend for your
-application for ease of distributing any sort of functionality your have
-built. In Python, the built-in Tkinter provides a quick-and-relatively-easy way
-to get a simple UI up-and-running.
+  application for ease of distributing any sort of functionality your have
+  built.
+
+In Python, the built-in Tkinter provides a quick-and-relatively-easy way to get
+  a simple UI up-and-running.

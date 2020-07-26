@@ -7,41 +7,33 @@ date: 2020-06-21
 draft: false
 ---
 
-If you are looking to build simple GUI application in Python Tkinter and distribute
-  it to your friends, but are having problems navigating the greek
+If you are looking to build simple GUI application in Python Tkinter and
+  distribute it to your friends, but are having problems navigating the greek
   documentation, look no further, read on for how I did it.
 
 * TL;DR
-I automated my interaction with a website, but needed to pass on my duty to
-  non-techincal colleague, so I built a GUI application in Tkinter.
+GUI applications are a good way to share tools that you have built with
+  non-technical friends / colleagues. And in Python, the standard library
+  contains [[https://docs.python.org/3/library/tkinter.html][Tkinter]] ("Tk interface") for building GUI applications.
 
-When building an application in Tkinter:
-  - If you have not used Tkinter before, refer to the [[https://docs.python.org/3/library/tkinter.html#tkinter-life-preserver][Tkinter Life Preserver]] on
-    Python's official documentation for a good overview on how to approach using
-    Tkinter. It provides valuable guidance on translating pure Tcl/Tk method
-    calls into the corresponding Tkinter calls in Python.
-  - When, refer to [[https://tkdocs.com/tutorial/index.html][TkDocs]] (which is clear, covers many topics, and has good code
-    samples)
-  - Next, refer to [[http://effbot.org/tkinterbook/][effbot.org]] (which covers certain things not covered by
-    TkDocs)
-  - And finally, if the feature is not covered by either of the above, refer to
-    [[https://www.tcl.tk/man/tcl8.7/TclCmd/contents.htm][Tcl]]/[[https://www.tcl.tk/man/tcl8.7/TkCmd/contents.htm][Tk]] documentation for the official specification, and make educated guess
-    on what Python method / arguments to pass.
+Documentation for Tkinter may be hard to navigate at first, it is recommended to
+  consult the following resources (and in the specific order): [[https://docs.python.org/3/library/tkinter.html#tkinter-life-preserver][Tkinter Life
+  Preserver]], [[https://tkdocs.com/tutorial/index.html][TkDocs]], [[http://effbot.org/tkinterbook/][effbot.org]], [[https://www.tcl.tk/man/tcl8.7/TclCmd/contents.htm][Tcl]]/[[https://www.tcl.tk/man/tcl8.7/TkCmd/contents.htm][Tk]] documentation.
 
 * Background
 As part of Covid-19 response, I was involved in collecting information via a
-  government website called FormSG. I was administering over 20 forms, with
-  multiple versions of each form, and need to do daily reporting.
+  government website called [[https://form.gov.sg/][FormSG]]. I was administering over 20 forms, with
+  multiple versions of each form, and needed to do daily reporting.
 
-Naturally, I automated the task (initially using TagUI, but very quickly
-  switching to the trusty Selenium).
+- In short, there was a lot of manual work involved and naturally, I automated
+  the task using Selenium.
 
-Eventually, there was additional manpower (or womanpower to be accurate) to
-  share my daily load of running the scripts. So I needed to build something
-  that is more user-friendly. (Note: I initially used batch files, and taught my
-  colleague how to the batch files.)
+However, while I am comfortable running the automation script from commandline,
+  I needed a way to share the tool with my colleague. And that's when I started
+  taking a closer look at Tkinter. (Note: I initially shared the scripts used
+  batch files, and taught my colleague how to the batch files.)
 
-* Tkinter Background And Resources
+* Navigating the Sea of Tkinter Resources
 Tkinter is part of Python's standard library, providing access to the Tcl/Tk
   graphical user interface toolkit. And since Python's standard library has
   always been of very high standard, with well-thought out inclusion / exclusion
@@ -51,27 +43,35 @@ Tkinter is part of Python's standard library, providing access to the Tcl/Tk
 Unfortunately, documentation for Tcl/Tk (the underlying framework) and Tkinter
   (Python's wrapper to the framework) are hard to follow at times.
 
-As such, the next following paragraph would be the most valuable one you will
-  read in this article:
-  - If you have not used Tkinter before, refer to the [[https://docs.python.org/3/library/tkinter.html#tkinter-life-preserver][Tkinter Life Preserver]] on
+Having built this GUI application, these are the resources (in order of
+priority) I would recommend:
+  - If you are new to Tkinter, refer to the [[https://docs.python.org/3/library/tkinter.html#tkinter-life-preserver][Tkinter Life Preserver]] page on
     Python's official documentation for a good overview on how to approach using
-    Tkinter. It provides valuable guidance on translating pure Tcl/Tk method
-    calls into the corresponding Tkinter calls in Python.
-  - First refer to [[https://tkdocs.com/tutorial/index.html][TkDocs]] (which is clear, covers many topics, and has good code
-    samples)
-  - Next, refer to [[http://effbot.org/tkinterbook/][effbot.org]] (which covers certain things not covered by
-    TkDocs)
-  - And finally, if the feature is not covered by either of the above, refer to
-    [[https://www.tcl.tk/man/tcl8.7/TclCmd/contents.htm][Tcl]]/[[https://www.tcl.tk/man/tcl8.7/TkCmd/contents.htm][Tk]] documentation for the official specification, and make educated guess
-    on what Python method / arguments to pass.
+    Tkinter. (E.g., It suggests first understanding how Tcl/Tk works, before
+    looking at Tkinter, which is an wrapper around Tcl/Tk.)
+  - Next, when selecting, laying out, and specifying the behaviors of widgets
+    (i.e., things like text boxes and buttons), refer to [[https://tkdocs.com/tutorial/index.html][TkDocs]] for clear
+    explanation, good coverage of topics, and good code samples.
+  - If the information is still not available, refer to [[http://effbot.org/tkinterbook/][effbot.org]] (which covers
+    certain things not covered by TkDocs).
+  - Finally, if the feature is not covered by either of the above, refer to
+    [[https://www.tcl.tk/man/tcl8.7/TclCmd/contents.htm][Tcl]]/[[https://www.tcl.tk/man/tcl8.7/TkCmd/contents.htm][Tk]] documentation for the official specification, and use the knowledge
+    from the Tkinter Life Preserver to translate those into Tkinter methods.
 
-* General Design
+* General Design of The GUI Application
+(/Note: I've skipped the basics on how to bootstrap a Tkinter app, you can refer
+  to the [[https://docs.python.org/3/library/tkinter.html#a-simple-hello-world-program][Hello World example]] from Tkinter Life Preserver/.)
+
 For my simple application, I conceptually divided the components into three:
-  state, widgets, and event handlers (AKA actions). These correspond roughly to
-  the model, view and controller in the traditional MVC framework.
+  - state
+  - widgets
+  - and event handlers (AKA actions).
+
+These correspond roughly to the model, view and controller in the traditional
+  MVC framework.
 
 ** State
-I initialize the state in the ~__init__()~ method of my ~App~ class:
+I initialize the state in the ~__init__()~ method of my ~App~ class as follows:
   #+BEGIN_SRC python
     class App:
   
@@ -96,16 +96,36 @@ I initialize the state in the ~__init__()~ method of my ~App~ class:
   or accepting input for the data.
 
 ** Widgets
-I created a mini-dsl using ~namedtuple~ and a simple loop, so that
-  the widget-related code may be written in a more declarative-like way.
+I created a mini-DSL using ~namedtuple~ and a simple loop, so that the
+  widget-related code may be written in a more declarative-like way.
 
-  The ~namedtuple~ definition is as follows:
+- So instead of using multiple method calls to instantiate one widget:
+  #+BEGIN_SRC python
+    widgets['frame_config'] = ttk.LabelFrame('text': 'Step 0: Configuration')
+    widgets['frame_config'].grid('column': 0, 'row': 0, 'padx', 10, 'pady': 10)
+  #+END_SRC
+
+- I can simple declare the widget, and pass the list of ~Widget~ to a loop for
+  actual instantiation:
+  #+BEGIN_SRC python
+    Widget('frame_config', ttk.LabelFrame, {'text': 'Step 0: Configuration'},
+           'grid', {'column': 0, 'row': 0, 'padx': 10, 'pady': 10})
+  #+END_SRC python
+
+To achieve the above, we need to define a ~namedtuple~ as follows:
   #+BEGIN_SRC python
   Widget = namedtuple('Widget', 'name type options geometry_manager geometry_options',
                       defaults=[{}, 'pack', {}])
   #+END_SRC
 
-  The fields of the namedtuple has the following meaning:
+- If you are not familiar with ~namedtuple~, it is part of Python's standard
+  library, and allows creation of simple "value classes" whose members may be
+  accessed via the dot operator.
+
+- In the code fragment above, it defines a new "class" named ~Widget~, that I can
+  "instantiate" by calling ~Widget()~, passing in as arguments values for each
+  of the fields, which have the following meaning:
+
   | Field Name         | Meaning                                                          |
   |--------------------+------------------------------------------------------------------|
   | ~name~             | name of the widget, serving as identifier                        |
@@ -114,29 +134,37 @@ I created a mini-dsl using ~namedtuple~ and a simple loop, so that
   | ~geometry_manager~ | one of the three geometry managers in Tk: place, pack or grid    |
   | ~geometry_options~ | arugments for the geometry manager method, e.g. ~.pack(options)~ |
 
-  With the above ~namedtuple~ defined, I'm able to declaratively define all the
-  widgets, and initialize them using the following loop:
 
+In addition to the ~namedtuple~, we need to initialize the widgets using the
+  following loop:
   #+BEGIN_SRC python
-    WIDGETS = [
-            Widget('frame_config', ttk.LabelFrame,
-                   {'text': 'Step 0: Configuration'}, 'grid',
-                   {'column': 0, 'row': 0, 'padx': 10, 'pady': 10}),
-            ... # More widgets here
-            ]
+    WIDGETS = [...] # List of Widget
 
-    # Actual loop to instantiate and position the widgets
     for name, widget_type, options, geometry_manager, geometry_options in WIDGETS:
 
         parent = options.pop('parent', None)
-        parent_widget = self.widgets.get(parent, master)
+        parent_widget = self.widgets.get(parent, master) # Parent defaults to master
         w = widget_type(parent_widget, **options)
         getattr(w, geometry_manager)(**geometry_options)
         self.widgets[name] = w
   #+END_SRC
 
+- One other major benefit of using the loop is that it allows us to use a
+  dictionary to hold all the widgets behind-the-scene implicitly/, and refer to
+  each element by its name given in the ~Widget()~ call, instead of using
+  dictionary access.
+
+- As such, is now trivial to reposition widgets within the hierarchy: within the
+  ~options~ dictionary passed to the ~Widget()~ call, just change the value of
+  ~"parent"~ to the name of the relevant parent widget.
+
+- If the default approach is used instead, reference to each widget either must
+  be kept as separate instance member on the ~App~ instance, or (if a dictionary
+  is used) there would be /explicit/ dictionary access littered throughout the
+  code, making it very clunky.
+
 ** Progress So Far
-With the mini-dsl in place, it is sufficiently simple to declare the layout to
+With the mini-DSL in place, it is sufficiently simple to declare the layout to
   get something like this:
 
 [[/img/post-a-python-gui-app-screenshot.png]]
@@ -145,6 +173,6 @@ In the next part, I'll cover how I added the event handlers (including a brief
   foray into asynchronous GUI programming), and hopefully the releasing and
   packaging of the application.
 
-* Conclusion
+* Lessons Learnt
 Don't be afraid to design your own mini-language if it makes your life simpler,
   especially for a side project.
