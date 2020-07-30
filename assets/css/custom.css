@@ -1,3 +1,23 @@
+/* Hidding the annoying horizontal scroll in Chrome */
+body {
+    overflow-x: hidden;
+}
+
+/* Setting scrollbar colors for Chrome  */
+[data-theme='dark'] ::-webkit-scrollbar {
+    background-color: #353535;
+}
+[data-theme='dark'] ::-webkit-scrollbar-thumb {
+    background-color: #797979;
+}
+[data-theme='light'] ::-webkit-scrollbar-thumb {
+    background-color: #CCC;
+}
+[data-theme='light'] ::-webkit-scrollbar {
+    background-color: #EFEFEF;
+}
+
+/* Spacing Tweaks */
 .post-content > h1 {
     padding-top: 1em;
     font-size: 1.3em;
