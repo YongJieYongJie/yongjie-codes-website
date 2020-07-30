@@ -84,7 +84,7 @@ url = "mailto:khooyongjie@gmx.com"
   url = "/reading-logs/"
 
   [[menu.main]]
-  name = "Portfolio"
+  name = "Portfolio (badly outdated)"
   weight = 400
   identifier = "Portfolio"
   url = "/portfolio/"
