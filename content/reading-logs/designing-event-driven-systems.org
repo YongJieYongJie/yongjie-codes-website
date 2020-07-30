@@ -1,0 +1,831 @@
+---
+short_title: "Designing Event-Driven Systems"
+title: "Designing Event-Driven Systems"
+source: "Googl-ing for books on Kafka"
+author: Ben Stopford
+isbn: 9781492038245
+reading_period: 2020.07.15–2020.07.30
+date: 2020-07-30T16:51:10+08:00
+draft: false
+---
+
+* General Review
+- Useful as a starting point to gain a deeper understanding of Kafka and its
+  proposition within the distributed systems ecosystem.
+  - The book makes reference to a huge number of different but related topics,
+    and provides references to articles and research papers on such topics.
+- Scant on details at times, but definitely provides sufficient structure and
+  high-level structure for the reader to know what to Google for, and which
+  branch of the knowledge tree to "hang" the knowledge.
+* Specific Takeaways
+** Foreword
+- One of the problem that is ameliorated by Kafka's /persistent/ event stream is
+  tradeoff between performance and tight coupling in a service-oriented
+  architecture when services need to share data.
+  - In particular, when multiple services need to share data, the tradeoff is
+    between (a) enforcing strong boundaries between services, and require data
+    access by external services by made via exposed API --> this ensures loose
+    coupling and enables each service to develop independently, leads to poor
+    performance (b) allow the external service direct access to the datastore
+    --> this allows better performance, but leads to tight coupling and hinders
+    independent development of each service.
+  - Traditionally, message brokers were already used to decouple services, but
+    there are limitations when the amount of data related to the events are
+    huge. Kafka's /persistent/ event stream makes decoupling possible event when
+    huge amount of data are shared.
+** Part I - Setting the Stage
+*** Chapter 1 - Introduction
+- Kafka's replayable-log-based approach has two primary benefits:
+  - It makes it easy to react to events that are happening now (without the need
+    for constant polling).
+  - It provides a central repository that can push whole datasets to wherever
+    they may be needed.
+- Another benefit of Kafka is that it allows systems designers to shift away
+  from designing systems from the perspective of databases, and to the
+  perspective of applications at evolving streams of data.
+*** Chapter 2 - The Origins of Streaming
+- Stream processing can be built atop Kafka using KSQL, an SQL-like stream
+  processing language.
+  - E.g. On the Kafka stream, there might be events corresponding to each time
+    any user open the mobile app, and each time app crashes. There can be
+    separate KSQLs to (a) calculate the running number of app opens per app per
+    day, (b) calculate running number of app crashes per app per day, and (c)
+    send message regarding unstable apps if the ratio of crashes to opens
+    exceeds a certain amount.
+- YJ?: At page 11-12, the author states that each stream processor can write and
+  store local state without the need for network call, and at the same time, the
+  data is flushed back to Kafka to ensure durability. Given the preceding, the
+  following questions arises:
+  - When exactly is the data flushed back to Kafka? Presumably not synchronously
+    with the main logic of the stream processor, otherwise the author could not
+    have said that the stream processor can write and store local state /without
+    the need for network call/.
+  - What happens in the event of failure? What if the stream processor has
+    created another event before failing? Will a duplicated event be generated?
+*** Chapter 3 - Is Kafka What You Think It Is?
+- Kafka is a centralized event stream that is flexible enough to build
+  traditional data exchange / communications paradigms on top of it: e.g., REST,
+  database, service bus.
+*** Chapter 4 - Beyond Messaging: An Overview of the Kafka Broker
+- There are several implications of Kafka's partitinoed, replayable log
+  approach:
+**** Linear Scalability
+- It is common for a single Kafka cluster to grow to company size, with over 100
+  nodes.
+**** Segregating Load in Multiservice Ecosystems (i.e., multitenancy)
+- Quotas can be used to control throughput allocation for different services
+  sharing the cluster.
+**** Maintaining Strong Ordering Guarantees
+- Elements that require strong ordering should share the same partitioning
+  key. This is because Kafka only guarantee strong ordering within a partition.
+  - For global ordering, use a single partition topic.
+  - Note: The order of messages recorded in the partition may not correspond
+    with the order of messages sent by the producer if (a) the producer is
+    configured to allow sending more than one batch at a time, *and* (b) an
+    earlier batch fails, followed by a successful next batch, and finally
+    followed by a successful retry of the initial batch.
+    - To avoid this, configure the producer to only send batches one at a time.
+**** Ensuring Messages Are Durable
+- Depending on how important are the data, configure:
+  - Replication factor
+  - Whether producer must wait for acknowledgement of full replication
+  - Whether to flush data to disk synchronously (if so, possibly increase batch
+    size for more effective flushes.
+**** Load-Balance Services and Make Them Highly Available
+- High availability is provided for free when an instance is added (assuming the
+  number of partitions of the topic is greater than the number of existing
+  instances).
+  - Each partition may only be assigned to a single consumer, so order is
+    guaranteed even if the consumer service fails and is restarted.
+**** Compacted Topics
+- Compacted topics are topics that retain only the most recent events. This
+  allow for more efficient stream processing because superseded events need not
+  be processed.
+**** Long-Term Data Storage
+- It is not uncommon to see retention-based or compacted topics holding more
+  than 100TB of data.
+- Data can be stored in regular topics, which are great for audit or Event
+  Sourcing, or compacted topics, which reduce the overall footprint.
+  - It is also possible to combine the two, by holding both and linking them
+    together with a Kafka Streams job. The trade-off is the additional storage
+    required. This is called he latest-versioned pattern.
+**** Security
+- Kafka supports enterprise-grade security features.
+** Part II - Designing Event-Driven Systems
+*** Chapter 5 - Events: A Basis for Collaboration
+**** Commands, Events, and Queries
+- The ways programs communicate across network can be classified into three
+  categories:
+  - Commands: Command are actions -- requests for some operation to be performed
+    by another service that will change the state of that system. It typically
+    indicate completion, and optionally return a result.
+    - Useful when operations must complete synchronously, or when using
+      orchestration or a process manager.
+  - Events: Events are both a fact and a notification. They travel in one
+    direction and expect no response.
+    - Useful when loose coupling is important, where the event stream is useful
+      to more than one service, or where data must be replicated from one
+      application to another. Events also lend themselves to concurrent
+      execution.
+  - Queries: Queries are requests to look something up. Queries are free of side
+    effects.
+    - Useful for lightweight data retrieval across service boundaries, or
+      heavyweight data retrieval within service boundaries.
+**** Coupling and Message Brokers
+- The term /loose coupling/ might mean different things:
+  - /"Loose coupling reduces the number of assumptions two parties make about
+    one another when they exchange information."/
+  - /"A measure of the impact a change to one component will have on others."/
+    (AKA connascence)
+- Loose coupling is not inherently good, nor is tight coupling inherently
+  bad. Loose coupling lets components change independently of one another, while
+  tight coupling lets components extract more value from one another.
+- Relevant considerations in relation to coupling:
+  - Interface surface area (functionality offered, breadth and quantity of data
+    exposed)
+  - Number of users
+  - Operational stability and performance
+  - Frequency of change
+- Essential data coupling is unavoidable (e.g., if an application needs to send,
+  it will need the email addresses). While it is possible to code around lack of
+  functionality, it is not possible to code around lack of daat.
+**** Events may be used for (a) notification, and (b) state transfers
+- Using events for state transfers, and having services keep a local replicated
+  copy, brings the following benefits:
+  - Better isolation and autonomy
+  - Faster data access
+  - Allows the data to be available offline
+- The benefits of using REST/RPC for data access has the following benefits:
+  - Simplicity
+  - Singleton -- The state lives in one place
+  - Centralized control
+- When building a small application, it may be appropriate to use events more
+  for its notification function, whereas when building a bigger application, it
+  may be necessary to use events also for its data replication function to allow
+  each service greater autonomy over the data it queries.
+**** The Event Collaboration Pattern
+- The way services collaborate can be viewed as /choreographed/ (i.e., via
+  events) or /orchestrated/ (i.e., centralized).
+- A benefit of choreographed systems is that they are pluggable. Changes can be
+  made solely to the relevant service without affecting the other services.
+- A benefit of orchestrated systems is that the whole workflow is written down
+  in code in one place.
+**** Mixing Request- and Event-Driven Protocols
+- An example of mixing both protocols is where the front-facing services provide
+  REST interfaces to the UI, but state changes are propagated as events on
+  Kafka. Backend services rely solely on Kafka.
+*** Chapter 6 - Processing Event with Stateful Functions
+**** Making Services Stateful
+- While statelessness is good, it is inevitable that certain state has to be
+  stored.
+  - E.g., For a web application, there will be a need to store user
+    sessions. Traditionally, this is stored in a database to make the
+    application itself stateless. For streaming systems, the state are contained
+    in the event stream. Kafka's Streams API go a step further: they ensure all
+    the data a computation needs is loaded into the API ahead of time, be it
+    events or any tables needed to do lookups or enrichments.
+**** Three Examples
+- Assuming we are building an email service that listens to an event stream of
+  orders and an event stream of payment, and the email service sends out a
+  confirmation email when an order has been paid. There are at least three ways
+  to do this with events.
+***** The Event-Driven Approach
+- The email service listens for the order event, and for each order event, it
+  calls out sychronously to the payments service to check whether payment has
+  been made, and send the email if so.
+- There are two disadvantages to this approach:
+  - There is a need for constant look up on another service.
+  - The payment and order are usually created at about the same time, so if the
+    order event arrives in the email service before the payment is registered in
+    the payments service, the email service would have to poll and wait until
+    the payment is registered before sending the email.
+***** The Pure (Stateless) Streaming Approach
+- The streams are buffered until both event arrive, and can be joined together.
+- This approach addresses the two disadvantages of the event-driven approach
+  above:
+  - There is no longer constant need to look up.
+  - It no longer matters whether the order event or payment event arrives first.
+- Note: In this case, there are actually state being stored in the buffer, and
+  when Kafka Streams restarts, it will have to reload the content of each
+  buffer.
+***** The Stateful Streaming Approach
+- Assuming the email service also needs to look up the customer's email
+  address. There will not be any recent events (unless the customer has recently
+  updated his/her email address), so the email service might (a) look up the
+  email address in some database, or (b) utilize Kafka to preload the customer
+  event stream (which would contain the lastest email addresses) into the email
+  service for local querying.
+- With this approach, the email service is now stateful. This means that, in the
+  worst case, it will have to reload the full database on restart.
+- The advantages to this approach are:
+  - The email service is now no longer dependent on the worst-case performance or
+    liveness of the customer service (for providing the email addresses).
+  - The email service can process event faster as there is no longer a need for
+    network calls.
+  - The email service is free to perform more data-centric operations on the
+    data it holds.
+**** The Practicalities of Being Stateful
+- Kafka Streams provide three mechanisms to deal with the potential pitfalls of
+  a stateful approach discussion under the section "The Stateful Streaming
+  Approach" above.
+  - Standby replicas are used to ensure that for every table or state store on
+    one node, there will be a replica kept up-to-date on another node, available
+    for immediate failover.
+  - Disk checkpoints created periodically to allow faster reloading of state
+    after a restart: by loading the checkpoint, and catching up on the lastest
+    messages after the checkpoint.
+  - Compacted topics are used to keep the dataset small.
+**** A summary of the there different events-based approach
+#+BEGIN_QUOTE
+An event-driven application uses a single input stream to drive its work. A
+streaming application blends one or more input streams into one or more output
+streams. A stateful streaming application also recasts streams to tables (used
+to do enrichments) and stores intermediary state in the log, so it internalizes
+all the data it needs.
+#+END_QUOTE
+*** Chapter 7 - Event Sourcing, CQRS, and Other Stateful Patterns
+- CQRS is Command Query Responsibility Segregation
+  - Every state change (i.e., a write) is *first* persisted to the log, before
+    further processing (i.e., a read) is done asynchronously. --> Command
+  - The aggregate state may be derived from the log (by going through each state
+    change) for querying. --> Query
+  - The separation of read and write allows for separate optimization of each
+    (e.g., the write is directed to a growing log, which is faster than a
+    in-place update of a data structure like a database index; whereas the read
+    can wait until the index is updated)
+- One benefit of using CQRS is in the event an service introduces a bug and
+  corrupts the data:
+  - Because each state change is persisted in the log, it acts like a version
+    control system and no information is lost, And it is easier to recover the
+    data; furthermore, after fixing the bug, the log can be replayed and the
+    necessary consquences changes will be made automatically as part of log
+    processing.
+  - Compared to using a traditional database, the corrupted data would have
+    replaced the original data, and debugging / recovery may be more
+    challenging; furthermore, after fixing the bug, there needs to be a
+    mechanism of pushing the new data out to dependant services.
+- When recording events, generally record exactly what is received. Do not be
+  attempted to attempt to create a "complete" message each time.
+  - For example, in relation to an Order Service, when the user creates an order
+    with list of items, record the entire order as a message. If the user
+    subsequently cancel a single item, record just the fact that the user
+    cancelled that one item. Do not be tempted to query the state and record the
+    whole new order with that one item removed. Query the state erodes away much
+    of the benefits of CQRS.
+**** Build In-Process Views with Tables and State Stores in Kafka Streams
+- Kafka's Streams API provides one of the simplest mechanisms for implementing
+  Event Sourcing and CQRS because it lets you implement a view natively, right
+  inside the Kafka Streams API—no external database needed!
+- At its simplest this involves turning a stream of events in Kafka into a table
+  that can be queried locally. For example, turning a stream of Customer events
+  into a table of Customers that can be queried by CustomerId takes only a
+  single line of code:
+  - ~KTable<CustomerId, Customer> customerTable =
+    builder.table("customer-topic");~
+**** Writing Through a Database into a Kafka Topic with Kafka Connect
+- It is possible to stream events from a traditional database using Kafka Connect
+  and CDC.
+  - The service will write to the traditional database, which will emit a Kafka
+    message via Kafka Connect, and downstream services can response to the
+    message accordingly.
+  - CDC stands for change data capture, and is highly efficient as it plugs into
+    the binary log that the traditional database uses.
+**** Writing Through a State Store to a Kafka Topic in Kafka Streams
+- It is also possible for a service to write to a Kafka data store, and have
+  events be emitted from the store.
+  - This approach essential replaces the database in the approach discussed
+    above with a Kafka data store, and brings along several advantages:
+    - The database is local, making it much faster to access.
+    - Because the state store is wrapped by Kafka Streams, it can partake in
+      transactions, so events published by the service and write to the state
+      store are atomic.
+    - The is less configuration, as it's a single API.
+**** Unlocking Legacy Systems with CDC
+- CDC can be used with legacy database to enable incremental shifting away from
+  the legacy database.
+- Kafka's single message transforms can be used to transform the raw event
+  messages from the legacy database into some more consistent.
+**** Query a Read-Optimized View Created in a Database
+- Another common pattern is to use the Connect API to create a read-optimized,
+  event-sourced view, built inside a database. Such views can be created quickly
+  and easily in any number of different databases using the sink connectors
+  available for Kafka Connect. As we discussed in the previous section, these
+  are often termed polyglot views, and they open up the architecture to a wide
+  range of data storage technologies.
+- E.g., data may be streamed into Elasticsearch for its rich indexing and query
+  capabilities.
+**** Memory Images / Prepopulated Caches
+- Where the dataset (a) fit in memory and (b) can be loaded in a reasonable
+  amount of time, it might make sense to load the whole dataset into memory
+  locally.
+- This may be implemented using Kafka Streams in-memory stores, or a
+  hand-crafted solution.
+**** The Event-Sourced View
+- Event-source view refers to a query resource (database, memory image, etc.)
+  created in one service from data authored by (and hence owned) by another.
+- What differentiates an event-sourced view from a typical database, cache, and
+  the like is that, while it can represent data in any form the user requires,
+  its data is sourced directly from the log and can be regenerated at any time.
+** Part III - Rethinking Architecture at Company Scales
+*** Chapter 8 - Sharing Data and Services Across an Organization
+- The central problem to scaling can be stated as such:
+  - As organization grows, there is the need for the system to be broken into
+    loosely coupled components that can be worked on and scaled separately
+    (e.g., microservices). Without this, development progress might grind to a
+    halt, and the application may hit a performance celing.
+  - After the system is broken into microservices, as business needs evolve,
+    different services would inevitably require access to data held by another
+    service. This leads to two possible scenarios, neither of which are
+    satisfactory:
+    - Where the data-owning service cannot be updated in time---the
+      data-requesting service would have to be given direct access to the data,
+      increasing coupling and diminishing the purpose of microservices.
+    - Where the data-owing service can be updated together with the
+      data-requesting service---the data-owning service slowly evolves into a
+      custom database implementation, capable of exposing different data,
+      encouraging many other services to depend on it (referred to as the "/God
+      Service/" problem by the author). This again increases coupling and
+      diminishes the purpose of microservices.
+      - Sidenote: One can think of microservice as trying to achieve the
+        opposite of what a database is trying to do: a microservice aims to hide
+        data to decrease coupling, whereas a good database allows querying of
+        data in many different ways to support the client service.
+  - A qualification to the above point is that there /are/ indeed some system
+    functions that lend themselves to microservices architecture, and will not
+    suffer the two problems relating to the need to expose more or different
+    data as business needs evolve.
+    - For example, single-sign-on and logging microservices fall within each of
+      their own bounded context, and it is unlikely that evolving business needs
+      will require changes to either in relation to data access.
+- Traditionally, microservices have dealt with the problem using three different
+  mode of data-sharing, each with its own set of problems:
+  - Interface on the services themselves (e.g., REST endpoints)
+    - Problems: Results in tight-coupling from service-to-service; hard to share
+      data at scale.
+  - Traditional Messaging
+    - Problems: No historical reference, data are lost after the message is
+      processed; harder to boostrap new applications.
+  - Shared Database
+    - Problems: Monolith
+- The "Data on the Inside and Data on the Outside" way of thinking about system
+  design helps to alleviate the above issue.
+  - Traditionally, microservices are designed to work in isolation, providing
+    data access only as an afterthought.
+  - The /data on the inside and data on the outside/ approach forces a
+    consideration of what data the microservice should share to the greater
+    ecosystem. This "data on the outside" must be treated differently from "data
+    on the inside".
+- Kafka's replayable log presents a modern / latest solution.
+*** Chapter  9 - Event Streams as a Shared Source of Truth
+- The basic idea behind "turning the database inside out" is that a database has
+  a number of core components---a commit log, a query engine, indexes, and
+  caching---and rather than conflating these concerns inside a single black-box
+  technology like a database does, we can split them into separate parts using
+  stream processing tools and the parts can exist in different places, joined
+  together by the log.
+  - Kafka plays the role of the commit log.
+  - Kafka Streams is used to create indexes or views; and those views behave
+    like a form of continuously updated cache.
+- Another way to think of the "turing the database inside out" relates to the
+  traditional deep-seated notion that is it bad to push business logic; so now
+  we push data from database into the code, creating tables, views and indexes
+  in application layer.
+- Yet another way to think about it is in terms of "unbundling":
+  - The role that a log serves for data flow inside a traditional distributed
+    database is analogous to the role it serves for data integration in a larger
+    organization. The whole of the organization's systems and data flow can be
+    viewed as a single distributed database---the individual query systems
+    (Redis, SOLR, Hive tables, etc) are particular indexs on the data, and
+    stream processing systems (like Storm and Samza) are very well-developed
+    triggers and view materialization mechanism.
+*** Chapter 10 - Lean Data
+- The idea behind lean data is that rather than collecting and curating large
+  datasets, applications carefully select small, lean onse---just the data they
+  need at a point in time---which are pushed from a central event store into
+  caches, or stores they control.
+  - The resulting lightweight views are propped up by operational processes that
+    make rederiving those views practical.
+- There are benefit to being able to just rely on the event streams as the
+  source of truth, and to rederive the view when needed:
+  - Compared to the alternative, each application have to maintain their own
+    databases, or share certain databases. Furthermore, because there is no
+    centralized event stream as the source of truth, such databases much store
+    all the data they possibly can, since otherwise the data will be gone. The
+    result is that over time, the data stored in each of these databases tend to
+    diverge from one another (e.g., one service might decide to store data at
+    certain granularity from another).
+  - The above point is analogous to the transformation from manually managed
+    servers (which are proned to accumulate differences from other servers which
+    are supposed to be the same) to infrastructure as code, where each server is
+    much lighter, and can be restarted quickly.
+  - By selecting just the data required, each application can keep its view
+    small and optimized for reading. E.g., when processing an event stream in
+    relation to product update, an inventory service may choose to retain only
+    two fields, the product ID and the number of items in stock. This allow
+    storing more rows in memory, and also reduces coupling.
+**** Rebuilding Event-Source Views
+- One drawback of lean data is that, should you need more data, you need to go
+  back to the log. The cleanest way to do this is to drop the view and rebuild
+  it from scratch.
+  - When using in-memory data structure as the view, this will happen by
+    default.
+  - When using Kafka Streams, views are either tables or state stores. There are
+    additional considerations as to how these are dropped and rebuilt.
+  - When using other types of databases and caches, it helps to pick a
+    write-optimized database or cache. E.g.:
+    - An in-memory database/cache like Redis, MemSQL, or Hazelcast.
+    - A memory-optimized database like Couchbase or one that lets you disable
+      journaling like MongoDB.
+    - A write/disk optimized, log-structured database like Cassandra or RocksDB.
+**** Automation and Schema Migration
+- Traditionally, database migration scripts are used to managed change in
+  schema. With Kafka, the approach is to recreate the database from the log.
+  - E.g., If you were importing customer information from a traditional
+    messaging system into a database when the customer message schema undergoes
+    a breaking change, you would typically craft a database script to migrate
+    the data forward, then subscribe to the new topic of messages. If using
+    Kafka to hold the datasets in full, instead of performing a schema
+    migration, you can simple drop and regenerate the view (assuming that
+    datasets have been migrated forward using a technique like dual-schema
+    upgrade window, covered later in the book).
+**** Data Divergence Problem
+- The data divergence problem are due to various reasons:
+  - Having different data model for different systems: a data model on the wire
+    (e.g., JSON), internal domain model (e.g., an object model), a data model in
+    the database (e.g., DDL), and various schemas for outbound communications.
+  - Reconcialiating semantic differences where different teams, departments or
+    companies meet. E.g.., two companies going through a merger may have
+    different treat for whether a supplier is a customer, or whether a
+    contractor is an employee.
+- Kafka help to address these problem by having all the data kept at a single
+  source of truth, where all relevant parties can come together and come to a
+  consensus, as opposed to having the data be piped through different services
+  and teams, with consensus required each time there is a difference at a
+  particular serivces / teams interface.
+** Part IV - Consistency, Concurrency, and Evolution
+*** Chapter 11 - Consistency and Concurrency in Event-Driven Systems
+- The term /consistency/ has many different usage: concurrent is CAP theorem, in
+  ACID transactions, strong consistency and eventual consistency.
+**** Eventual Consistency
+- There are two considerations when using event-driven systems that provides
+  eventual consistency:
+  - *Timeliness*: If two services processes the same event system, they will
+    process them at tdifferent rates, so one might lag behind the other. If a
+    business operation consults both services for any reason, this could lead to
+    an inconsistency.
+  - *Collisions*: If different services make changes to the same entity in the
+    same event stream, if that data is later coalesced---say in a
+    database---some changes might be lost.
+- The usual compromise for large business systems is to keep the lack of
+  timeliness (which allows us to have lots of replicas of the same state,
+  available read-only) but remove the opportunity for collisions altogether (by
+  disallowing concurrent mutations).
+  - This is achieved by allocating a single writer to each type of data (topic).
+**** The Single Writer Principle
+- I.e., responsibility for propagating events of a specific type is assigned to
+  a single service---a single writer.
+- Using the single writer approach not only avoids the problem of collisions,
+  but also has the following benefits:
+  - Allows versioning and consistency checks to be applied in a single place.
+  - It isolates the logic for evolving each business entity, in time, to a
+    single service, making it easier to reason about and to change (e.g.,
+    rolling out a schema change).
+  - It dedicates ownership of a dataset to a single team, allowing for
+    specialization. For example, for datasets relating to finance, there might
+    be complex business rules that a specialized team will be more equipped to
+    deal with.
+  - YJ: All the above advantages generally stems from the fact that data is
+    coming from the single source, and any service depending on the data go
+    directly to the source (picture a star network diagram). This is as opposed
+    to the scenario where the data is progressively enhanced as it is passed
+    from service to service, and each service only aware of the service before
+    it (like the telephone / Chinese whispers game).
+***** Command Topic
+- A variation of the single writer principle where the topic is broken into two:
+  command and entity.
+  - The command topic may be written to by any process, and is used to initiate
+    the event (e.g., order received).
+  - The event topic may only be written to by the owning service---the usual
+    single writer (e.g., order validated, order sent).
+***** Single Writer Per Transition
+- Another variation of the single writer principle where services own particular
+  transitions rather than all transitions in the topic.
+  - E.g.:
+    - Transition from order requested to order validated: handled by Order
+      Service.
+    - Transition from order validated to payment received: handled by Payment
+      Service.
+    - Transition from payment received to order confirmed: handled by Order
+      Service.
+**** Atomicity with Transactions
+- Kafka provides a transactions feature with two guarantees:
+  - Messages sent to different topics, within a transaction, will either all be
+    written or none at all.
+  - Messages sent to a single topic, in a transaction, will never be subject to
+    duplicates, even on failure.
+**** Identity and Concurrency Control
+- By having a unique identifier and versioning, it is possible to implement
+  optimistic concurrency control:
+  - If a user opens his profile page on two devices at the same time, makes a
+    change on the first device and submits it, and subsequently makes a change
+    on the second device without first reloading to get the change from the
+    first device, the change made on the second device will be rejected (because
+    the attempted update will be made on a stale version that has not
+    incorporated the change made on device one).
+- The optimistic concurrency control technique can be implemented in both
+  synchronous or asynchronous systems equivalently.
+*** Chapter 12 - Transactions, but Not as We Know Them
+- Transactions serve three important functions:
+  - Remove duplicates.
+  - Allow groups of messages to be sent atomically to different topics (e.g.,
+    confirming order and decreasing stock count).
+  - Save data to Kafka Streams state store and send a message to another service
+    atomically.
+**** The Duplicates Problem
+- Duplicates are generally unavoidable due to unreliability of systems, and the
+  need to retry.
+  - E.g., if service A sends makes an API request on service B, service B
+    successfully processes the request, but crashes before sending the response,
+    service A will naturally retry after a timeout, giving rise to duplicate.
+- Traditionally, duplicates are resolved by having a central database / service
+  that ultimately processes the entities, and are aware of how to handle the
+  duplicates (e.g., a customer address database may decide that duplicated
+  request is not an issue because it just mean that the data is updated to the
+  same value; a payment system may use unique IDs to spot and reject duplicate
+  payment deduction)
+- Transactions in Kafka allow creation of long chains of service where the
+  processing of each step in the chain is wrapped in exactly-once guarantees.
+  - However, the parts of the system that do not rely on Kafka will have to
+    handle duplicates using other means.
+**** Using the Transactions API to Remove Duplicates
+- One common use case is the need to ensure that a consumer only advances its
+  offset if it successfully send out a message to Kafka. I.e., in the event that
+  the message is not successuflly committed to Kafka, the consumer will not
+  advance its offset.
+  - E.g., consider an account validation service, that takes deposits in,
+    validates them, and sends a new message back to Kafka marking the deposit as
+    validated.
+  - The transaction may be implemented as follows:
+    #+BEGIN_SRC java
+      // Read and validate deposits
+      validatedDeposits = validate(consumer.poll(0))
+    
+      // Send validated deposits & commit offsets atomically
+      producer.beginTransaction()
+      producer.send(validatedDeposits)
+      producer.sendOffsetsToTransaction(offsets(consumer))
+      producer.endTransaction()
+    #+END_SRC
+- If using Kafka Streams API, no extra code is required. The feature just needs
+  to be enabled.
+**** Exactly Once Is Both Idempotence and Atomic Commit
+- As a broker, there are actually two possible opportunities for duplication on
+  Kafka:
+  - Sending message to Kafka might fail before an acknowledgement is sent back
+    to the client, and the subsequet retry may potentially result in a duplicate
+    message.
+  - Reading message from Kafka might fail before offsets are committed (i.e.,
+    advancing the reading position), and the message might be read a second time
+    when the process restarts.
+- The problem of /sending/ duplicated messages to Kafka is handled via
+  idempotence: each producer is given a unique identifier, and each message from
+  the producer is given a sequence number, so if a message is already in the log
+  (i.e., the producer ID + sequence number already exists), it will be dropped.
+- The problem of /reading/ a single message multiple times from Kafka may be
+  handled by deduplication (e.g., in a database). But is is also possible to use
+  Kafka's transaction, which provides a broader guarantee, more akin to
+  transactions in a database, tying all messages sent together in a single
+  atomic commit.
+**** How Kafka's Transactions Work Under the Covers
+- Transactions incur overheads. Such overheads might be measured using the
+  performance test scripts that ship with Kafka.
+*** Chapter 13 - Evolving Schemas and Data over Time
+**** Handling Schema Change and Breaking Backword Compatibility
+- The most common approach in Kafka for introducing non-backward-compatible data
+  schema changes is via the Dual Schema Upgrade Window, where we create two
+  topics: ~topic-v1~ and ~topic-v2~, for messages with the old and new schemas,
+  respectively. There are generally 4 options when handling the two topics:
+  1. The topic-owning service can publish to both using transactions.
+  2. The topic-owning service is repointed to publish to ~topic-v2~, and a Kafka
+     Streams job is added to down-convert ~topic-v2~ messages to ~topic-v1~.
+  3. The topic-owning service continues to write to ~topic-v1~, and a Kafka
+     Streams job is added to up-convert ~topic-v1~ messages to ~topic-v2~ until
+     all clients have been upgraded, at which point the topic-owning servicec is
+     repointed to ~topic-v2~.
+  4. The topic-owning service migrate its dataset internally, and republish the
+     whole view into the log in the ~topic-v2~ topic.
+- Note: Approaches 1 and 2 above does not handle the existing ~topic-v1~
+  messages in the log, and is not appropriate for event-sourcing / long-term
+  storage. Approaches 3 and 4 both uses a Kafka Streams job capable of
+  up-converting ~topic-v1~ messages to ~topic-v2~ messages, and is thus able to
+  handle existing ~topic-v1~ messages by simply running the jobs from offset 0.
+**** Collaborating Over Schema Changes
+- Using version control and GitHub is a good way of collaborating on schema
+  change because pull requests can be made, and implementation can be tested.
+  - This is better when compared to communication over emails.
+**** Handling Unreadable Messages
+- Traditional messaging systems handle messages that can't be sent in a /dead
+  letter queue/.
+- In Kafka, where a message can't be read by a consumer (e.g., perhaps the
+  message has become corrupted), some implementers choose to create a separate
+  topic to hold such messages.
+**** Deleting Data
+- Data may be "deleted" in various ways:
+  - Simply letting the data expire.
+  - When using Kafka for eventing sourcing, a record may be removed by using a
+    delete marker.
+  - Using compacted topics, and writing a new message to the topic with the key
+    you want to delete, and a null value.
+- A complication occurs when the key you want to be able to delete by is
+  completely different from the key for partitioning (and thus for ordering).
+  - E.g., an online retailer wants to be able to (a) delete by customerId, and
+    (b) partition by productId. Because there isn't a one-to-one relationship
+    between customerId and productId, it is not possible to create a mapping
+    from customerId to productId in order to delete using productId.
+  - The solution to the above issue is to use [productId][customerId] as the
+    key, and in the producer, use a custom partitioner that ignores the
+    customerId.
+**** Triggeiring Downstream Deletes
+- After deleting a record on Kafka, there might be a need to also delete the
+  record in some downstream Kafka Connect sinks (e.g., traditional database).
+  - Downstream deletes Just Works™ if using CDC (Change-Data-Capture).
+  - If not using CDC, a custom mechanism is required.
+**** Segregating Public and Private Topics
+- Public and private topics might be separated using naming conventions.
+  - Alternative, authorization interface might be used to assign read/write
+    permission to the relevant services.
+** Part V - Implementing Streaming Services with Kafka
+*** Chapter 14 - Kafka Streams and KSQL
+**** A Simple Email Service Built with Kafka Streams and KSQL
+- Kafka Streams Java may be used if the application is running in JVM.
+  - Otherwise, KSQL provides a SQL-like wrapper for the Kafka Streams API.
+**** Windows, Joins, Tables, and State Stores
+- Kafka Streams allow a stream can be joined with another stream, in which case
+  the incoming event are buffered for a defined period of time (denoted
+  ~retention~).
+- Kafka Streams also manages whole tables---a local manifestation of a complete
+  topic, usually compacted.
+- There are two types of table in Kafka Streams: ~KTable~ and ~GlobalKTable~.
+  - ~KTable~ are partitioned across instances, whereas ~GlobalKTable~ are not
+    (but takes up more space).
+  - Because ~KTable~ are partitioned by key, it can only be joined on its key.
+  - In order to join a ~KTable~ or stream on an attribute that is not its key,
+    we must form a repartition.
+*** Chapter 15 - Buliding Streaming Services
+**** Join-Filter-Process
+- A standard processing flow is Join-Filter-Process:
+  - Join: The Kafka Streams DSL is used to join a set of streams and tables
+    emitted by other services.
+  - Filter: Anything that isn't required is filtered. Aggregations are often
+    used here too.
+  - Process: The join result is passed to a function where business logic
+    executes. The output of this business logic is pushed into another stream.
+**** Event-Sourced Views in Kafka Streams
+- When providing RESTful access to resources backed by a Kafka state store that
+  is partitioned across multiple instances, there is a need to ensure that the
+  request reach the correct instance with the key. This is achieved using
+  /interactive queries/.
+  - Alternatively, it is also common practice to use Kafka Connect and use a
+    traditional database as the event-sourced view.
+**** Collapsing CQRS with a Blocking Read
+- It is a common use case to allow user of a service to read his/her own writes.
+  - However, the CQRS pattern is based on the asynchronity of reads and
+    writes. This mean that when the user try to read immediately after writing,
+    the read may not show the latest write.
+  - The asynchronity of CQRS may be callapsed using the long polling technique
+    such that the read following the write appears synchronous.
+    - Long polling is where the client sends a HTTP request requesting for data,
+      and the server holds the request open until data is available, effectively
+      emulating a "push" from server.
+**** Scaling Concurrent Operations in Streaming Systems
+- Consider an inventory service that performs the following tasks for each order
+  message coming in:
+  - Validate whether there are enough product in stock.
+  - If so, reserve the appropriate number of the product.
+  - Send out a message validating the order.
+- To achieve the above:
+  - Kafka transactions must be used.
+  - Additionally, the stream must be rekeyed to use the productId as the
+    key. This is to ensure that all operations for one productId will be
+    sequentially executed on the same thread.
+    - Rekeying might be achieved as follows: ~orders.selectKey((id, order) ->
+      order.getProduct())~.
+    - Rekeying pushes the values back into a new intermediary topic in Kafka,
+      this time keyed by the new key. The intermediary topic is then sent back
+      out to the rekeying service.
+- YJ: What does the author mean when he refer to "thread"? Is it an actual
+  operating system thread, or is he using the word to refer to one instance of a
+  horizontally scaled service?
+  - If he is refering to operating system thread, does that mean that messages
+    are partitioned at least twice---first when splitting across the instances,
+    and second time when splitting to various operating system threads?
+**** Rekey to Join
+- Topics must be co-partitioned when joining---i.e., same number of partitions
+  and same partitioning strategy.
+**** Repartitioning and Staged Execution
+- It is common for a stream to be rekeyed into another key for processing, and
+  then rekeyed back to the original key to update certain views.
+  - E.g., A stream of orders initially keyed by the orderId may be rekeyed by
+    productId for validation, and subsequently rekeyed back to orderId to update
+    the validation status.
+  - Is such cases, the keys used to partition the event streams must be
+    invariant if ordering is to be guaranteed. For the example above, orderId
+    and productId must remain fixed across all messages that relate to that
+    order.
+**** Waiting for N Events
+- Another common use case is for N events to occur before triggering another
+  step in the processing.
+- If each of the N events is in its seperate topic, then the events may be
+  awaited on using joins on the separate streams.
+- If the N events belong to the same topic, then the solution generally takes
+  the form:
+  - Group by the key
+    - YJ: How does grouping by key works?
+    - YJ: The relevant API seems to be described on Kafka Streams' developer
+      guide on [[https://kafka.apache.org/25/documentation/streams/developer-guide/dsl-api.html#streams-developer-guide-dsl-aggregating][Aggregating]].
+  - Count occurrences of each key
+  - Filter the output for the required count.
+* To Internalize /Now/
+** Chapter 1 - Introduction
+- When working with unfamiliar domain (language, technologies, concepts), google
+  for common gotcha's, code smells, antipatterns.
+** Chapter 6 - Processing Events with Stateful Functions
+- Building applications using Kafka / event streams is akin to building an RDBMS
+  (or at the same level as building an RDBMS): changes to state are presented as
+  streams of events, and it is for the relevant part of the application to
+  respond accordingly.
+  - E.g., in a traditional RDBMS, there is the binary log
+    that gets passed from the master to various slaves, which will decide how to
+    update their own tables in relation to the binary log.
+- Since Kafka is using the same (or similar) architecture (i.e., the log)
+  powering traditional RDBMS, it is possible to allow services to "listen" to
+  the Kafka log / event stream, and keep a local database / state derived from the
+  events.
+* To Learn/Do Soon
+** Chapter 6 - Processing with Stateful Function
+*** Making Services Stateful
+**** The Pure (Stateless) Streaming Approach
+- Find out how does Kafka Streams buffer works, and how it supports the "pure
+  (stateless) streaming approach).
+** Chapter 15 - Building Streaming Services
+- How does N-way join of streams work? Assuming N is 2 (i.e., we are joining two
+  streams), and we are joining by the key (which I believe is the only way
+  possible), what happens if topic A has one record with that key, and topic B
+  has two records with that key?
+  - Will the sole record from A be joined with the first record from B, while
+    the second record from B waits for the next record in A?
+  - Will the sole record from A be joined with each record from B, thus
+    producing two records in the joined stream.
+  - Refer to /[[https://www.confluent.io/blog/crossing-streams-joins-apache-kafka/][Crossing the Streams - Joins in Apache Kafka]]/ article by Confluent
+    for details.
+* To Revisit When Necessary
+** Chapter 3 - Is Kafka What You Think It Is?
+- Refer to this chapter for a brief refresher / overview on the different ways
+  Kafka may be viewed as, and the underlying capabilities.
+** Chapter 4 - Beyond Message: An Overview of the Kafka Broker
+- Refer to this chapter for an excellent overview of Kafka's capabiliites.
+** Chapter 5 - Events: A Basis for Collaboration
+*** The Event Collaboration Pattern
+- Refer to this section for a simple illustration of how different services
+  might communicate with each other via events on different topics on Kafka.
+*** Relationship with Stream Processing
+- Refer to this section for a short example of how Kafka Stream may be used as
+  part of a shipping service.
+*** Mixing Request- and Event-Driven Protocols
+- Refer to this section for illustrations on how small and bigger organizations
+  may mix the request-driven and event-driven protocols.
+** Chapter 6 - Processing Events with Stateful Functions
+- Refer to this chapter for a detailed high-level look into the three ways of
+  building events-based processing: (a) using events solely for notification,
+  processing one event at a time, (b) merging multiple event streams to provide
+  meaningful events containing all the information required for processing, (c)
+  using stateful streaming by keeping a local database of particular events of
+  interest for fast querying.
+** Chapter 7 - Event Sourcing, CQRS, and Other Stateful Patterns
+- Refer to this chapter for specific implementation patterns on how to build
+  stateful systems based on event sourcing and CQRS.
+** Chapter 9 - Event Streams as a Shared Source of Truth
+- Refer to this chapter for various ways to conceptualize what it means to "turn
+  the database inside out".
+** Chapter 10 - Lean Data
+- Refer to this chapter to the benefits and drawbacks (and recommendations) of
+  having each application keep a lean view of the data locally.
+** Chapter 11 - Consistency and Concurrency in Event-Driven Systems
+- Refer to this chapter on the consistency and concurrency models typically used
+  with Kafka. E.g., single writer principle and optimistic concurrency control.
+** Chapter 12 - Transactions, but Not as We Know Them
+- Refer to this chapter for a high-level introduction to transactions in Kafka,
+  its limitations, and why it plays a crucial role in building stream
+  applications in Kafka.
+** Chapter 13 - Evolving Schemas and Data over Time
+- Refer to this chapter for concerns in relation to evolving scehmas and data
+  over time.
+** Chapter 15 - Building Streaming Services
+- Refer to this chapter for a higher-level description of various components in
+  a complete Kafka-based production system (e.g., how messages are archived, how
+  legacy systems are interfaced with etc.).
+* Other Resources Referred To
+- Example repositories on [[https://github.com/confluentinc/examples][Kafka]] and [[https://github.com/confluentinc/kafka-streams-examples/tree/5.5.1-post/][Kafka Streams]] by Confluent.
+** Chapter 1 - Introduction
+- Rick Hickey's talk titled [[http://www.youtube.com/watch?v=Cym4TVwTCNU][Deconstructing the Database]] on a different way of
+  looking at systems design.
