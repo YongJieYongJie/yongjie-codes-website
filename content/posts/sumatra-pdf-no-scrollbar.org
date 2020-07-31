@@ -1,0 +1,169 @@
+---
+title: "I added a feature that was \"impossible\" for three years"
+alternateTitle: "Adding the option to hide scrollbar to SumatraPDF"
+date: 2020-07-05
+image: "img/post-sumatra-pdf-no-scrollbar-title.jpg"
+imageCredit: "Paul Kapischka (https://unsplash.com/photos/N5hZ_3_Wf-s)"
+draft: false
+---
+
+Facing a seemingly impossible task? Fret not, read on for a story of how I
+  dealt with one (and perhaps learn something about C++ and Win32 API GUI
+  programming along the way)
+
+# more
+
+* TL;DR
+I wanted to add a feature to a piece of open-source tool I've been using for
+  quite some time, but discovered that the feature was requested many years ago
+  and was deemed to complicated.
+
+I went ahead anyway, with a language I haven't used in over 10 years, and worked
+  through numerous problems to get the feature implemented.
+
+* Background
+I'm a huge proponent of not wasting screen real estate on UI [[https://en.wikipedia.org/wiki/Cruft][crufts]] like title
+  bars, tab bars, scrollbars etc.
+
+Naturally, since I use a Windows machine, my PDF reader of choice is SumatraPDF,
+  with menu bar and tool bars that can be hidden, and even a full screen mode
+  that hides everything else... everything else /besides/ the scrollbar.
+
+And thus began my journey of trying to remove the scrollbar.
+
+* Initial Googl-ing
+I'm usually not the first person to come up with a good feature request, so I
+  turned to the Internet to find like-minded people before me.
+
+- Unfortunately for me, the feature requests I did find, but solutions I did
+  not: the feature was deemed too troublesome.
+
+- https://forum.sumatrapdfreader.org/t/option-to-hide-turn-off-scrollbar/705
+  [[/img/post-sumatra-pdf-no-scrollbar-initial-feature-request.png]]
+
+- https://github.com/sumatrapdfreader/sumatrapdf/issues/1211
+  [[/img/post-sumatra-pdf-no-scrollbar-second-feature-request.png]]
+
+(/If you are reading this is dark mode, apologies for the blinding screenshots
+above/.)
+
+Thankfully, I had some time on my hand, and the lack of ability to hide the
+  scrollbars is the last remaining feature that is preventing SumatraPDF from
+  being the perfect PDF reader for me, so I decided to go ahead anyway.
+
+* Setting Up and Finding Where to Start
+At first, I had absolutely no idea at all where to begin, so the first thing I
+  did was to visit the project GitHub page (over [[https://github.com/sumatrapdfreader/sumatrapdf][here]]).
+
+The author had a simple but excellent =readme.md= explaining how to compile and
+  the application. And despite it being more than 10 years since I first touched
+  C++, I was able to compile the application with no issue. Kudos to excellent
+  documentation by the author!
+
+* Naive Approach - Passing ~false~ to ~ShowScrollBar()~
+Even with the code in hand (or on my hard disk to be accurate), I had no idea
+  where to begin.
+
+But what I do know is that I would like to remove the scrollbars in fullscreen
+  mode, so I searched the whole project for the word "scrollbar", roughly along
+  the following lines:
+
+  - Press =<Ctrl>+<Shift>+F= to bring up the =Find and Replace= dialog box,
+    enter the words "scrollbar", unselect the options =Match case=, =Match whole
+    word= and =Use regular expressions=, and clicked =Find All=:
+
+  - The search matched 108 lines in 21 files---definitely a manageable amount to
+    go through:
+
+    [[/img/post-sumatra-pdf-no-scrollbar-visual-studio-find-and-replace-scrollbar.png]]
+  
+    (/I initially seacrh for the word "scroll", but that had way too many hits/)
+
+The first file to caught my eye is the aptly named =SumatraPDF.cpp=, since
+  that's the name of the application itself. And from there I found the function
+  ~UpdateScrollbar()~---*Jackpot!!* (or so I thought, /once again/).
+
+  - In the ~UpdateScrollbar()~ function itself, there were calls to
+    ~ShowScrollBar(...)~:
+
+    #+BEGIN_SRC C++
+      ShowScrollBar(win->hwndCanvas, SB_HORZ, viewPort.dx < canvas.dx);
+    #+END_SRC
+
+  - A Google search on the ~ShowScrollBar()~ function led me to the [[https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-showscrollbar][Microsoft
+    documentation]] which explained that the third argument is a ~BOOL~ indicating
+    whether to show or hide the scrollbars.
+
+  - I was so excited, and immediately try setting the value to ~false~ to check
+    whether it works---surprise, it /didn't/.
+
+I guess I have no choice but to read the manual. As the saying goes:
+  "/Remember, a few hours of trial and error can save you several minutes of
+  looking at the README./". So I finally Google "Win32 API C++ programming", and
+  landed on [[https://docs.microsoft.com/en-us/windows/win32/learnwin32/learn-to-program-for-windows][Get Started with Win32 and C++]].
+
+* Basic Working Approach - Intercepting the ~WM_NCPAINT~ Message
+After reading through the official documentation, I understood that UI updates
+  are the result of processing a series of messages.
+
+- My /Gut Feel™/ tells me that the reason my previous approach (of passing ~false~
+  as the last argument to the ~ShowScrollBars()~ function) didn't work possibly
+  because somewhere along the processing chain, a subsequent message on the
+  queue superceded that particular function call.
+
+- So how do I deal with this?
+
+The most direct way that came to my mind was this---to intercept the final
+  message just before the scrollbars will (or will not) be drawn, and call
+  ~ShowScrollBars()~ again.
+
+  - After digging through the official documentation, I found that the message
+    to intercept is ~WM_NCPaint~, which is sent when the "non-client" areas of
+    the UI is to be painted. (Non-client means areas like the title bars,
+    borders, and---of course---scrollbars.)
+
+  - To intercept the message, this is what I used (I hardcoded the third
+    argument to ~FALSE~ to test that it works):
+    #+BEGIN_SRC C++
+      case WM_NCPAINT:
+          ShowScrollBar(win->hwndCanvas, SB_BOTH, FALSE);
+      return TRUE;
+    #+END_SRC
+
+  - But how do I know where to insert this? Simple, I know from the
+    documentation that all application must handle ~WM_PAINT~ to update the
+    "client" UI (i.e., the main content area besides the title bar, borders,
+    etc.). So I did a global search and found the function
+    ~WndProcCanvasFixedPageUi()~, and inserted my code fragment above,
+    and—viola!—no scrollbars.
+
+Let me repeat: \tilde /No Scrollbars/ \tilde
+
+* To Be Continued
+This post has gone rambling on for quite a while. But is gist, using just the
+  above knowledge, it wasn't too difficult to implement a setting that will
+  enable turning scrollbars off.
+
+- However, every time the setting changed, the application must be reload, and
+  this just won't do it for me---one of the primary reason why SumatraPDF is
+  such a delight is that it responds to settings changes and file changes
+  immediately.
+
+In a future post, I'll share more about how I was able to react to changes in
+  settings immediately, and rounding off with submitting my pull request and
+  implementing a context menu as requested by the author.
+
+* Lessons Learnt (so far)
+When working with a heavily customized piece of software like SumatraPDF, expect
+  a lot---and I mean A LOT---of edge cases, each and every one meant to delight
+  end-user (with or without them knowing). For example, if you highlighted a
+  chunk of text in SumatraPDF and you change the zoom setting, the software will
+  try is best to keep the highlighted text visible. Now, go try this in
+  something like Firefox and see what happens (hint: Firefox doesn't really care
+  that you have a chunk of text highlighted.)
+
+Read the official document for Win32 API at [[https://docs.microsoft.com/en-us/windows/win32/learnwin32/learn-to-program-for-windows][Get Started with Win32 and C++]], to
+  save yourself hours of headaches.
+
+/The pull request is over [[https://github.com/sumatrapdfreader/sumatrapdf/pull/1647][here]] if you are interested/.
+  
