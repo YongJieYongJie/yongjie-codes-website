@@ -1,32 +1,32 @@
 {{ define "main" }}
-<div class="post animated fadeInDown">
-  <div class="post-content">
-    <div class="post-title">
-      <h3>{{ .Title }}</h3>
+<div class="post animated fadeInDown yj-reading-log">
+    <div class="post-content">
+        <div class="post-title">
+            <h3>{{ .Title }}</h3>
+        </div>
+        <h3><i>Book Details</i></h3>
+        <ul>
+            <li><p>Full Title: <i>{{ .Params.title }}</i></p></li>
+            <li><p>Author: <i>{{ .Params.author }}</i></p></li>
+            <li><p>ISBN/URL: <i>{{ .Params.isbn }}</i></p></li>
+            <li><p>Reading Period: <i>{{ .Params.reading_period }}</i></p></li>
+            <li><p>Source: <i>{{ .Params.source }}</i></p></li>
+        </ul>
+        {{ .Content }}
     </div>
-  <h1>Book Details</h1>
-  <ul>
-    <li>Full Title: <i>{{ .Params.title }}</i></li>
-    <li>Author: <i>{{ .Params.author }}</i></li>
-    <li>ISBN/URL: <i>{{ .Params.isbn }}</i></li>
-    <li>Reading Period: <i>{{ .Params.reading_period }}</i></li>
-    <li>Source: <i>{{ .Params.source }}</i></li>
-  </ul>
-  {{ .Content }}
-  </div>
 
-  <div class="post-footer">
-    <div class="info">
-      {{ with .Page.Params.Categories }}{{ partial "taxonomy/categories.html" . }}{{ end }}
-      {{ with .Page.Params.Tags }}{{ partial "taxonomy/tags.html" . }}{{ end }}
+    <div class="post-footer">
+        <div class="info">
+            {{ with .Page.Params.Categories }}{{ partial "taxonomy/categories.html" . }}{{ end }}
+            {{ with .Page.Params.Tags }}{{ partial "taxonomy/tags.html" . }}{{ end }}
+        </div>
     </div>
-  </div>
 
-  {{ if .Site.DisqusShortname -}}
+    {{ if .Site.DisqusShortname -}}
     <div id="fb_comments_container">
-      <h2>Comments</h2>
-      {{ template "_internal/disqus.html" . }}
+        <h2>Comments</h2>
+        {{ template "_internal/disqus.html" . }}
     </div>
-  {{- end }}
+    {{- end }}
 </div>
 {{ end }}

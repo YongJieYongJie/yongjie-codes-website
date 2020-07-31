@@ -1,6 +1,7 @@
 {{ define "main" }}
 <div class="archive animated fadeInDown">
     <ul class="list-with-title">
+    <p>{{ .Content }}</p>
     {{ range .Data.Pages.GroupByDate "2006" }}     
         <div class="listing-title">{{ .Key }}</div>
         {{ range .Pages }}

@@ -17,20 +17,26 @@ body {
     background-color: #EFEFEF;
 }
 
-/* Spacing Tweaks */
-.post-content > h1 {
+/* Tweaks on Posts Page */
+.yj-post .post-content .post-body h2 {
     padding-top: 1em;
-    font-size: 1.3em;
+    font-size: 1.4em;
 }
 
-.post-content > h2 {
+.yj-post .post-content .post-body h3 {
     padding-top: 1em;
-    font-size :1em;
+    font-size: 1.1em;
+    font-style: italic;
 }
 
-span.image-credit {
+.yj-post span.image-credit {
     display: block;
     width: 100%;
     text-align: right;
     font-size: 13px;
+}
+
+/* Tweaks on Reading Logs Page */
+.yj-reading-log h2 {
+    font-style: italic;
 }
