@@ -5,6 +5,8 @@ date: 2020-02-18
 image: "img/post-conda-offline-title.jpg"
 imageCredit: "Robert Anasch (https://unsplash.com/photos/h7dl6upIOOs)"
 draft: false
+categories: ["python", "data-science"]
+tags: ["anaconda"]
 ---
 
 If you are wondering how to set up Anaconda / Conda environments on a machine

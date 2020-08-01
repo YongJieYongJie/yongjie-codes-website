@@ -5,6 +5,8 @@ date: 2020-07-05
 image: "img/post-sumatra-pdf-no-scrollbar-title.jpg"
 imageCredit: "Paul Kapischka (https://unsplash.com/photos/N5hZ_3_Wf-s)"
 draft: false
+Categories: ["c++", "gui", "open-source"]
+tags: ["sumatrapdf", "win32-api"]
 ---
 
 Facing a seemingly impossible task? Fret not, read on for a story of how I
@@ -166,4 +168,3 @@ Read the official document for Win32 API at [[https://docs.microsoft.com/en-us/w
   save yourself hours of headaches.
 
 /The pull request is over [[https://github.com/sumatrapdfreader/sumatrapdf/pull/1647][here]] if you are interested/.
-  

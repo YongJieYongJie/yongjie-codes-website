@@ -5,6 +5,8 @@ image: "img/post-a-python-gui-app-title.jpg"
 imageCredit: "Jon Tyson (https://unsplash.com/photos/Q_GnkCF1PrE)"
 date: 2020-06-21
 draft: false
+categories: ["python", "gui"]
+tags: ["tkinter"]
 ---
 
 If you are looking to build simple GUI application in Python Tkinter and
