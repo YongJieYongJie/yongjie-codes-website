@@ -1,7 +1,7 @@
 baseURL = "https://yongjie.codes"
 languageCode = "en"
 DefaultContentLanguage = "en"
-title = "Programmer, Ex-Lawyer"
+title = "A Random Programmer"
 theme = "anatole"
 summarylength = 10
 enableEmoji = true
@@ -16,7 +16,7 @@ googleAnalytics = "UA-144641266-1"
 [params]
 title = "I'm Yong Jie"
 author = "Yong Jie"
-description = "Call me YJ"
+description = "You can call me YJ. I write code, write about writing code (here), and sometimes speak about writing code. I enjoy coding in general, and have written (poor) programs from Flash games to Office Add-ins, browser extensions, web applications, desktop applications, data-analytics tools..."
 profilePicture = "img/avatar.jpg"
 keywords = ""
 favicon = "img/favicons/"
