@@ -1,9 +1,77 @@
+/**************
+ * LEFT PANEL *
+ **************/
+
+/* Shift left panel higher to make space for bio text */
+.sidebar .logo-title {
+    padding-top: 30%;
+}
+
+/* Give the copyright footer a background so it'll cover the bio if necessary */
+.footer {
+    background: #292a2d;
+}
+
+/* Add horizontal padding for bio text */
+.logo-title {
+    padding-left: 1em;
+    padding-right: 1em;
+}
+
+/* Change split percentage to be based on golden ratio */
+.sidebar {
+    width: 38.19%;
+}
+
+
+/***************
+ * RIGHT PANEL *
+ ***************/
+
+/* Change split percentage to be based on golden ratio */
+.page-top, .content {
+    width: 61.01%;
+}
+
+/* Horizontal margin for posts */
+.post {
+    margin: 1em;
+}
+.page-top > .nav {
+    padding-left: 1em;
+    padding-right: 1em;
+}
+.page-top > .themeswitcher {
+    /* 0.625em instead of 1em like the other things around here  because the 
+       font-size here was changed in the default css. */
+    padding-right: 0.625em;
+}
+.list-with-title {
+    margin-left: 1em;
+    margin-right: 1em;
+}
+
+
+/*************
+ * Scrollbar *
+ *************/
+
+/* Use thin scrollbar for Firefox */
+html {
+    scrollbar-width: thin;
+}
+
+/* Use thin scrollbar for Chrome */
+::-webkit-scrollbar {
+    width: 7px;
+}
+
 /* Hidding the annoying horizontal scroll in Chrome */
 body {
     overflow-x: hidden;
 }
 
-/* Setting scrollbar colors for Chrome  */
+/* Setting scrollbar colors for Chrome to match Firefox */
 [data-theme='dark'] ::-webkit-scrollbar {
     background-color: #353535;
 }
@@ -17,7 +85,11 @@ body {
     background-color: #EFEFEF;
 }
 
-/* Tweaks on Posts Page */
+
+/**************
+ * POSTS PAGE *
+ **************/
+
 .yj-post .post-content .post-body h2 {
     padding-top: 1em;
     font-size: 1.4em;
@@ -36,7 +108,11 @@ body {
     font-size: 13px;
 }
 
-/* Tweaks on Reading Logs Page */
+
+/*********************
+ * READING LOGS PAGE *
+ *********************/
+
 .yj-reading-log h2 {
     font-style: italic;
 }
