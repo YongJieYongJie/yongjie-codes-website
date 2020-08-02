@@ -1,0 +1,556 @@
+---
+short_title: "The Pmp Exam: How to Pass on Your First Try"
+title: "The PMP Exam: How to Pass on Your First Try, Sixth Edition"
+source: Googl-ing on how to pass the PMP exam, found this book recommended in quite a few different places
+author: Andy Crowe
+isbn: 978-0-9909074-7-3
+reading_period: 2020.06.21–2020.08.01
+date: 2020-08-02T19:43:32+08:00
+draft: false
+categories: ["non-programming-related"]
+tags: ["pmp", "certification"]
+---
+
+* General Review
+- A good book focused on helping the reader pass the PMP exam by emphasizing
+  what is important for the exam, and what approaches are favored on the exam.
+  - At the same time, the book highlights areas that are actually important in
+    actual projects---this is very valuable as PMP itself seems focused on the
+    traditional ways of doing things.
+* Specific Takeaways
+** Chapter 4 - Integration Management
+*** Project Charter
+- Ways to select projects for execution include:
+  - *Benefit Cost Ratio*: Positive ratio means benefits outweight costs
+  - *Economic Value Added*: Values the project by taking into account
+    opportunity costs (e.g., cost of capital is deducted from net profits
+    streaming in from the project)
+  - *Internal Rate of Return*: The project's returns expressed as an interest
+    rate (think of it as the organization investing the capital into the
+    project, hence the interest rate measures the growth of the capital)
+  - *Opportunity Cost*: Cost of the other opportunities given up
+  - *Payback Period*: How long it will take to recoup an investment
+  - *Present Value* / *Net Present Value*: Discounting future income by the
+    "time value of money"
+  - *Return On Investment*: The excess of benefits over costs, expressed as a
+    percentage of the cost: =(benefit-cost)/cost=. Note that cost is generally
+    calculated including the whole of the capital invested.
+  - *Return On Invested Capital (ROIC)*: A measure of how well the capital is
+    being deployed. A general formula would be: =(after tax profits - cost) /
+    capital invested=. Note that the capital itself is not included in the
+    numerator calculation; also, this figure is usually calculated on a yearly
+    basis.
+** Chapter 5 - Scope Management
+*** Create WBS
+- Process Flow: Develop Project Charter -> Identify Stakeholders -> Collect
+  Requirements -> Define Scope -> Create WBS
+- When deciding whether work packages have been broken down into sufficiently
+  small packages, ask yourself the following questions:
+  - Are your work packages small enough to be estimated for time and cost?
+  - Are the project manager and project team satisifed that the current level of
+    detail provides enough information to proceed with subsequent project
+    activities?
+  - Is each work package small enough to be able to be assigned to a single
+    person or group that can be made responsible for the results?
+** Chapter 6 - Schedule Management
+*** Define Activities
+- An activity is different from a work package in that work package is
+  deliverable-based whereas activity is effort and task-based.
+*** Sequence Activities
+- A *lead* is one activity getting a jump-start on another. For example, if task
+  A and task B has a finish-to-start dependency, a lead of 3 days would mean
+  that task B can start 3 days before the finish of task A.
+- A *lag* is when a waiting period must occur, where the project team does no
+  work in relation to the tasks.
+*** Estimate Activity Durations
+- Process flow: Plan Schedule Management -> Define Activities -> Estimate
+  Activities Resources (under Project Resource Management) -> Estimate Activity
+  Durations
+- PERT (Program Evaluation and Review Technique) estimation:
+  - Beta Distribution:
+    - Estimate = (pessimistic + 4 x realistic + optimistic) / 6
+    - Standard deviation = (pessimistic - optimistic) / 6
+  - Triangular Distribution:
+    - Estimate = (pessimistic + realistic + optimistic) / 3
+- Critical Path vs Critical Chain
+  - Critical Path is the traditional approach of sequencing activities and
+    calculating the total duration required based on the longest path (AKA the
+    critical path). Any delay in relation to activities on the critical path
+    will result in overal project delay. Activities not on the critical path
+    usually have certain "float" where delays in such activities will no cause
+    project delay.
+    - Free Float: Maximum amount of delay of that particular activity that will
+      not cause delay in the early start of any other activity.
+    - Total Float: Maximum amount of delay of that particular activity that will
+      not cause overall project delay.
+  - Critical Chain is the newer approach where the estimation is
+    resource-optimized, and an overall project buffer is added to the critical
+    chain.
+*** Develop Schedule
+- Resource Optimization: Resource Leveling vs Resource Smoothing
+  - Resource leveling is the application of resource constraints on the activity
+    network diagram. Recall that the activity diagram sets out activity duration
+    estimates that are unconstrained by resource availability.
+  - Resource smoothing does not change the critical path or the completion date,
+    but merely shifts activities within their float.
+- Schedule Compression: Crashing vs Fast-Tracking
+  - Crashing involves adding resources to a project activity so that it will be
+    completed more quickly. Crashing almost always increases costs.
+  - Fast-tracking involves re-ordering the sequence of activities so that some
+    of the activities are performed at the same time. Fast-tracking does not
+    necessarily increase costs, but it almost always increases risk.
+- An easy way to calculate float of a particular activity is to first determine
+  the duration of the critical path, then find all the paths that include the
+  relevant activity and calculate the duration of each of these paths. The float
+  of the relevant activity is the duration of the critical path minus the
+  duration of the other path containing the activity with longest duration.
+- Negative float is when an activity's start date falls after it's finish
+  date. This usually occur because of immovable constraints or milestones
+  imposed by external forces, resulting in an impossible situation.
+  - E.g., if an activity is scheduled to finish on 4 June, but can only start on
+    14 June due to certain constraints, it has negative float of 10 days.
+- *Delphi Techinque* is a method of gathering expert judgment where the
+  participants do not know who the others are and therefore are not able to
+  influence each other's opinion. It is designed to prevent groupthink and to
+  find out a participant's real opinion.
+- Reserve time may be added on a project basis or on an activity basis; it may
+  also be added as a lump sum, or as a percentage.
+** Chapter 7 - Cost Management
+*** Estimate Costs
+- Process flow: Define Scope -> Create WBS -> Define Activities -> Estimate
+  Activity Resources -> Estimate Activity Durations -> Develop Schedule ->
+  Estimate Costs
+- Estimates are usually made at different levels of accuracy, less accurate at
+  project initiation, and gradually made more accurate. A general sense of what
+  are the different levels of accuracy is as follows: "rough order of magnitude"
+  (-25% to +75%), "preliminary estimate" (-20% to +30%), and "definitive
+  estimate" (-5% to +10%).
+*** Develop Budget
+- The cost baseline + management reserves makes up the project's budget.
+- Terms
+  - TCPI: To-Complete Performance Index
+- Cost Variance is Earned Value - Actual Cost
+- Estimate at Completion (EAC) is the amount we expect the project to cost when
+  it is finished, based on where we are today.
+- Indirect Costs: Costs that are shared and allocated among several or all
+  projects (e.g., manager's salary).
+** Chapter 8 - Quality Management
+- Total Quality Management (TQM) is the idea that everyone in the company is
+  responsible for quality and is able to make a difference in the ultimate
+  quality of the product. TQM applies to improvements in processes and in
+  results.
+- Continuous Improvement (AKA Kaizen) stresses constant process improvement. It
+  seeks to make an ongoing series of small changes to improve the product and
+  the process.
+- Just-In-Time (JIT) is a manufacturing method that brings inventory don to zero
+  or near zero levels, and forces a focus on quality since there is no excess
+  inventory to waste.
+  - YJ: It is not exactly clear how this leads to a focus on quality.
+- ISO 9000 is a series of standards in relation to quality management.
+- In relation to standard deviation of a normally-distributed variable:
+  - 68.25% will fall within 1 s.d. from the mean.
+  - 95.46% will fall within 2 s.d. from the mean.
+  - 99.73% will fall within 3 s.d. from the mean.
+  - 99.99966% will fall within 6 s.d. from the mean.
+- Attribute Sampling vs Variable Sampling
+  - When measuring quality, it is possible to choose either attribute sampling
+    or variable sampling.
+    - Attribute Sampling is binary: a set of tolerances is defined, and the
+      product passes the tolerances or fail. E.g., in a production facility
+      making prescription drugs, if a certain batch contains an amount of
+      undesirable component that exceeds the pre-defined number of parts per
+      million, the batch fails the quality check.
+    - Variable Sampling rates the quality on a scale. E.g., in a production
+      facility making prescription drugs, the amount of undesirable component is
+      measured on a continuous scaled and evaluated against the ideal amount.
+- Special Causes vs Common Causes
+  - Within the topic of statistical process control, there is a concept of
+    special causes and common causes.
+    - Special Causes are unusual and preventable (by process improvement),
+      whereas common causes are normal (and generally accepted).
+- Tolerances vs Control Limits
+  - Tolerances represent the range within which the product is acceptable. E.g.,
+    if it is specified that the product is acceptable if its weight is between
+    =k= and =j= grams, the range from =k= to =j= is the tolerance.
+  - Control limits is a more complex concept, and are typically set at 3
+    standard deviations above and below the mean. As long as the results fall
+    within the control limits, the process is considered to be in control.
+  - One way to distinguish the two is that tolerances focus on whether the
+    product is acceptable, while control limits focus on whether the process
+    itself is acceptable.
+*** Plan Quality Management
+- A useful flowcharting tool for quality management is the SIPOC value chain:
+  Suppliers, Inputs, Process, Output, Customer. More specifically, it visualize
+  the flow of suppliers and inputs through the process to create outputs to the
+  customers.
+*** Manage Quality
+- Design for X is a methodology where design is applied to certain select
+  priorities. E.g.,:
+  - Design for Cost (DfC): Designing with cost efficiency being the key
+    priority.
+  - Design for Assembly (DfA): Designing to prioritize for ease, accuracy, and
+    efficiency of assembly of the components.
+  - Design for Manufacturing (DfM): Design to prioritize around the best way to
+    manufacture he product and its components.
+  - Design for Logistics (DfL): Designing to prioritize sourcing componentns
+    from the most efficient locations.
+  - Design for Serviceability (DfS): Designing to prioritize optimal ease of
+    repair and service.
+- A common problem solving approach is as follows:
+  - Define the Problem -> Root Cause Analysis -> Identify Possible Solutions ->
+    Choose a Solution -> Implement the Solution -> Verify the Solution
+- Quality Report is an output of the Manage Quality process.
+  - YJ: Is this because quality can be considered part of the scope, and hence
+    the quality report is part of the deliverable. And as a parallel, evaluation
+    of the quality report (as a deliverable) under the Control Quality process
+    is the counterpart to Control Scope / Validate Scope.
+*** Control Quality
+- "Any time you find a part being inspected for quality, you can be sure that
+  you are in Control Quality".
+  - YJ: Does this mean that on difference between the Manage Quality process and
+    the Control Quality process is that the former relates to the "doing"
+    (together with the data generated alongside), and the latter relates to the
+    "checking"?
+  - YJ: Does this mean that Manage Quality is concerned more about the process,
+    whereas Control Quality is concerned more about the product? The book seems
+    to suggest so.
+- A control chart shows the metrics per datapoint against the overall mean and
+  +/- three standard deviations from the mean.
+  - One interesting rule in relation to control charts is the rule of seven ---
+    if seven or more consecutive data points fall on one side of the mean, they
+    should be investigated, even if the seven data points are within the control
+    limits.
+** Chapter 9 - Resource Management
+- Be prepared to see questions on Tuckman's Ladder, Maslow's Hierarchy,
+  Herzberg's Hygiene Factors, and other theories.
+*** Plan Resource Management
+- The resource management plan has three main components: identification of
+  resources, plan for acquiring resources, and staffing roles and
+  responsibilities.
+- A resource histogram shows the resource usage for a given period of time.
+*** Estimate Activity Resources
+- Process Flow: Create WBS -> Define Activities -> Estimate Activity Resources
+  -> Estimate Activity Durations -> Develop Schedule.
+  - This process usually goes hand-in-hand with Estimate Costs.
+*** Develop Team
+- *Tuckman's Ladder* defines five levels of team performance:
+  - Forming is the first stage where the team understands the project and their
+    roles.
+  - Storming is the stage where the team begins to do the work, but there is
+    typically a good bit of conflict and difficulty. This stage may be chaotic.
+  - Norming is the satge where the behavior normalizes and members begin to work
+    as a team. In this stage, the project manager shares more leadership with
+    the team.
+  - Performing is the stage where the team is working at an efficient level that
+    exceeds what individuals could accomplish alone. The project manager's role
+    changes to be one of overseeing and delegating.
+  - Adjourining is the stage where the project is closed and the team is
+    released. Since individuals tend to fear change, this stage can be difficult
+    on everyone.
+- *Maslow's Hierarchy of Needs* defines five basic category of human motivation:
+  - Physiological -> Security -> Acceptance -> Esteem ->
+    Self-Actualization
+- *Expectancy Theory* states that team members make choices based on expected
+  outcomes. I.e., team members will only work hard towards a goal if they
+  believe that goal is achievable.
+- *McGregor's Theory X and Theory Y* states that there are two ways to
+  categorize and understand people in the workplace:
+  - Theory X: Team members are only interested in their own selfish goals. They
+    are unmotivated, they dislike work, and they must be forced to do productive
+    work. --> Constant supervision is necessary to achieve desired results on a
+    project.
+  - Theory Y: People are naturally motivated to do good work. --> Team members
+    need very little external motivation and can be trusted to work toward the
+    organization's or project's goals.
+- *Contingency Theory* states that a leader's effectiveness is contingent upon
+  two sets of factors: (a) whether the leader is task-oriented or
+  relationship-oriented; and (b) how stressful the environment is.
+  - In stressful times, a task-oriented leader will be more effective; in
+    relatively calm times, a relationship-oriented leader will function more
+    effectively.
+- *Herzberg's Motivation-Hygiene Theory* states that the presence of certain
+  factors does not make someone satisfied, but their absence can make someone
+  unsatisfied. In particular, hygiene factors must be present, but they do not
+  motivate by themselves; motivation factors will motivate, but they will not
+  work without the hygiene factors in place.
+  - Examples of motivation factors: achievement, recognition, work,
+    responsibility, advancement, growth.
+  - Examples of hygiene factors: paycheck, personal life, status, security,
+    relationship with co-workers, company policy, supervision, good relationship
+    with boss, working conditions.
+- *McCelland's Three Need Theory* (AKA *Achievement Theory*) states that
+  employees are motivated out of three primary needs:
+  - Achievement: Team members with a high /need for achievement/ have a need to
+    stand out. They gravitate toward other team members with a need for
+    achievement. High risk projeccts are not appealing to them since their
+    individual effort may be thwarted by the risk of the project. Low risk
+    projects may not ab appealing since individual effort may not be recognized.
+  - Power: Team members with the /need for power/ generally desire either
+    institutional (social) power or personal power. Individuals with a desire
+    for social power are usually more effective team members than those with a
+    desire for personal power.
+  - Affiliation: Individuals with the /need for affiliation/ want to belong to a
+    team. They seek to maintain good relationships and do well in
+    customer-facing team positions.
+- There are various forms of power that a project manager may have.
+  - Reward Power
+  - Expert Power
+  - Legitimate (AKA Formal Power)
+  - Referent Power
+  - Punishment (AKA Coercive Power)
+  - /Note: The PMP exam favors reward and expert powers, and dislike
+    punishment./
+*** Manage Team
+- Work Performance Reports are output of the process. *Recall that reports
+  should be actionable.*
+- There are several ways of handling conflict:
+  - Problem-Solving: Confronting the problem and resolving the root
+    causes.
+    - /Note: This is highly favored by PMP exam./
+    - /Note 2: This is sometimes known as confrontation./
+  - Collaboraton: Individuals (or teams) work together to come to a solution.
+  - Compromise (AKA reconcile): Both parties sacrifice something for the sake of
+    reaching an agreement. This might be presented on the test as "lose-lose".
+  - Forcing
+  - Smoothing (AKA accommodating): Play down the problem, and turns attention to
+    what is going well. Smoothing merely tries to diminish the problem instead
+    of solving it.
+  - Withdrawal
+- Types of team roles:
+  - Constructive
+    - Initiators
+    - Information Seekers
+    - Informaiton Givers
+    - Encouragers
+    - Clarifiers
+    - Harmonizers
+    - Summarizers
+    - Gate Keepers
+  - Destructive
+    - Aggressors
+    - Blockers
+    - Withdrawers
+    - Recognition Seekers
+    - Topic Jumpers
+    - Dominators
+    - Devil's Advocates
+- Style of leadership will generally need to change as the project progresses.
+  - Directing Leadership -> Coaching Leadership -> Facilitating Leadership ->
+    Supporting Leadership
+*** Control Resources
+- This process is about physical resources (not human resources).
+** Chapter 10 - Communications Management
+- The project manager need not vet through each and every communications; his
+  role is to manage the communication process and not each and every
+  communication.
+*** Plan Communications Management
+*** Manage Communications
+*** Monitor Communications
+** Chapter 11 - Risk Management
+*** Plan Risk Management
+*** Identify Risks
+- Use the "five why's" technique to identify root causes: i.e., ask why
+  consecutive for five times, and by the fifth time, the response would be near
+  the root cause. E.g.:
+  - Problem: The vehicle failed its annual emissions test.
+  - Why? The check engine light was on.
+  - Why? The oxygen sensor had failed.
+  - Why? The fuel injectors had not been properly cleaned, resulting in an
+    improper burn.
+  - Why? The mechanic did not follow manufacturer's guidelines.
+  - Why? The staff was not factory trained for maintenance.
+- Consider using prompt lists to generate ideas:
+  - PESTLE (political, economic, social, technological, legal, environmental)
+  - TECOP (technical, environmental, commercial, operational, political)
+  - VUCA (volatility, uncertainty, complexiyt, ambiguity)
+*** Perform Qualitative Risk Analysis
+*** Perform Quantitative Risk Analysis
+*** Plan Risk Response
+- The strategies for dealing threats (i.e., negative risks) include:
+  - *Escalate*: I.e., bring the problem to someone else. Note: this is not a
+    preferred approach for PMP exam.
+  - *Avoid*: E.g., choosing to use an older but more reliable technology,
+    instead of going for the cutting-edge stuff.
+  - *Mitigate*: I.e., to reduce the impace.
+  - *Accept*: Merely acknowledege the risk. Passive acceptance requires no
+    proactive steps, active acceptance may involve setting aside contingency
+    reserve.
+- The strategies for dealing with opportunities (i.e., positive risks) include:
+  - *Escalate*: E.g., if there is a potential technological breakthrough that
+    impacts the whole organization and not just the project, it might be more
+    appropriate for the opportunity to be handled at a higher level.
+  - *Exploit*: E.g., if there is a possibility that the project work is finished
+    early, a way to exploit it will be to direct more resources to increase such
+    likelihood.
+  - *Share*: I.e., collaboratig with another party to improve the chances of the
+    opportunity.
+  - *Enhance*: I.e., Increase the likelihood by acting on the underlying
+    triggers.
+  - *Accept*: (Same as for threats. See previous list.)
+*** Implement Risk Responses
+- Risk response are implemented through change requests.
+*** Monitor Risks
+** Chapter 12 - Procurement Management
+- *Summary*: The main contract types for the exam are as follows:
+  - *Fixed Price*
+    - Risk borne by Seller: since the price is fixed, cost overruns may not be
+      passed on to the buyer and must be borned by the seller.
+  - *Cost Plus Fixed Price*
+    - Risk borne by Buyer: sicne all costs must be reimbursed to th eseller, the
+      buyer bears the risk of cost overruns.
+  - *Cost Plus Incentive Fee*
+    - Risk borne by Buyer and Seller: The buyer bears most of the risk here, but
+      the incentive fee for the seller motivates that seller to keep costs down.
+  - *Time and Material*
+    - Risk borne by Buyer: The buyer pays the seller for all time and materials
+      the seller applies to the project. The buyer bears the most risk of cost
+      overruns.
+- *Fixed Price Contracts (AKA Lump Sum Contracts)*
+  - *Firm Fixed Price*
+    - Risk is entirely shifted to the seller.
+  - *Fixed Price Incentive Fee*
+    - The price is fixed, with an incentive fee for meeting a target specified
+      in the contract (such as finishiing the work ahead of schedule).
+    - With FPIF contracts, both parties agree to a ceiling price, and all
+      costs above the price ceiling must be covered by the seller.
+  - *Fixed Price Economic Price Adjustment*
+    - Popular in cases where fluctuations in the exchange rate or interest
+      rate may impact the project.
+    - In a FP-EPA contract, an economic stipulation may be included to protect
+      the seller or the buyer. The economic stipulation may be based on the
+      interest rate, the consumer price index, cost of living adjustments,
+      currency exchange rates, or other indices.
+- *Cost Reimbursable Contracts*: Buyer agrees to pay the seller for actual
+  costs plu a fee that is actually the seller's profit.
+  - *Cost Plus Fixed Fee (CPFF)*
+    - The seller passes the cost back to the buyer and receives an additional
+      fixed fee upon completion of the project. The fee is calculated as a
+      percentage of the planned costs.
+  - *Cost Plus Incentive Fee (CPIF)*
+    - The seller passes the cost back to the buyer and gets an incentive fee for
+      meeting a target (usually tied back to keeping the costs low) specified in
+      the contract.
+  - *Cost Plus Award Fee (CPAF)*
+    - The seller passes the costs back to the buyer, but the seller's profit
+      (award fee) comes from a decision on whether or not to grant it, made
+      subjectively by the buyer based on the seller's performance. The decision
+      may not be appealed by the seller.
+- *Time and Materials Contracts*: Seller charges for time plus the cost of any
+  materials needed to complete the work.
+- Point of Total Assumption (PTA)
+  - Particularly relevant when using Fixed Price Incentive Fee contracts.
+  - PTA is the cost point in the contract where a subcontractor assumes
+    responsibility for all additional costs.
+  - E.g.:
+    | Contract Type                   | FPIF    |
+    | Estimate                        | $75,000 |
+    | Buyer's target cost             | $71,000 |
+    | Target price to Seller          | $75,000 |
+    | Seller's ceiling price to Buyer | $84,000 |
+    | Share ratio above target cost   | 3:1     |
+    This means that for every dollar over the target cost ($71,000), the buyer
+    will pay $0.75 and the seller will pay $0.25.
+
+    YJ: The above means that the seller's best-case profit is $4,000, when the
+    costs incurred is $71,000, and they get paid $75,000. When the costs is
+    $83,000, the seller still gets paid only $84,000 (being the ceiling price),
+    and thus bear the loss of profit (because $84,000 - $83,000 is only $1,000),
+    and also the percentage of cost (0.25 of $83,000 - $71,000).
+*** Plan Procurement Management
+- Source Selection Analysis: the ways to select a seller includes the following:
+  - *Least Cost*: Applicable when quality is not in question. E.g., if the
+    component purchased must comply with an ISO standard, it may reasonably be
+    assumed that anything that complies would suffice for the projecct.
+  - *Qualifications Only*: Applicable when the product or service is small
+    enough and does not warrant an elaborate procurement process.
+  - *Quality-Based (technical score)*: Sellers are ranked on quality scores.
+  - *Quality and Cost-Based*: Sellers are ranked on quality scores and costs.
+  - *Sole Source*: Buyer negotiates with sole seller.
+  - *Fixed Budget*: Buyer discloses the budget to seller, and the parties
+    negotiate on scope. Would not work well when scope changes are anticipated.
+- Procurement Management Plan
+  - Defines what will be procured on the project, how a seller will be selected,
+    what types of contracts will be used, how risk will be managed, how sellers
+    will be managed, including how their performance will be measured.
+*** Conducting Procurement
+*** Controlling Procurement
+** Chapter 13 - Stakeholder Management
+*** Identify Stakeholders
+- It might be useful to think about the influence that stakeholders have in
+  terms of the directions: upwards, downwards, sidewards and/or outwards. (I.e.,
+  besides just saying that a stakeholder has high influence, also consider who
+  that stakeholder has the high influence over.)
+*** Plan Stakeholder Engagement
+- Stakeholder engagement is often plotted on a matrix, indicating each
+  stakeholder's current engagement level, and the desired engagement level.
+  - The different engagement level may range from unaware, resistant, neutral,
+    supportive to leading.
+*** Manage Shareholder Engagement
+- The project manager should be constantly thinking about the stakeholder's
+  needs---how he/she might want to be involved in the project.
+- The project manager should aim to align the interests of the stakeholders with
+  project interests.
+*** Monitor Stakeholder Engagement
+** Chapter 14 - How to Pass the PMP Exams
+- Handling harder questions
+  - Generally, on difficult questions, there might be a solution that looks
+    correct, but are too vague or generic to be helpful.
+    - E.g., the question is about how the project sponsor has requested a
+      meeting with the project manager to discuss the CPI and SPI (both of which
+      are slightly below 1) and also certain decisions made by the project
+      manager and their consequencies. One of the choices may be "Evaluate why
+      the sponsor wants to meet." While this may sound like a sensible thing to
+      do, it doesn't really actually do anything to positively change affect the
+      situation. The more appropriate answer might be "Explain to the sponse why
+      he made the decisions he did."
+- When guessing, think about which of the processes stage are relevant
+  (initiating, planning, executing, monitoring and controlling, closing).
+  - E.g., when asked which of the presented processes does not take
+    organizational process assets (OPA) as input, it is useful to recall that
+    OPA are usually used for initiating and planning activities, so if the
+    presented processes fall within initiating or planning process group, then
+    they are less likely to be the answer.
+- Handling trick questions
+  - When given a choice between a reasonable answer and an answer that confirms
+    with PMI processes, choose the latter.
+  - Avoid choosing answer that defer resolution of an issue.
+  - PMI favors direct communication by project managers instead of beating about
+    the bush / going through a third party. E.g., the project manager would
+    communicate the bad news to customer directly, and the sooner the better.
+- Formulas to memorize:
+  - Earned value formulas (EV, PV, AC, CPI, CPI cumulative, SPI, CV, CS, BAC,
+    EAC, ETC, TCPI cumulative).
+  - Schedule management formulas for three-point estimates and standard
+    deviation.
+    - Beta distribution:
+      - ~estimate = (pessimistic + (4 x realistic) + optimistic) / 6~
+      - ~standard deviation = (pessimistic - optimistic) / 6~
+  - Communication channels formula: ~num channels = num pax x (num pax - 1) / 2~
+  - Point of total assumption is ~target cost + (ceiling price - target price) /
+    buyer's % share of cost overrun~.
+*** Code of Ethics and Professional Conduct
+- The four fundamental values are responsibility, respect, fairness, honesty.
+- Each of the four values has two set of standards: aspirational and mandatory.
+  - Mandatory standards generally relates to legal requirements (e.g., no
+    bribery).
+* To Internalize /Now/
+- When possible, try to think of everyday tasks as a mini-project, and "manage"
+  it accordingly. E.g., try to identify risk, try to think about alternatives.
+* To Learn/Do Soon
+- Check out other relevant professional certifications.
+* To Revisit When Necessary
+** Chapter 5 - Scope Management
+*** Create WBS
+- Refer to this section for an example of a WBS, a WBS dictionary, and
+  terminologies related to the WBS / Scope Baseline.
+** Chapter 6 - Schedule Management
+*** Develop Schedule
+- Refer to this section for a worked example of resource leveling.
+- Refer to this section for a list of terminologies (together with definitions
+  and examples) used in relation to scheduling (e.g., discretionary dependency).
+** Chapter 7 - Cost Management
+- Refer to this section for a list of terms and their definition, and also their
+  equivalent and older versions that may still show up on the exam.
+* Other Resources Referred To
+- N.A.
+  
