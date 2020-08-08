@@ -1,0 +1,233 @@
+---
+title: "Communicating Code over Conference Calls"
+date: 2020-08-08T10:08:52+08:00
+draft: fales
+categories: ["techincal-communication"]
+tags: ["ZoomIt", "LiveShare", "Covid-19", "tmux", "vscode"]
+---
+
+In this guide, we'll pick up some tips and tricks on how to
+  communicate code better over conference calls, such as how to
+  increase the zoom level of /any/ application (Tip #3).
+
+  - Tip #1: Increase the Font Size Everywhere (with instructions; yes,
+    I did the Googling for you)
+  - Tip #2: Use Live Share (Google Docs, but for coding)
+  - Tip #3: Global Zoom using macOS Accessibility / Microsoft ZoomIt
+  - Tip #5: Display an Agenda List on Screen
+  - Tip #6: Have an Audience Take Notes
+
+* Background
+Software engineers generally were able to work from home during the
+  Covid-19 pandemic. While many have enjoyed the flexibility that
+  comes with being able to work from home, it is not without its own
+  sets of disadvantages.
+
+One such problem: /effective communication of code over conference
+  calls/.
+
+What you see:
+[[/img/guide-communicating-code-goland-presenter.png]]
+
+vs what /they/ see (notice how the comments are especially hard to
+  read because of the compression artefacts):
+[[/img/guide-communicating-code-goland-audience.png]]
+
+Deciphering code in and or itself already requires mental effort, to
+  make matters worst, when communicating over conference calls, we
+  face more issues:
+
+- As an audience:
+  - Poor video quality due to compression.
+  - Choppy connection and not being able to follow when the presentor
+    moves around the code.
+
+- As the presenter:
+  - We also face the issue of not knowing exactly whether the
+    participants are following along fine.
+
+* Tip 1: Increase the Font Size Everywhere
+This point is more subtle than you might imagine---as a presenter, you
+  might have already switched to a font size larger than usual, and
+  the code might look sufficiently zoomed in for you, however, what
+  the participants see might be a low quality compression version of
+  the code.
+
+As such, it is crucial to know how to quickly change the font size,
+  and respond to any such request from the audience.
+
+(/In the examples below, replace ~<Control>~ with ~<Command>~ on macOS/).
+- Visual Studio Code:
+  - ~<Control> + =~ to zoom in
+  - ~<Control> + -~ to zoom out
+  - ~<Control> + 0~ to reset zoom
+- IntelliJ Idea / GoLand
+  - Enable zooming in/out using mouse wheel:
+    - Go to ~Preferences~ > ~Editor~ > ~General~
+    - Ensure ~Change font size with Command+Mouse Wheel~ is enabled
+  - Enable soft-wrapping so long lings are wrapped after zooming in:
+    - Go to ~Preferences~ > ~Editor~ > ~General~
+    - Ensure ~Soft-wrap these files:~ is checked, and add the relevant
+      wildcards to wrap the various file types (e.g., ~*.java~)
+  - For those keyboard-inclined users, unfortunately IntelliJ Idea
+    doesn't has any preset keyboard shortcuts for changing zoom
+    level, but we can add at the shortcuts ourselves.
+    - Go to ~Preferences~ > ~Keymap~
+    - Search for ~Increase Font Size~, right-click and select ~Add
+      Keyboard Shortcut~ and/or ~Add Mouse Shortcut~
+    - Repeat the steps as appropriate for ~Decrease Font Size~
+- Mac Terminal
+  - ~<Command> + =~ to zoom in
+  - ~<Command> + -~ to zoom out
+- Windows Terminal
+  - ~<Control> + =~ to zoom in
+  - ~<Control> + -~ to zoom out
+  - ~<Control> + 0~ to reset zoom
+
+While it might be easy to over focused on the editors and IDES, but
+  the fact of the matter is that we do use many other applications in
+  our day-to-day work.
+
+Make sure you know how to change the zoom levels of such applicaitons
+  too.
+
+- Chrome, Postman, and many other tools
+  - ~<Control> + =~ to zoom in
+  - ~<Control> + -~ to zoom out
+  - ~<Control> + 0~ to reset zoom
+
+* Tip 2: Use Live Share (Google Docs, but for coding)
+Say what you may about Microsoft, but it has been doing good work with
+  its suite of text editor (Visual Studio Code) and IDE (Visual
+  Studio).
+
+The excellent [[https://marketplace.visualstudio.com/items?itemName=MS-vsliveshare.vsliveshare-pack][Live Share]] feature allows audience member to connect to
+  your editing session, and follow your cursor (not the mouse cursor,
+  but where you are in the editor / IDE) on their own editor.
+
+  #+BEGIN_EXPORT html
+  <iframe width="560" height="315"
+     src="https://www.youtube.com/embed/9QXwSg9-2qQ?start=26" frameborder="0"
+     allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+     allowfullscreen>
+  </iframe>
+  #+END_EXPORT
+  (Do give the video I try, I've helpfully set the start time to be
+  exactly when the demo starts.)
+
+An added benefit is that the audience member can choose to temporarily
+  unfollow your cursor to browse the code base, to perhaps catch up on
+  something they missed, or to check the definition of certain
+  functions they are not familiar with.
+
+* Tip 3: Global Zoom using macOS Accessibility / Microsoft ZoomIt
+Sometimes it's just not possible to configure zoom settings on an per
+  application level, perhaps the application does not provide such an
+  option, or perhaps the layout looks strange after zooming in.
+
+Whatever the case may be, as a presenter an ability to zoom based on
+  the screen you are currently looking at is godsend.
+
+- Here's an example:
+  #+BEGIN_EXPORT html
+  <video autoplay loop width="640">
+    <source src="../../vid/guide-communicating-code-mac-accessibility-zoom-v2-reduced-size.webm"
+       type="video/webm">
+  </video>
+  #+END_EXPORT
+
+And below is how to enable global zooming on macOS, and on Windows:
+** For macOS
+- Open accessibility preference
+  - ~cmd + space~ to open spotlight search
+  - type ~accessibility~ and hit ~<enter>~ to open Accessibility Preference
+
+- Enable Zoom
+  - in the left panel, select the ~General~ icon
+  - in the right panel, ensure ~Zoom~ is checked
+  [[/img/guide-communicating-code-accessibility-preference.png]]
+
+- Enable keyboard shortcuts to zoom
+  - in the left panel, select the ~Zoom~ icon
+  - in the right panel, ensure ~Use scroll gesture with modifier keys
+    to zoom~ is checked, and that the modifier key is set to ~^
+    Control~
+  [[/img/guide-communicating-code-accessibility-preference-zoom.png]]
+
+- How to zoom
+  - Hold down ~<control>~ and use the scroll wheel / trackpad to zoom in / out
+  - Move the cursor to the edge of the screen to pan
+
+** For Windows
+- "Install" the ZoomIt application
+  - Download [[https://docs.microsoft.com/en-us/sysinternals/downloads/zoomit][ZoomIt]]
+  - Extract the application anywhere
+- Ensure the zoom setting is properly configured
+  - Double-click the ZoomIt executable file
+    - You should see a window pop
+    - If not, look for it in the taskbar notification area,
+      right-click on the ZoomIt icon, and select ~Options~
+  - Click on the ~LiveZoom~ tab
+  - Ensure that a keyboard shortcut is set for the ~LiveZoom Toggle~
+    option
+    [[/img/guide-communicating-code-zoomit.png]]
+  - Close the window
+- How to zoom
+  - Press ~<control> + 4~ to toggle zoom
+  - While zoomed in, use ~<Control> + <mouse wheel up / down>~ to
+    change the zoom level
+  - Move the cursor to pan the screen
+
+* Tip 4 (for lols): Tmux for the Hardcore
+- Just use tmux and have your audience "remote-in" to the same
+  session.
+
+  #+BEGIN_EXPORT html
+    <iframe width="560" height="315"
+       src="https://www.youtube.com/embed/norO25P7xHg" frameborder="0"
+       allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+       allowfullscreen>
+    </iframe>
+  #+END_EXPORT
+
+* Tip 5: Display an Agenda List on Screen
+Have visual aid to show the agenda frequently.
+
+The nature of an online interaction is that it is much harder for the
+  presenter to engage the audience, and it's much easier for the
+  audience to get distracted and lose track of the where he/she is in
+  presentation.
+
+A simple way to keep everyone on track is to have a visual aid. It
+  might be as simple as a plain text editor with the agenda items
+  listed in point form, and some marker to indicate where the
+  presenter is at:
+
+  #+BEGIN_SRC markdown
+    + Agenda Item 1
+      + Agenda Sub-Item A
+      + Agenda Sub-Item B
+      + Agenda Sub-Item C [here]
+    + Agenda Item 2
+    ...
+  #+END_SRC
+
+Another benefit of having such a list is that when the presenter has
+  nothing better to show on the screen, instead of staying on a web
+  browser (with its distracting ads) or a code editor (where the
+  audience might instinctively begin looking for bugs), the presenter
+  can just show the agenda list and speak.
+
+* Tip 6: Have An Audience Take Notes
+This is helpful is a discussion setting (as opposed to a presentation
+  setting).
+
+To ensure that messages get across, have anyone but the speaker take
+  notes on a shared document editor (e.g., Google Docs).
+
+This way, there is a natural pause when the presenter realises the
+  notetaker is having problems catching up.
+
+Yes, this will likely reduce the amount of content covered in the
+  amount of time, but this is exactly the point---fewer but good
+  communications trumps voluminous bad communications.

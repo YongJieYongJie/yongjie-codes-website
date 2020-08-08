@@ -22,7 +22,7 @@ keywords = ""
 favicon = "img/favicons/"
 customCss = ["css/custom.css"]
 customJs = []
-mainSections = ["posts"] # This determines, among other things, what is on the home page.
+mainSections = ["posts", "guides"] # This determines, among other things, what is on the home page.
 
 ## Math settings
 [params.math]
@@ -72,6 +72,12 @@ url = "mailto:khooyongjie@gmx.com"
 #  url = "/about/"
 
   [[menu.main]]
+  name = "Guides"
+  weight = 250
+  identifier = "guides"
+  url = "/guides/"
+
+  [[menu.main]]
   name = "Posts"
   weight = 300
   identifier = "posts"
@@ -79,7 +85,7 @@ url = "mailto:khooyongjie@gmx.com"
 
   [[menu.main]]
   name = "Reading Logs"
-  weight = 300
+  weight = 350
   identifier = "reading-logs"
   url = "/reading-logs/"
 
