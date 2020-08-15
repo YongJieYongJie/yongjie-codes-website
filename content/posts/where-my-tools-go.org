@@ -1,0 +1,111 @@
+---
+title: "Where My Tools Go"
+alternateTitle: "Development Dependencies in Go"
+date: 2020-08-15T15:34:35+08:00
+Description: ""
+image: "img/post-where-my-tools-go-title.jpg"
+imageCredit: "Todd Quackenbush (https://unsplash.com/photos/IClZBVw5W5A)"
+Categories: ["Go"]
+Tags: ["dependencies-management"]
+---
+
+This posts seeks to answer the question: /how are development dependencies
+  managed in Go projects/?
+
+This naturally brings up several other questions:
+  - Is there an official way? Yes, via ~tools.go~
+  - How do we use ~tools.go~? Simple, import the packages to ~_~
+  - What exactly does ~tools.go~ do? Well, read on
+
+* Background
+
+In many other programming languages, part of dependencies management includes
+  management of development dependencies---in short, things that are required
+  for developers, but not for end-users.
+
+- In Python, when installing dependencies, if you run ~pipenv install --dev
+  <package-name>~, the packages will be installed as development dependencies.
+
+- In Javascript, you run ~npm install <package-name> --save-dev~ to achieve the
+  same.
+
+- In Java, Gradle has the concept of /dependency configurations/, where you can
+  configure certain dependencies such as ~compileOnly~ that are only required at
+  compile time and not at runtime, ~runtimeOnly~ which is the reversed.
+
+  - Sidenote: [[https://www.scala-sbt.org/index.html][sbt]] also supports similar concepts: see [[https://www.scala-sbt.org/release/docs/Library-Dependencies.html][Library Dependencies]] and
+    [[https://www.scala-sbt.org/release/docs/Library-Management.html][Library Management]].
+
+- In C# / .NET (and .NET Core), dependencies are managed by NuGet, which
+  supports ~PrivateAssets~ (see documenation on [[https://docs.microsoft.com/en-us/nuget/consume-packages/package-references-in-project-files#controlling-dependency-assets][Controlling dependeny assets]].
+
+  - Sidenote: there was an [[https://github.com/NuGet/Home/issues/4125][issue]] (now closed) regarding a
+    ~DevelopmentDependency~ metadata, I didn't go down that rabbit hole and
+    research what happened to it.
+
+And that briefly covers all the "modern" (by my definition) languages that I
+  know of or have used.
+
+What about Go?
+
+* Official Way
+As stated on the GitHub wiki on [[https://github.com/golang/go/wiki/Modules#how-can-i-track-tool-dependencies-for-a-module][How can I track tool dependencies for a module]]
+  The officially recommended way is to create a file called ~tools.go~ that
+  imports the required development dependencies to ~_~
+
+  - As further explained by Russ Cox (one of Go's core developer), this approach
+    doesn't introduce new mechanisms, but merely reuses existing ones.
+
+* How to Use ~tools.go~
+1. Make sure the project is using Go modules.
+2. Create a file called ~tools.go~ at module root directly as follows:
+   #+BEGIN_SRC go
+     // +build tools
+
+     package tools
+
+     import (
+         _ "golang.org/x/tools/cmd/stringer" // This is the dev dependency
+     )
+   #+END_SRC
+   Notice the ~// +build tools~ at the beginning of the file. This ensures that
+   the file is not compiled into the binary (I'm using loose language here, not
+   sure if "compile" is the correct word to use).
+3. Run ~go mod tidy~ to install the dependencies (including development
+   dependencies)
+   - Sidenote: One thing that tripped me up is that ~go mod tidy~ doesn't seem
+     to be a command to be used for installing dependencies. However, in the
+     official [[https://blog.golang.org/migrating-to-go-modules][Migrating to Go Modules]] guide, it is mentioned that "It is always
+     good practice to run ~go mod tidy~ before committing a ~go.mod~ file to
+     version control".
+   - Sidenote 2: You might think ~go build~, ~go run~ or even ~go test~ might be
+     the commands that'll trigger installing of development
+     dependencies. However, the current recommended approach leverages on the
+     fact that we are using a build constrain (with ~// +build tools~) that will
+     not be satisfied on any platform to prevint development dependencies from
+     being compiled into the binary (again, I'm using loose language here).
+4. You would notice that ~go.mod~ has been updated to contain the development
+   dependencies.
+
+Implications
+- If using go generate and vendoring, the comment should refer to the vendored
+  binary, as follows (continuing the example above):
+  #+BEGIN_SRC go
+    //go:generate go run golang.org/x/tools/cmd/string
+    ...
+  #+END_SRC
+
+Note:
+- The examples are borrowed from: [[https://github.com/go-modules-by-example/index/blob/master/010_tools/README.md][Tools and dependencies]].
+- The note on implication above are not tested, please refer to the GitHub
+  issues ([[https://github.com/golang/go/issues/25922#issuecomment-590540095][here]] and [[https://github.com/golang/go/issues/25922#issuecomment-590529870][here]]) for details.
+
+* What Exactly does ~tools.go~ do?
+As alluded to in some of the sidenotes above, ~tools.go~ works briefly as
+  follows:
+- ~tools.go~ is just like any other source file in go. As such, by importing
+  development dependencies makes the Go suite of tools treat such development
+  dependencies like any other dependencies.
+- The ingenuity comes in using the [[https://golang.org/pkg/go/build/#hdr-Build_Constraints][build constraint]] (~// +build tools~) to
+  prevent the ~tools.go~ file from being actually included in the package. For
+  more details, see official documentation on [[https://golang.org/cmd/go/#hdr-Build_constraints][Build constraints]].
