@@ -9,7 +9,7 @@
 
 /* Give the copyright footer a background so it'll cover the bio if necessary */
 .footer {
-    background: #292a2d;
+    background-color: var(--bg-color)
 }
 
 /* Add horizontal padding for bio text */
