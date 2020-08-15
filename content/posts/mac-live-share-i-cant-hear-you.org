@@ -1,0 +1,62 @@
+---
+title: "Mac Live Share, I Can't Hear You"
+alternateTitle: "Enabling Live Share Audio on Mac"
+date: 2020-08-15T19:54:35+08:00
+Description: ""
+image: ""
+imageCredit: ""
+Categories: ["Mac"]
+Tags: ["vscode", "live-share"]
+DisableComments: false
+---
+
+A quick guide on how to enable audio on Visual Studio Live Share Audio on Mac.
+
+* For the Presenter
+1. Install Visual Studio Code ([[https://code.visualstudio.com/download][official binary]] or use [[https://formulae.brew.sh/cask/visual-studio-code][Homebrew]]).
+2. Install [[https://marketplace.visualstudio.com/items?itemName=MS-vsliveshare.vsliveshare-pack][Live Share Extension Pack]].
+3. Exit Visual Studio Code /completely/.
+   - [[https://support.apple.com/en-za/guide/mac-help/mchl834d18c2/mac][Official guide]]
+   - *Note: Just clicking the red cross button is not enough*.
+   - Using the shortcut key ~<command>+Q~ should be sufficient.
+4. Open Terminal application.
+   - Not iTerm2.
+5. Launch Visual Studio Code binary directly from Terminal. Something along the
+   lines of:
+   #+BEGIN_SRC bash
+     > sudo open $(which code)
+   #+END_SRC
+   or
+   #+BEGIN_SRC bash
+     > "/Applications/Visual Studio Code.app/Contents/MacOS/Electron"
+   #+END_SRC
+6. Open the folder / file you intend to use for the Live Share session.
+7. Open the Command Palette (~<Command>+<Shift>+P~) and type "Start
+   Collaboration Session" to find the command *Live Share: Start Collaboration
+   Session (Share)*.
+   - Authenticate with GitHub / Microsoft account as necessary.
+   - If at any point in time Visual Studio Code is closed and relaunched
+     automatically, you will have to quit the application completely, and
+     manually relaunch it from the Terminal before continuing with this guide.
+8. Back in Visual Studio Code, open the Command Palette (~<Command>+<Shift>+P~)
+   and type "Show Live Share" to find the command *View: Show Live Share*.
+9. On the side panel, click on *Start audio call...*.
+   - If you followed the steps correctly, there will be a prompt asking you to
+     grant access to Terminal (unless you have already granted access when you
+     used the ~sudo~ command at step 5).
+
+* For the Presentee
+1. Follow steps 1 through 5 above.
+2. Open the Command Palette (~<Command>+<Shift>+P~) and type "Join Collaboration
+   Session" to find the command *Live Share: Join Collaboration Session*.
+3. Enter the URL provided by the presenter.
+   - Authenticate with GitHub / Microsoft account as necessary.
+   - If at any point in time Visual Studio Code is closed and relaunched
+     automatically, you will have to quit the application completely, and
+     manually relaunch it from the Terminal before continuing with this guide.
+4. Follow step 8 above.
+5. Wait a prompt asking whether you want to join the audio session. Select yes.
+
+* Endnote
+Hopefully this guide proves useful to someone. And hopefully such guides won't
+  be required in the future.
