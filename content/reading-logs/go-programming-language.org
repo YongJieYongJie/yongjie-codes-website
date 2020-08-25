@@ -1,0 +1,2667 @@
+---
+short_title: "The Go Programming Language"
+title: "The Go Programming Language"
+source: Browsing on Amazon for a good book to learn Go.
+author: Alan A. A. Donovan, Brian W. Kernighan
+isbn: 978-0-13-419044-0
+reading_period: 2020.07.15–2020.08.08
+date: 2020-08-25T08:02:17+08:00
+draft: false
+categories: ["programming-language"]
+tag: ["go"]
+---
+
+* General Review
+- This book provides an excellent treatment of the Go programming language,
+  covering not just the language specification (i.e., syntax), but also how and
+  why certain Go is designed in a certain way (e.g., variable stack size to
+  enable huge recursion).
+- The examples provided in the book are generally sufficiently concise, and yet
+  fully demonstrates the concept at hand without being just-a-toy-example.
+* Specific Takeaways
+** Introduction
+- Some of the characteristics of Go include the following:
+  - Go has a garbage collector.
+  - Go comes with a package system.
+  - Go has first-class functions.
+  - Go has lexical scope (as opposed to dynamic scope, where changes to a
+    variable from any scope will affect all other usage of that variable).
+  - Go has a system call interface.
+  - Go has immutable strings in which text is generally encoded in UTF-8.
+  - Most of Go's built-in data types and most library data structures are
+    crafted to work naturally without explicit initialization or implicit
+    constructors, so relatively few memory allocations and memory writes are
+    hidden in the code.
+  - Go's aggregate types (structs and arrays) hold their elements directly,
+    requiring less storage and fewer allocations and pointer indirection
+    compared to languages that use indirect fields (e.g., Python).
+  - Go has variable-size stacks.
+  - Go has no class hierachies or any classes; complex object behaviors are
+    created from simpler ones by composition and the relationship between
+    concrete types and abstract types (interfaces) is implicit, so a concrete
+    type may satisfy an interface that the type's designer was unaware of.
+** Chapter 1 - Tutorial
+- Go is a compiled language.
+- A Go source file might be compiled and runned as follows: ~go run
+  helloworld.go~.
+  - ~go build helloworld.go~ is used to create a persistent binary file.
+- Each Go source file begins with ~package nameOfPackage~ that states which
+  package the file belongs to.
+  - The package ~main~ is special, and defines a standalone executable
+    program. Within the package ~main~, the /function/ ~main~ defines where
+    execution of the program begins.
+- Go program will not compile if there are unused imports.
+- Go does not require semicolons at the ends of statements or declarations,
+  except where two or more appear on the same line.
+  - Where newlines are placed matters to proper parsing of Go code because
+    newlines following certain tokens are converted into semicolons. E.g., the
+    opening brace of the function must be on the same line as the end of the
+    ~func~ declaraton.
+- The ~gofmt~ tool is used to rewrite the code into standard formatting.
+- The ~goimports~ tool manages the insertion and removal of import declarations
+  as needed. (Available by executing ~go get golang.org/x/tools/cmd/goimports~.)
+- ~os.Args~ is used to obtain commandline arguments.
+  - ~os.Args[0]~ contains the name of the command itself.
+- Comments begin with ~//~.
+- When declaring consecutive variables of the same type, the type identifier may
+  be placed after the last of the consecutive variables. E.g., instead of ~var a
+  int, b int~, we can write ~var a, b int~.
+- Go provides the usual arithmetic operators: ~+~, ~+=~, ~++~ (prefix only).
+  - Note however that the ~++~ operator results in a statement and not an
+    expression, as such, the following is illegal: ~a = b++~.
+- The for loop is the only loop statement in Go.
+  - One of the form is as follows:
+    #+BEGIN_SRC go
+      for initialization; condition; post {
+          // zero or more statements
+      }
+    #+END_SRC
+- The /initialization/ and /post/ may be omitted, and if both are omitted, then
+  the semicolons may be omitted too, as follows:
+  #+BEGIN_SRC go
+    // a traditional "while" loop
+    for condition {
+        //
+    }
+  #+END_SRC
+- The /condition/ may be omitted for a infinate loop.
+- Another form of the for loop iterates over a range of value, for example:
+  #+BEGIN_SRC go
+    import (
+        "fmt"
+        "os"
+    )
+
+    func main() {
+        s, sep := "", ""
+        for _, arg := range os.Args[1:] {
+            s+= sep + arg
+            sep = " "
+            fmt.Println(s)
+        }
+    }
+  #+END_SRC
+- A variable may be declared (and sometimes also initialized) in several ways:
+  #+BEGIN_SRC go
+    s := ""
+    var s string
+    var s = ""
+    var s string = ""
+  #+END_SRC
+  - The first form, a short variable declaration, is the most compact, but it
+    may be used only within a function, not for package-level variables.
+  - The second form relies on default initialization to the zero value for
+    strings, which is ~""~.
+  - The third form is rarely used except when declaring multiple variables.
+  - The fourth form is explicit about the variable's type, which is redundant
+    when it is the same as that of the initial value but necessary in other
+    cases where they are not of the same type.
+  - Generally, use either of the first two forms, with explicit initialization
+    to say that the initial value is important and implicit initialization to
+    say that the initial value doesn't matter.
+- Use ~strings.Join()~ to build concatenate a slice strings (as opposed to
+  concatenating each pair repeatedly).
+*** Finding Duplicate Lines
+- To read lines from standard input, use the following:
+  #+BEGIN_SRC go
+    input := bufio.NewScanner(os.Stdin)
+    for input.Scan() {
+        line := input.Text()
+        fmt.Println(line)
+    }
+  #+END_SRC
+- A ~map~ holds a set of key/value pairs and provides constant-time operations
+  to store, retrieve, or test for an item in the set.
+  - The key may be any type whose values can be compared with ~==~.
+  - The value may be of any type.
+  - When accessing a key that doesn't yet exist on the ~map~, the zero value of
+    the type of the value will be returned (e.g., ~0~ of any number type, and
+    ~""~ for string).
+  - A ~map~ instance is created by calling ~make()~ and passing in the type of
+    the ~map~ (i.e., specifying the type of the key and value):
+    ~make(map[string]int)~.
+  - A ~map~ is a /reference/ to the data structure created by ~make()~. I.e.,
+    when passed to a function, the function receives a copy of the /reference/
+    and not a copy of the actual ~map~. As such, changes made within the
+    function to the ~map~ will be visible outside.
+- ~Printf()~ is used to print formatted output. Common formatting verbs are as
+  follows:
+| Verb             | Meaning                                                        |
+|------------------+----------------------------------------------------------------|
+| ~%d~             | decimal integer                                                |
+| ~%x~, ~%o~, ~%b~ | integer in hexadecimal, octal, binary                          |
+| ~%f~, ~%g~, ~%e~ | floating-point number: 3.141593 3.141592652589793 3.141593e+00 |
+| ~%t~             | boolean: ~true~ or ~false~                                     |
+| ~%c~             | rune (Unicode code point)                                      |
+| ~%s~             | string                                                         |
+| ~%q~             | quoted string ~"abc"~ or run ~'c'~                             |
+| ~%v~             | any value in a natural format                                  |
+| ~%T~             | type of any value                                              |
+| ~%%~             | literal percent sign (no operand)                              |
+- ~os.Open()~ return two values: an open file (~*os.File~) and a value of the
+  built-in ~error~ type.
+- Functions and other package-level entities may be declared in any order.
+- ~ioutil.ReadFile()~ may be used to read a ~[]byte~ directly from a file whose
+  path is provided as the argument.
+- ~fmt.Fprintf()~ is used to print to a specified stream.
+- Under the covers, ~bufio.Scanner()~, ~ioutil.ReadFile()~ and
+  ~ioutil.WriteFile()~ use the ~Read()~ and ~Write()~ methods of ~*os.File~, but
+  it's rare that most programmers need to access those lower-level routines
+  directly.
+*** Animated GIFs
+- A struct type is a group of values called /fields/, often of different types,
+  that are collected together in a single object that can be treated as a unit.
+  - The individual fields of a struct can be accessed using dot notation.
+- /Composite literals/ refers to the compact notation for instantiating any of
+  Go's composite type from a sequence of elemment values:
+  - For slices, an example would be ~[]color.Color{color.White, color.Black}~
+  - For struct, an example would be ~gif.GIF{LoopCount: 20}~
+*** Fetching a URL
+- ~http.Get()~ makes an HTTP request and, if there is no error, returns a struct
+  and ~error~. The ~Body~ field of the struct contains the server response as a
+  readable stream.
+- ~ioutil.ReadAll()~ reads an entire stream.
+*** Fetching URLs Concurrently
+- A /goroutine/ is a concurrent function execution.
+  - The function ~main~ runs in a goroutine and the ~go~ statement creates
+    additional goroutines. E.g., ~go myFunc(myArgs)~
+- A /channel/ is a communication mechanism that allows one goroutine to pass
+  values of a specified type to another goroutine.
+  - A channel may be created using ~make()~: e.g., ~ch := make(chan string)~
+    creates a channel of ~string~.
+  - Value may be sent on a channel: e.g., ~ch <- expression~
+  - Value may be received from a channel: e.g., ~<- ch~
+  - When one goroutine attempts a send or receive on a channel, it blocks until
+    another goroutine attempts the corresponding receive or send operation.
+*** A Web Server
+- ~http.HandleFunc()~ is used to associate a handler ~func~ with a location
+  (e.g., ~"/"~ for the usual index page).
+  - The handler ~func~ takes an arguments a ~http.ResponseWriter~ and a
+    ~*http.Request~. The former is an output stream where the response may be
+    written to.
+- ~http.ListenAndServe()~ is used to start listening and serving on the address
+  and port specified in the argument.
+  - ~http.ListenAndServe()~ will use the handlers associated earlier by calls to
+    ~http.HandleFunc()~ automatically (i.e., from the client code, there is
+    nothing linking the calls to ~http.HandleFunc()~ and the call to
+    ~http.ListenAndServe()~).
+    - YJ: It seems like the whole ~net/http~ package is used as an "object
+      instance". What if we want to start two different servers in the same
+      program?
+- A mutex (from ~sync.Mutex~) is used to ensure exclusive excess to resources
+  when necessary.
+- ~req.ParseForm()~ is used to parse form data in a HTTP request.
+  - In Go, it is conventional to combine the potentially error-returning
+    function call and the corresponding error check: e.g.,
+    #+BEGIN_SRC go
+      if err := req.ParseForm(); err != nil {
+          log.Print(err)
+      }
+    #+END_SRC
+  - One benefit of the above approach is that it reduces the scope of ~err~ to
+    only within the ~if~ block (and ~else~ block, if any).
+- ~ioutil.Discard~ may be used as an output stream if the stream data is not
+  required anymore, but nonetheless the stream must be processed (e.g., to count
+  the number of bytes).
+  - YJ: This would be similar to piping to ~/dev/null~ on Linux.
+*** Loose Ends
+- Switch statement in Go looks like this:
+  #+BEGIN_SRC go
+    switch coinflip() {
+    case "heads":
+        heads++
+    case "tails":
+        tails++
+    default:
+        fmt.Println("landed on edge!")
+    }
+  #+END_SRC
+  - Cases do not fall through, so there is no "break" statement. Though there is
+    a ~fallthrough~ statement to explicitly fall through to the next
+    case. Repeated ~fallthrough~ statements are required to emulate a
+    traditional switch-case control flow in C.
+  - Cases do not have to be ~int~ values.
+  - A ~switch~ expression does not need to have an operand (~coinflip()~ in the
+    example above), and can just list the cases, each of which is a boolean
+    expression:
+    #+BEGIN_SRC go
+      func Signum(x int) int {
+          switch {
+          case x > 0:
+              return +1
+          default:
+              return 0
+          case x < 0:
+              return -1
+          }
+      }
+    #+END_SRC
+  - The switch expression may include an optional simple statement to set a
+    value before it is tested.
+** Chapter 2 - Program Structure
+- In Go, the first letter of a name determines the entity's visibiliity across
+  package boundaries: if the name begins with an upper-case letter, it is
+  exported.
+  - Package names themselves are always in lower case.
+- Go uses camel case: e.g., ~myFavoriteThings~
+- Acronyms are either all upper-case or all lower-case: e.g., ~htmlEscape~,
+  ~HTMLEscape~ or ~escapeHTML~, but not ~escapeHtml~.
+- Every source file in Go begins wiht a ~package~ declaration, followed by any
+  ~import~ declarations, and then a sequence of /package-level` declarations of
+  types, variables, constants and functions.
+*** 2.3 Variables
+- Variables in Go may be declared and initialized using short variable
+  declarations of the form: ~name := expression~, where the type of ~name~ is
+  determined by the type of ~expression~.
+  - Short variable declaration is only valid within functions, and not on the
+    package-level.
+  - Within functions, short variable declarations is generally preferred for its
+    conciseness. A ~var~ declaration tends to be reserved for when (a) the
+    variables need an explicit type that differs from that of the initializer
+    expression, or (b) the variables will be assigned a value later and its
+    initial value is unimportant.
+- *A short variable declaration does not necessarily declare all the variables
+  on its left-hand side*.
+  - If some (but not all) of the variables on the left-hand side are already
+    declared in the same lexical block, then the short variable acts like an
+    assignment to those variables.
+  - If all of the variables on the left-hand side are already declared in the
+    same lexical block, then the code will not compile.
+  - A short variable declaration acts like an assignement only to variables that
+    were already declared in the same lexical block.
+- Go supports pointers.
+  - Pointer are variables whose value hold the address of another /variable/.
+  - Not every value has an address, but every variable does.
+    - YJ: Does the above imply the following: (a) a literal does not have an
+      address; (b) the value returned from a function (or is the result of an
+      expression) has no address until it is assigned to a variable?
+  - The ~&x~ expression yields a pointer to ~x~. If ~x~ is of type ~int~, then
+    the yielded pointer is of type ~*int~. The ~&~ is called the address-of
+    operator.
+  - The statement ~*x = "my literal"~ is used to update the variable pointed to
+    by ~*x~ (equivalently, the variable whose address is stored as the value of
+    ~*x~).
+  - The zero value of a pointer of any type is ~nil~.
+  - Pointers are comparable, and two pointers are equal if and only if they
+    point to the same variable or both are ~nil~.
+  - A function can return the address of a local variable, in which case, the
+    variable will remain in existence as long as there is a pointer pointing to
+    the variable.
+  - *Using pointers to create aliases of variables is a double-edged sword*.
+    - Everytime time we write something like ~*p = v~, we are creating ~*p~ as
+      an alias of ~v~.
+    - This allow us to access ~v~ without using its name.
+    - However, the result is that in order to find all statement that access
+      that variable, we have to know all its aliases.
+    - Note: aliases are also created when we copy values of (a) reference types
+      like slices, maps, and channels; (b) and structs, arrays, and interfaces
+      that contain the reference types.
+- The ~flag~ package is a useful tool to use command-line arguments to set the
+  values of certain variables distributed throughout the program.
+- The ~new~ function is another way to create a variable.
+  - The expression ~new(T)~ creates an unnamed variable of type ~T~, initializes
+    it to the zero value of ~T~, and returns its address, which is a value of
+    type ~*T~.
+- A compiler may choose to allocate local variables on the heap or on the stack,
+  but this choice is not determined by whether ~var~ or ~new~ was used to
+  declare the variable.
+  - E.g., a compiler would need to allocate a local variable on the heap if the
+    variable will be reachable after the function exits; on the other hand, if
+    the local variable is no longer reachable after the function exits, the
+    compiler may choose not to allocate it on the heap even if the ~new()~
+    function is used.
+*** 2.5 Type Declarations
+- A type declaration defines a new /named/ type that has the same /underlying
+  type/ as an existing type. The named type provdes a way to separate different
+  and perhaps incompatible uses of the underlying type so that they can't by
+  mixed unintentionally.
+  - E.g., In a temperature conversion package, we might declare ~type Celsiues
+    float64~ and ~type Fahrenheit float64~ so that we will not in advertently
+    compare the two directly or use them together in arithmetic expressions.
+  - In the above example, ~Celsius(37.3)~ would be a type conversion, and will
+    not change the value or representation of the operand (in this case its
+    ~37.3~, but it might be an other compatible type with the samae underlying
+    type).
+    - *Caveat*: Conversions between numeric types may change the representation
+      of the value. E.g., converting a floating-point number to an integer
+      discards any fractional part. Conversions between string and some slice
+      types also results in implicit side effect. E.g., converting a string to a
+      ~[]byte~ allocates a copy of the string data.
+  - Conversion never fails at run time.
+  - Operations supporting by the underlying type will be available to the new
+    named type. E.g., the arithmetic operations will be available to the
+    ~Celsius~ type declared in our example above.
+  - Named types also allow us to define new behaviors for values of the type by
+    defining methods.
+*** 2.6 Packages and Files
+- The source code for a package resides in one or more ~.go~ files, usually in a
+  directory whose name ends with the import path.
+- Each package serves as a separate name space for its declaration.
+- Package-level names like the types and constants declared in one file of a
+  package are visible to all the other files of the package.
+- Each of the source files comprising a package may import only what is required
+  within that single source file. E.g., there might be a source file containing
+  the various output functions, and hence that particular source file will
+  likely need to import ~fmt~; for the other source files, they may not need to
+  import ~fmt~ if none of the functionality of ~fmt~ are required in them.
+- Doc comment immediately preceding the package declaration documents the
+  package as a whole.
+  - Only one file in the package should have a package doc comment.
+  - Extensive doc comments are often placed in a file of their own,
+    conventionally called ~doc.go~.
+- Imports are specified using strings like ~"gopl.io/ch2/tempconv"~; the
+  language specification doesn't define where these strigs come from or what
+  they mean.
+- Note: the package name (i.e., the name that appears in the package declaration
+  at the start of a Go source file) is the same as the last segment of its
+  import path (i.e., the string used for specifying imports) purely by
+  convention.
+  - It is not necessarily the case that the two will match.
+- Package are initialized by initializing package-level variables in the order
+  in which they are declared, except that dependencies are resolved first.
+  - If the package has multiple ~.go~ files, thy are initialized in the order in
+    which the files are given to the compiler; though the ~go~ tool sorts ~.go~
+    files by name before invoking the compiler.
+- The ~init()~ function may also be used to initialization: they are
+  automatically executed when the program starts, in the order in which they are
+  declared.
+  - Such ~init()~ functions may not be called or referenced.
+  - There may be any number of such ~init()~ functions within a file.
+- One package is initialized at a time, in the order of the imports in the
+  program, dependencies first.
+  - I.e., a package ~p~ importing ~q~ can be sure that ~q~ is fully initialized
+  program, dependencies firstbefore ~p~'s initialization begins.
+*** 2.7 Scope
+- The example code below demonstrates three different variables called ~x~
+  program, dependencies firstdeclared in a different lexical block:
+  #+BEGIN_SRC go
+    func main() {
+        x := "hello!"
+        for i := 0; i < len(x); i++ {
+            x := x[i]
+            if x != '!' {
+                x := x + 'A' - 'a'
+                fmt.Printf("%c", x) // "HELLO" (one letter per iteration)
+            }
+        }
+    }
+  #+END_SRC
+- The example code below also has three variables named ~x~, each declared in a
+  different block---one in the function body, one in teh ~for~ statement`s
+  block, and one in the loop body---but only two of the blocks are explicit:
+  #+BEGIN_SRC go
+    func main() {
+        x := "hello"
+        for _, x := range x {
+            x := x + 'A' - 'a'
+            fmt.Printf("%c", x) // "HELLO" (one letter per iteration)
+        }
+    }
+  #+END_SRC
+- ~if~ statements and ~switch~ statements also create implicit blocks in
+  addition to their body blocks:
+  #+BEGIN_SRC go
+    if x := f(); x == 0 {
+        fmt.Println(x)
+    } else if y := g(x); x == y {
+        fmt.Println(x, y)
+    } else {
+        fmt.Println(x, y)
+    }
+    fmt.Println(x, y) // compile error: x and y are not visible here
+  #+END_SRC
+- When using a function that returns two variables, one for the actual variable
+  we are interested in, and one for the error, it is conventional to handle the
+  error in the ~if~ block, and proceed with the "happy" path after the ~if~
+  block, without using an ~else~ block (so that it is not indented):
+  #+BEGIN_SRC go
+    f, err := os.Open(fname)
+    if err != nil {
+        return err
+    }
+    f.ReadByte()
+    f.Close()
+  #+END_SRC
+  - I.e., the following is not preferred:
+    #+BEGIN_SRC go
+      if f, err := os.Open(fname); err != nil {
+          return err
+      } else {
+          // f and err are visible here too
+          f.ReadByte()
+          f.Close()
+      }
+    #+END_SRC
+- Take special care when assigning to variables from an outer scope. Usage of
+  ~:=~ short variable declaration will instead result in an declaration of a new
+  variable in the inner scope that'll shadow the variable in the outer scope.
+  - The issue may be avoided by using the simple assignment operation ~=~
+    instead.
+  - E.g., assuming we intend to assign to a ~cwd~ variable from the outer scope,
+    instead of ~cwd, err := os.Getwd()~ (which will result in declaration of a
+    new ~cwd~ in the local scope, use ~cwd, err = os.GetWd()~. In the latter,
+    ~err~ will need to be declared prior using ~var err error~.
+** Chapter 3 - Basic Data Types
+- Go's types fall into four categories:
+  - *Basic types*: e.g., numbers, strings and booleans
+  - *Aggregate types*: e.g., arrays and structs
+  - *Reference types*: e.g., pointers, slices, maps, functions and channels
+  - *Interface types*
+*** 3.1 Integers
+- The types ~int~ and ~unit~ are signed and unsigned integers that are the
+  natural or most efficient size on a particular platform.
+  - Their size may be 32 or 64 bits, but *one must not make assumption about
+    which* as different compilers may make different choices even on identical
+    hardware.
+- The type ~rune~ is an synonym for ~int32~ and conventionally indicates that a
+  value is a Unicode code point.
+- The unsigned type ~uintptr~ has unspecified width but is sufficient to hold
+  all the bits of a pointer value. It is used only for low-level programming,
+  such as at the boundary of a Go program with a C library or an operating
+  system.
+- Go integer types will overflow and underflow (e.g., according to the
+  underlying two's complement representation for signed integers).
+- Go code tend to use the signed ~int~ even for quantities that can't be
+  negative, such the the length of an array, though ~uint~ might seem a more
+  obvious choice.
+  - The built-in ~len()~ function returns an ~int~.
+  - Using signed ~int~ allows proper functioning of loops that decrement the
+    loop variable, and terminating when the variable is smaller than zero.
+    - If the unsigned ~unit~ were used instead, it would have underflowed to the
+      maximum integer value of its type, and the loop will never end.
+  - *Unsigned numbers tend to be used only when their bitwise operators or
+    peculiar arithmetic operators are required*, as when implementing bit sets,
+    parsing binary file formats, or for hashing and cryptography.
+- Avoid conversion in which the operand is out of range for the target type, e.g.:
+  #+BEGIN_SRC go
+    f := 1.100 // a float64 with very big value
+    i := int(f) // result is implementation-dependent
+  #+END_SRC
+- Some examples of printing numbers in various formats are as below:
+  #+BEGIN_SRC go
+    o := 0666 // octal literal
+    fmt.Printf("%d %[1]o %#[1]o\n", o) // "438 666 0666"
+    x := int64(0xdeadbeef)
+    fmt.Printf("%d %[1]x %#[1]x %x[1]X\n", x)
+    // Output:
+    // 3735928559 deadbeef 0xdeafbeef 0XDEADBEEF
+  #+END_SRC
+*** 3.2 Floating-Point Numbers
+- The function ~math.IsNaN()~ tests whether its argument is a not-a-number
+  value.
+- It is tempting to use ~NaN~ as a sentinel value in a numeric
+  computation. However, testing for ~NaN~ is fraught with perils because any
+  comparison (e.g., ~==~, ~<~, ~>~) with ~NaN~ is always false.
+  - If a function that returns a floating-point result might fail, a better
+    approach is to report the failure separately, for example:
+    #+BEGIN_SRC go
+      func compute() (value float64, ok bool) {
+          // ...
+          if failed {
+              return 0, false
+          }
+          return result, true
+      }
+    #+END_SRC
+*** 3.5 Strings
+- A string is an immutable sequence of bytes.
+  - *The /i/-th byte of a string is not necessarily the /i/-th /character/ of
+    the string*, because UTF-8 encoding of a non-ASCII code point requires two
+    or more bytes
+- A raw string literal is written using `...`, using backquotes instead of
+  double quotes. Within a raw string, no escape sequencies are processed. The
+  only processing is that carriage returns are deleted so that the value of the
+  string is the same on all platforms.
+- *Go's ~range~ loop, when applied to a string, performs UTF-8 decoding
+  implicitly*.
+- A ~[]rune~ conversion applied to a UTF-8-encoded string returns the sequence
+  of Unicode code points that the string encodes.
+- Converting an integer value to a string interprets the integer as a rune
+  value, and yields the UTF-8 representation of that rune:
+  #+BEGIN_SRC go
+    fmt.Println(string(65)) // "A", not "65"
+    fmt.Println(string(0x4eac)) // "京"
+  #+END_SRC
+  - If the rune is invalid, the replacement character is substituted:
+    #+BEGIN_SRC go
+      fmt.Println(string(1234567)) // "�"
+    #+END_SRC
+- A UTF-8 encoded string can be converted to runes using the following:
+  ~[]rune(theString)~.
+- The ~path~ and ~path/filepath~ packages provides general set of functions for
+  working with hierarchical names. The former is appropriate for any
+  slash-delimited paths (e.g., URLs) but should not be used for manipulating
+  file names. The latter should be used for file names.
+- The ~bytes~ and ~strings~ packages have numerous parallel functions to avoid
+  the need to convert from string to slice of bytes and back (and /vice versa/).
+  - This is because conversion and string to slice of bytes (and /vice versa/)
+    requires copying to maintain immutability of the string.
+- The ~bytes.Buffer~ type is extremely versatile, and may be used as a
+  replacement for a file whenever an I/O function requires a sink for bytes
+  (~io.Writer~) or a source of bytes (~io.Reader~).
+- Conversions between strings and numbers are done with functions from the
+  ~strconv~ package.
+*** 3.6 Constants
+- Many computations on constants can be completely evaluated at compile time.
+- The results of all arithmetic, logical, and comparison operations applied to
+  constant operands are themselves constants.
+  - This is also the case for the results of conversions and calls to certain
+    built-in functions such as ~len~, ~cap~, ~real~, ~imag~, ~complex~, and
+    ~unsafe.Sizeof~.
+- A constant declaration /may/ specify a type as well as a value.
+  - In the absence of an explicit type, the type is inferred from the expression
+    on the right-hand side.
+- A ~const~ declaration may use the /constant generator/ ~iota~, which is used to
+  create a sequence of related value without spelling out each one.
+  - In a ~const~ declaration, the value of ~iota~ begins at zero and increments
+    by one for each item in the sequence.
+  - YJ: Think of the word "iota" as the long form of ~i~, the defacto loop
+    variable. iota is also the first letter in the greek alphabet.
+  - An example usage of iota would be in a ~const~ declaration of flags:
+    #+BEGIN_SRC go
+      type Flags uint
+    
+      const (
+          FlagUp Flags = 1 << iota  // 0b00001
+          FlagBroadcast             // 0b00010
+          FlagLoopback              // 0b00100
+          FlagPointToPoint          // 0b01000
+          FlagMulticast             // 0b10000
+      )
+    #+END_SRC
+  - ~iota~ can be used in similar ways to create a simple enum of consecutive
+    integers, or a ~const~ declaration of powers of 2 (or powers or any power of
+    2).
+- Constant may have uncommitted types.
+  - The compiler represents these uncommitted constants wiht much greater
+    numeric precision than values of basic types, and arithmetic on them is more
+    precise than machine arithmetic. It is generally safe to assume at least 256
+    bits of precision.
+  - There are six flavors of uncommited constants: untyped boolean, untyped
+    integer, untyped rune, untype floating-point, untyped complex and untyped
+    string.
+    - YJ: Untyped constants are necessary for certain fundamental features of
+      the language to work. E.g.:
+      #+BEGIN_SRC go
+        type OnOff bool
+      
+        var t = true     // variable of type bool
+        const f = false  // constant of untyped bool
+      
+        var myState OnOff // variable of type OnOff
+      
+        myState = t // compile error because assigning t of type bool to myState
+                    //   of type OnOff
+      
+        myState = f // OK
+      #+END_SRC
+    - YJ: Essentially what uncommitted constants give Go programmers is the
+      ability to use constants as if the each usage of the constant is replaced
+      with the literal used to declare the constant in the first place.
+  - Note: untype integers are converted to ~int~, whose size is not guaranteed,
+    but untyped floating-point and complex numbers are converted to the
+    explicitly sized types ~float64~ and ~complex128~.
+    - This is because the language has no unsized ~float~ and ~complex~ types
+      analogous to unsized ~int~. This is further because it is very difficult
+      to write correct numerical algorithms without knowing the size of one's
+      floating-point data types.
+** Chapter 4 - Composite Type
+- Arrays and structs are /aggregate/ types: their values are concatenations of
+  other values in memory.
+  - Both arrays and struct are fixed size. In contrast, slices and maps are
+    dynamic data structures that grow as values are added.
+*** 4.1 Arrays
+- Declaration:
+  #+BEGIN_SRC go
+    var a [6]rune // array of 6 runes
+  #+END_SRC
+- Literal initialization:
+  #+BEGIN_SRC go
+    var a [2]string = [2]string{"one", "two"} // array of 2 strings
+    b := [...]string{"one", "two"}            // same as above
+    c := [...]int{99: -1} // array of 100 elements, all zeroes except the last,
+                          //   which has the value of -1
+  #+END_SRC
+- The size of an array is part of its type: so ~[2]byte~ and ~[3]byte~ are
+  different types.
+- Arrays are comparable if the underlying type is comparable.
+- *Arrays are passed by value by default*.
+*** 4.2 Slices
+- Declaration:
+  #+BEGIN_SRC go
+    var a = []int
+  #+END_SRC
+- A slice has three components: a pointer, a length, and a capacity.
+  - The pointer points to the first element of the array that is reachable
+    through the slice, which is not necessarily the array's first element.
+  - The length is the number of slice elements; it can't exceed the capacity,
+    which is usually the number of elements between the start of the slice and
+    the end of the underlying array.
+- The slice operator (e.g., ~s[i:j]~) is used to create a new slice that refers
+  to elements ~i~ through ~j-1~ of the sequence ~s~, which may be an array
+  variable, a pointer to an array, or another slice.
+  - Slicing beyond ~cap(s)~ causes a panic, but slicing beyond ~len(s)~ extends
+    the slice.
+- YJ: Would the capacity of a slice pointing to a slice increase if the lengthof
+  the pointed-to slice increases?
+- *Slices are not comparable using ~==~*.
+  - The standard libary does provide a highly optimized ~bytes.Equal()~ to
+    compare two slices of bytes.
+  - For other types of slices, we'll need to do the comparison ourselves:
+    #+BEGIN_SRC go
+      func equal(x, y []string) bool {
+          if len(x) != len(y) {
+              return false
+          }
+          for i := range x {
+              x[i] != y[i] {
+                  return false
+              }
+          }
+          return true
+      }
+    #+END_SRC
+  - The reason why the comparison in the code fragement above is not implemented
+    as the default comparison for slices is because elements of slices are
+    indirect and a slice may contain itself, and there is no obvious way to do
+    comparison in such instances.
+  - A that a default comparison of slices is not implemented is because a hash
+    table such as Go's map type only makes shallow copies of its key, and it
+    requires that equality for each key remain the same throughout the lifetime
+    of the hash table. However, the underlying elements of a slice might change.
+  - YJ: From brief Googl-ing it seems like slice comparison is not implemented
+    by default because there are at least two notions of equality for slices,
+    the and langauge itself is not choosing which notion is the default. The two
+    notions are: (1) the slices must be of same length and point to the same
+    underlying sequence at the same index, (2) the values of each element of the
+    slice must be the same.
+- To test whether a slice is empty, use ~len(s) == 0~.
+  - Don't ~s == nil~, which compares true only for a slice having its zero value
+    (which is ~nil~).
+- Slice can be created using the built-in ~make()~ function: ~make([]T, len)~ or
+  ~make([]T, len, cap)~.
+- The built-in ~append()~ function is used to append items to slices:
+  #+BEGIN_SRC go
+    s = []int{1, 2, 3}
+    s = append(s, 4) // s = [1 2 3 4]
+  #+END_SRC
+  - Notice that the result of ~append()~ is assigned back to ~s~. This is
+    because the underlying array of ~s~ might not be modified in place. Instead
+    a new underlying array may be created (e.g., when resizing to accomodate the
+    new element), and a different slice will be returned by ~append()~. Hence
+    the need for re-assignment.
+    - Generally, such re-assignment is required when calling any function that
+      may change the length or capacity of the slice, or make it refer to a
+      different underlying array.
+*** 4.3 Maps
+- Map type in Go is written ~map[K]V~, where ~K~ and ~V~ are the types of its
+  keys and values. The keys must be comparable using ~==~.
+- Empty maps can be created using the built-in ~make()~ function or empty literal:
+  #+BEGIN_SRC go
+    myMap := make(map[myKeyType]myValueType)
+    myMap := map[myKeyType]myValueType{}
+  #+END_SRC
+- A map literal can be created as follows:
+  #+BEGIN_SRC go
+    ages := map[string]int{
+        "alice":   31,
+        "charlie": 34,
+    }
+  #+END_SRC
+- Elements can be deleted using the built-in ~delete()~ function: e.g.,
+  ~delete(ages, "alice")~.
+- Elements may be assessed even if it is not in the map---the operation will
+  simply return the zero value of that type.
+  - To check whether an element exists, use the second return value of the
+    lookup operation; e.g.: ~age, ok := ages["bob"]~
+- Elements themselves are not variables, and so we cannot take their address:
+  e.g., ~&ages["bob"]~ is illegal.
+- Most operations on maps, including lookup, ~delete()~, ~len()~ and ~range~
+  loops, are safe to perform on a ~nil~ map reference.
+  - But storing to a ~nil~ map causes a panic.
+- Go does not provide a set type. Maps will ~bool~ values are generally used.
+*** 4.4 Structs
+- A struct type declaration and its variable declaration may look something like
+  this:
+  #+BEGIN_SRC go
+    type Employee struct {
+        ID int
+        Name string
+        Address string
+        DoB time.Time
+        Position string
+        Salary int
+        ManagerID int
+    }
+
+    var dilbert Employee
+  #+END_SRC
+- Fields of the struct are themselves variables, and address of them may be
+  taken using the ~&~ operator.
+- Fields of the struct are may be accessed via the dot operator: e.g.,
+  ~dilbert.Position~.
+  - The dot operator works the same way for pointers to the struct:
+    #+BEGIN_SRC go
+      var employeeOfTheMonth *Employee = &dilbert
+      employeeOfTheMonth.Position += " (proactive team player)"
+      (*employeeOfTheMonth).Position += " (proactive team player)"
+    #+END_SRC
+  - The last two lines in the code fragment above are equivalent.
+- A struct field is exported if its name begins with a capital letter.
+- A named struct type ~S~ cannot declare a field that contains itself.
+  - It may however declare a pointer type ~*S~.
+- The zero value for a struct is compased of the zero values of each of its
+  fields.
+- The struct type with no fields is called the /empty struct/, written
+  ~struct{}~.
+  - It has size zero and carries no information but may be useful nonetheless.
+- Struct literal may be written by specifying the values of the fields in order,
+  for example:
+  #+BEGIN_SRC go
+    type Point struct{ X, Y int }
+    p := Point{1, 2}
+  #+END_SRC
+  - Note that the above form requires users to memorize the order of the fields,
+    and are also fragile to code changes when fields are added / reordered; as
+    such, it is generally used for struct where the fields have an obvious
+    ordering convention.
+  - A second form of writing struct literal is by using the field names:
+    #+BEGIN_SRC go
+      anim := gif.GIF{LoopCount: nframes}
+    #+END_SRC
+  - The two forms cannot be mixed.
+- Struct are passed by value.
+  - As such, it may be more efficient to pass pointers to struct.
+  - Struct pointers are so commonly dealt with that there is shorthand notation
+    to create and initialize and struct variable and obtain its address:
+    #+BEGIN_SRC go
+      pp := &Point{1, 2}
+    
+      // exactly equivalent to:
+      pp := new(Point)
+      *pp = Point{1, 2}
+    #+END_SRC
+  - The shorthand notation may be used directly within an expression, such as a
+    function call.
+- If all the fields of a struct are comparable, the struct itself is comparable.
+- *struct embedding*
+  - The struct embedding mechanism let us use one named struct type as an
+    anonymous field of another struct type, providing a convenient syntactic
+    shortcut so that a simple dot expression like ~x.f~ can stand for a chain of
+    fields like ~x.d.e.f~.
+  - Without struct embedding, we might do the following:
+    #+BEGIN_SRC go
+      type Point struct {
+          X, Y int
+      }
+    
+      type Circle struct {
+          Center Point
+          Radius int
+      }
+    
+      type Wheel struct {
+          Circle Circle
+          Spokes int
+      }
+    
+      var w Wheel
+      w.Circle.Center.X = 8 // Cumbersome field access
+      w.Circle.Center.Y = 8
+      W.Circle.Radius = 5
+      W.Spokes = 20
+    #+END_SRC
+  - With struct embedding, we can do the following:
+    #+BEGIN_SRC go
+      type Circle struct {
+          Point
+          Radius int
+      }
+      
+      type Wheel struct {
+          Circle
+          Spokes int
+      }
+    
+      var w Wheel
+      w.X = 8 // equivalent to w.Circle.Point.X = 8
+      w.Y = 8 // equivalent to w.Circle.Point.Y = 8
+      w.Radius = 5 // equivalent to w.Circle.Radius = 5
+      w.Spokes = 20
+    #+END_SRC
+  - There is however no struct embedding for literal struct syntax.
+  - Because the "anonymous" fields do have implicit names, we can't have two
+    anonymous fields of the same type as their names would conflict.
+    - Because the name of the "anonymous" field is implicity determined by its
+      type, so too is the visibility of the field. E.g.:
+      #+BEGIN_SRC go
+      type circle {...}
+      type point {...}
+      type Wheel {
+          circle, point
+      }
+      
+      var w Wheel
+      w.X = 8 // Ok, equivalent to w.circle.point.X = 8
+      w.circle.point.X = 8 // Compile error: circle not visible
+      #+END_SRC
+  - struct embedding also works for fields of any named type or pointer to a
+    named type. This allow the struct to "inherit" methods defined for the named
+    type.
+- To print a value in a form similar to Go syntax, use ~%#v~ in the formatting
+  string. E.g., ~fmt.Printf("%#v\n", myVar)~
+*** 4.5 JSON
+- Field tags are strings of metadata associated at compile time with the fields
+  of a struct.
+  - An example of field tags usage is in JSON marshaling as follows: 
+    #+BEGIN_SRC go
+    type Movie struct {
+        Title string
+        Year int `json:"released"`
+        Color bool `json:"color,omitempty"`
+        Actors []string
+    }
+    
+    var movies = []Movie{
+        {Title: "Casablanca", Year: 1942, Color: false,
+            Actors: []string{"Humphrey Bogart", "Ingrid Bergman"}},
+        //...
+    }
+  
+    data, err := json.Marshal(movies)
+    if err != nil {
+        log.Fatalf("JSON marshaling failed: %s", err)
+    }
+    fmt.Printf("%s\n", data) // Prints the JSON-formatted movies
+    #+END_SRC
+  - A field tag may be any literal string, but is conventionally interpreted as
+    a space-separated list of ~key:"value"~ pairs, surrounded by backticks
+    because the use of double quotation marks.
+*** 4.6 Text and HTML Templates
+- Go has a built-in templating language used in the standard libraries
+  ~text/template~ and ~html/template~.
+  - A simple template string is as follows:
+    #+BEGIN_SRC go
+      // Simple template string for formatting Git issues
+      const templ = `{{.TotalCount}} issues:
+      {{range .Items}}----------------------
+      Number: {{.Number}}
+      User:   {{.User.Login}}
+      Title:  {{.Title | printf "%.64s"}}
+      Age:    {{.CreatedAt | daysAgo}} days
+      {{end}}`
+    #+END_SRC
+** Chapter 5 - Functions
+*** 5.1 Function Declarations
+- A function declaration looks as follows:
+  #+BEGIN_SRC go
+    func name(parameter-list) (result-list) {
+        body
+    }
+  #+END_SRC
+- Go has no concept of default parameter values, nor any way to specify
+  arguments by name.
+- Arguments are passed by value.
+*** 5.2 Recursion
+- Typical Go implementations use variable-size stacks that start small and grow
+  as needed up to a limit on the order of a gigabyte.
+  - As such, recursion may be used safely without worrying about overflow.
+- An interesting use of slice in relation to recursive function calls is to use
+  the slice a sort of stack which keeps track of the position in the iteration.
+  - /Pushing to stack/: Each iteration of the recursive function will append an
+    item to the slice before calling itself, passing in the new slice.
+  - /Popping from stack/: The subtle aspect is that there is no need for a
+    corresponding call to "pop" items from the slice.
+    - This is because even though each recursive call deeper down will add an
+      element to the stack (modifying the underlying array and perhaps even
+      allocating a new array), when the recursive call returns, the calling
+      function still has reference to the slice before just before the recursive
+      call was called.
+*** 5.3 Multiple Return Values
+- Go functions can return multiple values (referred to as "results" in the
+  book).
+- A multi-valued call may appear as the sole argument when calling a function of
+  multiple parameters.
+- The results may be named in the function declaration itself, improving
+  readability.
+  - In a function with named results, the operands in a ~return~ statement might
+    be omitted.
+  - This is called a bare return---each of the named result variables are
+    returned in order.
+  - E.g.:
+    #+BEGIN_SRC go
+      func CountWordsAndImages(url string) (words, images int, err error) {
+          resp, err := http.Get(url)
+          if err != nil {
+              return
+          }
+          doc, err := html.Parse(resp.Body)
+          resp.Body.Close()
+          if err != nil {
+              err = fmt.Errorf("parsing HTML: %s", err)
+              return
+          }
+          words, images = countWordsAndImages(doc)
+          return
+      }
+      func countWordsAndImages(n \*html.Node) (words, images int) { \/\* ... \*/ }
+    #+END_SRC
+*** 5.4 Errors
+- A function for which failure is an expected behavior returns an additional
+  result, conventionally the last one.
+  - If the failure has only one possibly cause, the result is a ~boolean~,
+    usually called ~ok~. E.g., lookup on a ~map~.
+  - If the failure may have a variety of causes for which the caller will need
+    an explanation, the result is of type ~error~.
+    - The built-in ~error~ is an interface type.
+    - A nil error implies success while a non-nil error implies failure.
+    - The error message string of a non-nil error can be obtained by calling its
+      ~Error()~ method or printed by calling ~fmt.Println(err)~ or
+      ~fmt.Printf("%v", err)~.
+- Unlike many other languages which use exceptions to report errors, Go uses
+  ordinary values.
+  - The reason is to decouple description of an error with the control flow
+    required to handle it.
+  - In languages were exceptions are used, the entanglement of the description
+    of an error with the control flow required to handle often results in
+    routine errors reported to the end user in the form of an incomprehensible
+    stack trace.
+  - Go's approach of using ordinary return values and ordinary control-flow
+    mechanisms like ~if~ and ~return~ intentionally requires more attention to
+    be paid to the error-handling logic.
+**** 5.4.1 Error-Handling Strategies
+- *Propagate*
+  - This is were a subroutine's error becomes a failure of the calling routine.
+  - The error from the subroutine may be returned directly, or may be enriched
+    with information only available in the error-handling function.
+  - Because error messages are freuently chained together, they should not be
+    capitalized and newlines should be omitted.
+    - This results in long error strings on a single line, which will be
+      self-contained when picked up by tools like ~grep~.
+    - YJ: It seems that generally error messages should be phrased either of two
+      ways, depending on whether it is the cause, or it is merely propating
+      another error.
+      - E.g., consider two functions: ~parseHtml()~ which calls
+        ~tokeniseHtml()~.
+        - If ~tokenisedHtml()~ fails because of illegal character in the tag, it
+          may return an error with message like ~fmt.Errorf("illegal character
+          in tag: %s", tagWithIllegalChar)~.
+        - When ~parseHtml()~ receives this error, it might propagate the error
+          by adding the name the HTML file like ~fmt.Error("parsing file %s:
+          %v", fileName, tokeniseErr)~.
+        - The resultant error message will be something like: ~parsing file
+          myFile.html: illegal character in tag: <body<~. Notice how this error
+          string reads smoothly if we add the word "error" at the beginning.
+- *Retry*
+  - An example of retry might look something as follows:
+    #+BEGIN_SRC go
+      // WaitForServer attempts to contact the server of a URL.
+      // It tries for one minute using exponential back-off.  It reports an
+      // error if all attempts fail.
+      func WaitForServer(url string) error {
+          const timeout = 1 * time.Minute
+          deadline := time.Now().Add(timeout)
+          for tries := 0; time.Now().Before(deadline); tries++ {
+              _, err := http.Head(url)
+              if err == nil {
+                  return nil // success
+              }
+              log.Printf("server not responding (%s); retrying...", err)
+              time.Sleep(time.Second << uint(tries)) // exponential back-off
+          }
+          return fmt.Errorf("server %s failed to respond after %s", url, timeout)
+      }
+    #+END_SRC
+- *Print Error and Stop Program*
+  - If progress is not possible, the caller can print the error and stop the
+    program gracefully.
+    - This should generally be reserved for the main package of a program.
+    - Library functions should usually propagate errors to the caller, unless
+      the error is sign of an internal inconsistency---that is, a bug.
+  - Error messages may be printed using ~fmt.Printf()~, and followed by a call
+    to ~os.Exit(1)~.
+    - Alternatively, ~log.Fatalf()~ may be used to print and exit. As with other
+      ~log~ functions, it prefixes the time and date by default (this may be
+      changed using ~log.SetPrefix()~).
+- *Log Error and Continue*
+  - Again, there's a choice between using the ~log~ package, which adds the
+    usual prefix:
+    #+BEGIN_SRC go
+      if err := Ping(); err != nil {
+          log.Printf("ping failed: %v; networking disabled", err)
+      }
+    #+END_SRC
+    and printing directly to the standard error stream:
+    #+BEGIN_SRC go
+      if err := Ping(); err != nil {
+          fmt.Fprintf(os.Stderr, "ping failed: %v; networking disabled\n", err)
+      }
+    #+END_SRC
+    - Note that all ~log~ functions append a newline if one is not already
+      present.
+- *Ignore*
+- Author's comment on error handling in Go:
+#+BEGIN_QUOTE
+Error handling in Go has a particular rhythm. After checking an error, failure
+is usually dealt with before success. If failure causes the function to return,
+the logic for success is not indented within an ~else~ block but follows at the
+outer level. Functions tend to exhibit a common structure, with a series of
+initial checks to reject errors, followed by the substance of the function at
+the end, minimally indented.
+#+END_QUOTE
+**** 5.4.2 End of File (EOF)
+- In certain situations, the program logic might be different depending on the
+  error return (as opposed to the mere fact that there has been an error).
+  - An example is when a call to read /n/ bytes fail because end of file has
+    been reached.
+  - In such a situation, a distinguished ~error~ (YJ: like a singleton ~error~)
+    is returned for the caller to performed comparison against the distinguished
+    ~error~ exported by the package.
+  - E.g., the ~io~ package exports and also returns ~io.EOF~.
+    - ~EOF~ is declared in the ~io~ package as follows: ~var EOF =
+      errors.New("EOF")~.
+*** 5.5 Function Values
+- Functions are first-class values in Go---like other values, function values
+  have types, and they may be assigned to variables or passed to or returned
+  from functions. A function value may be called like any other function.
+  - The zero value of a function type is ~nil~.
+  - Calling a ~nil~ function value causes a panic.
+- Function values let us parameterize our functions over not just data, but
+  behavior too.
+  - Examples of such usage within the standard library include: ~strings.Map~
+    which applies a function to each character of a string.
+- A way to print indented output is the following: ~fmt.Printf("%*s<%s>\n",
+  indentationLevel, "", actualContent)~.
+  - The ~%*s~ verb specifies a variable-width string, and the width ~*~ will be
+    taken from the next operand, which is the case of the example above, is
+    ~indentationLevel~. The next operand is an empty string.
+*** 5.6 Anonymous Functions
+- Named functions can be declared only at the package level. But a function
+  literal may be use to denote function value within any expression.
+  - A function literal is written like a function declaration, but without a
+    name following the ~func~ keyword.
+  - Function literals form closures around the surronding lexical environment.
+  - YJ: Question: Python need a local keyword to allow
+- Because of lexical scoping rules, iteration variables need to be captured if
+  its value will be used after the iteration has ended.
+  - In particular, iteration in Go creates two lexical scope: (1) the implicit
+    outer scope containing the iteration variable and other simple
+    initializations, and (2) one explicit inner scope within the curly braces.
+  - While there is a separate inner scope for each iteration, the implicit outer
+    scope is shared by all iterations.
+  - An example of capturing of iteration variable is as follows:
+    #+BEGIN_SRC go
+      var rmdirs []func()
+      for _, d := range tempDirs() {
+          dir := d // captured
+          os.MkdirAll(dir, 0755)
+          rmdirs = append(rmdirs, func() {
+              os.RemoveAll(dir) // using dir instead of d, which would have 
+                                // changed by the time thie anonymous function
+                                // is actually called.
+          })
+      }
+      // ... more processing ...
+      for _, rmdir := range rmdirs {
+          rmdir() // use the dir variable that is captured
+    }
+    #+END_SRC
+*** 5.7 Variadic Functions
+- A variadic function may be declared as follows:
+  #+BEGIN_SRC go
+    func sum(vals ...int) int {
+        total := 0
+        for _, val := range vals {
+            total += val
+        }
+        return total
+    }
+  #+END_SRC
+- Implicitly, the caller allocates an array, copies the arguments into it, and
+  passes a slice of the entire array to the function.
+*** 5.8 Deferred Function Calls
+- The ~defer~ keyword is used to specify a function to be called when the
+  current function containing the ~defer~ keyword finishes, whether normally or
+  by panicking.
+  - Syntactically, a ~defer~ statement is an ordinary function or method call
+    prefix by the keyword ~defer~.
+  - The function and argument expressions are evaluated when the ~defer~
+    statement is executed, but the actual called is deferred until the function
+    that contains the statement has finished.
+  - Any number of calls may be deferred, and they are executed in the reverse of
+    the order in which they were deferred.
+- The ~defer~ statement is usually used to ensure resources are released, by
+  having a ~defer~ statement immediately after where the resource is acquired.
+  - The ~defer~ statement is also used for other paired operations like on-entry
+    and on-exit actions.
+  - YJ: ~defer~ statement seem to be Go's answer to resource managers like
+    ~with~ in Python, ~try~ in Java, and ~using~ in C#.
+- Defered functions run /after/ return statementsn have updated the function's
+  result variables.
+  - Because an anonymous function can access its enclosing function's variables,
+    including named results, a deferred anonymous function can observe the
+    function's results. E.g.:
+    #+BEGIN_SRC go
+      func double(x int) (result int) {
+          defer func() { fmt.Printf("double(%d) = %d\n", x, result) }()
+          return x + x
+      }
+
+      _ = double(4)
+      // Output:
+      // "double(4) = 8"
+    #+END_SRC
+  - A deferred anonymous function can also change the values that the enclosing
+    function returns.
+- Certain functions that seems to acquire resources may not actually acquire
+  the resource on failure, and hence there is no need to use a defer statement
+  to release the resource.
+  - E.g., ~os.Create()~ is used to open a file of writing, creating it as
+    needed. If there is an error, the calling function should return the error,
+    instead of making a deferred call to close the returned ~*File~ variable
+    which would be invalid.
+*** 5.9 Panic
+- During a typical panic, normal execution stops, all deferred function calls in
+  that goroutine are executed, and the program crashes with a log message.
+- Panics might come from the runtime, when performing certain checks only
+  possible as runtime: e.g., deferencing a ~nil~ pointer, out-of-bounds array
+  access.
+- Panics might come from the built-in ~panic~ function.
+  - Example of an appropriate situation to use ~panic~ would be whene some
+    "impossible" situation happens, like when execution reaches a case that
+    logically shouldn't happen.
+- While it's good practice to assert that the preconditions of a function hold,
+  this can easily be done to excess.
+  - Unless you can provide a more informative error message or detect an error
+    sooner, there is no point in asserting a condition that the runtime will
+    check for you.
+- Go's panic mechanism should be reserved for grave errors, such as a logical
+  inconsistency in the program.
+  - It should no be used as liberally as the exceptions handling mechanisms in
+    some other languages.
+  - In a robust program, "expected" errors, the kind that arise from incorrect
+    input, misconfiguration, or failing I/O, should be handled gracefully; they
+    are best dealt with using ~error~ values.
+  - A result of this design is that for certain kinds of functions, they may
+    return an non-~nil~ error value during normal program execution, but at some
+    other times (e.g., at program initialization), the programmer knows that
+    there should not be an error, and needs to convert that error into a panic.
+    - This can get tedious. As such, it is common practice to define another
+      helper function to do the error checking and converting to panic.
+    - E.g.:
+      #+BEGIN_SRC go
+        package regexp
+
+        func Compile(expr string) (*Regexp, error) { /* ... */ }
+
+        func MustCompile(expr string) *Regexp {
+            re, err := Compile(expr)
+            if err != nil {
+                panic(err)
+            }
+            return re
+        }
+      #+END_SRC
+      The ~MustCompile()~ helper function makes it convenient for clients to
+      initialize a package-level variable with a compiled regular expression:
+      #+BEGIN_SRC go
+        var httpSchemeRE = regexp.MustCompile(`^https?:`)
+      #+END_SRC
+*** 5.10 Recover
+- General description of the panic mechanism in relation to the built-in
+  ~recover~ function:
+  #+BEGIN_QUOTE
+  If the built-in ~recover~ function is called within a deferred function and the
+  function containing the ~defer~ statement is panicking, ~recover~ ends the
+  current state of panic and returns the panic value. The function that was
+  panicking does not contiue where it left off but returns normally. If ~recover~
+  is called at any other time, it has no effect and returns ~nil~.
+  #+END_QUOTE
+- Example:
+  #+BEGIN_SRC go
+    func Parse(input string) (s *Syntax, err error) {
+        defer func() {
+            if p := recover(); p != nil {
+                err = fmt.Errorf("internal error: %v", p)
+            }
+        }()
+        // ...parser...
+    }
+  #+END_SRC
+- As a general rule, you should not attempt to recover from another package's
+  panic.
+  - Public APIs should report failure as ~errors~.
+- You should not recover from a panic that may pass through a function you do
+  not maintain, such as a caller-provided callback, since you cannot reason
+  about its safety.
+  - E.g., the ~net/httep~ package provides a web server that dispatches incoming
+    requests to user-provided handler functions. Rather than let a panic in one
+    of these handlers kiil the process, the server calls ~recover~, prints a
+    stack trace, and continue serving. This is convenient in practice, but it
+    does risk leaking resources or leaving the failed handler in an unspecified
+    state that could lead to other problems.
+- One way to recover from an "expected" panic is to declare a special type
+  (e.g., ~type myExpectedPanic struct{}~, and call ~panic(myExpectedPanic{})~
+  when the expected situation occurs.
+  - The deferred recover function might then ~switch~ on the value received from
+    ~recover()~, and provide a case for ~bailout{}~ to handle to expected panic
+    situation by converting the panic to an ~error~.
+  - The deferred recover function should also provide a ~default~ case to the
+    ~switch~ statement that simply calls ~panic()~ with the value received from
+    ~recover()~ to resume the panic.
+** Chapter 6 - Methods
+*** 6.1 Method Declarations
+- A method declaration is similar to a function declaration, but with an extra
+  parameter (called the /receiver/) before the function name. This paramater
+  attaches the function to the type of the parameter.
+  - E.g.:
+    #+BEGIN_SRC go
+      import "math"
+    
+      type Point struct { X, Y float64 }
+    
+      func (p Point) Distance(q Point) float64 {
+          return math.Hypot(q.X-p.X, q.Y-p.Y)
+      }
+
+      a := Point{1, 2}
+      b := Point{4, 6}
+      dist := a.Distance(b) // method call, dist is 5
+    #+END_SRC
+- The expression /object.methodName/ is called a /selector/, because it selects
+  the appropriate /methodName/ method for the receiver of /object/.
+  - Selectors are also used to select fields of struct types, hence methods and
+    fields inhabit the same namespace, and declaring both with the same name is
+    illegal.
+- One benefit of using methods as opposed to function is that names for methods
+  can generally be shorter.
+*** 6.2 Methods with a Pointer Receiver
+- For methods to update the recevier variable, we need to use pointers.
+  - This is because calling a function (and methods are just functions attached
+    to the receiver type) makes a copy of each argument value, including the
+    receiver variable.
+  - E.g.:
+    #+BEGIN_SRC go
+      func (p *Point) ScaleBy(factor float64) {
+          p.X *= factor
+          p.Y *= factor
+      }
+    #+END_SRC
+  - The name of the method above is ~(*Point).ScaleBy~.
+  - To avoid confusion, method declarations are not permitted on named types
+    that are themselves pointer types:
+    #+BEGIN_SRC go
+      type P *int
+      func (P) f() { /* ... */ } // compile error: invalid receiver type
+    #+END_SRC
+- In a realistec program, convention dictates that if any method of ~Point~
+  (continuing with our example of far) has a pointer receiver, then all methods
+  of ~Point~ should have a pointer receiver, even ones that don't strictly need
+  it.
+  - YJ's additional Googl-ing: The method set for types ~*T~ and ~T~ are
+    different. In particular, methods of ~T~ are also methods of ~*T~ (i.e., Go
+    will implicitly dereference the variable). The rationale is explained in the
+    [[https://golang.org/doc/faq#different_method_sets][Go FAQs]].
+- When calling method on type ~*T~ on a variable with type ~T~, Go compiler will
+  perform an implicit ~&p~ on the variable.
+- The three different cases of receiver variable type vs receiver parameter type
+  are summarized as follows:
+  | Variable Type     | Parameter Type   | Compiler Behavior                |
+  |-------------------+------------------+----------------------------------|
+  | Same as parameter | Same as variable | Calls the obvious method         |
+  | ~T~               | ~*T~             | Implicitly obtains the address   |
+  | ~*T~              | ~T~              | Implicitly deference the pointer |
+- If all methods of a named type ~T~ have a recevier of type ~T~ itself (not
+  ~*T~), it is safe to copy instance of that type, since calling any of its
+  methods necessarily makes a copy.
+  - If any method has apointer receiver, you should avoid copying instance of
+    ~T~ because doing may violate internal invariants.
+- ~nil~ is a valid recevier value.
+  - When defining a type whose method allow ~nil~ as a receiver value, it's
+    worth pointing this out explicitly in its documentation comment.
+*** 6.3 Compasing Types by Struct Embedding
+- Methods of an embedded anonymous field is promoted to the containing struct.
+  - E.g.:
+    #+BEGIN_SRC go
+      import "image/color"
+      type Point struct{ X, Y, float64 }
+      type ColoredPoint struct {
+          Point
+          Color color.RGBA
+      }
+      func (p *Point) ScaleBy(factor int) { /* ... */ }
+
+      var cp ColoredPoint
+      cp.X = 1 // usual behavior of anonymous struct field
+      cp.ScaleBy(2) // method of Point promoted to type ColoredPoint
+    #+END_SRC
+- The embedded field may be a pointer type, in which case fields and methods are
+  promoted indirectly from the pointed-to object.
+- When the compiler resolves a selector, it first looks for method declared
+  directly on the type, then for methods promoted once from the embedded fields,
+  then for methods promoted twice from the embedded fields of the embedded
+  fields, and so on.
+- One possible (and sometimes useful) use of embedded fields is to create
+  unnamed types that have methods.
+  - E.g.:
+    #+BEGIN_SRC go
+      var cache = struct {
+          sync.Mutex
+          mapping map[string]string
+      } {
+          mapping: make(map[string]string),
+      }
+
+      func Lookup(key string) string {
+          cache.Lock()
+          v := cache.mapping[key]
+          cache.Unlock()
+          return v
+      }
+    #+END_SRC
+  - Recall that methods can only be declared on named types and pointer to named
+    types. As such, unnamed types generally do not have methods.
+*** 6.4 Method Values and Expressions
+- The expression ~myInstance.MyMethod~ (notice the lack of parenthesis as
+  compared to a usual method / function call), yields a /method value/---a
+  function that binds a method (~MyMethod~ in our example) to a specific
+  receiver (~myInstance~ in our example).
+  - This useful when a package's API takes a function value, and the client's
+    desired behavior when passing in the function value is for a method to be
+    called on a specific receiver.
+  - E.g., instead of the more verbose:
+    #+BEGIN_SRC go
+      type Rocket struct { /* ... */ }
+      func (r *Rocket) Launch() { /* ... */ }
+
+      r := new(Rocket)
+      time.AfterFunc(10 * time.Second, func() { r.Launch() })
+    #+END_SRC
+    we can replace the last preceding line with this:
+    #+BEGIN_SRC go
+      time.AfterFunc(10 * time.Second, r.Launch)
+    #+END_SRC
+- A method expression, written ~T.f~ or ~(\*T).f~ where T is a type, yields a
+  function value with a regular first parameter taking the place of the
+  receiver.
+  - E.g.:
+    #+BEGIN_SRC go
+      p := Point{1, 2}
+      q := Point{4, 6}
+
+      func (p Point) Distance(q Point) float64 { /* ... */ }
+
+      distance := Point.Distance // method expression
+      fmt.Println(distance(p, q))
+      fmt.Printf("%T\n", distance) // "func(Point, Point) float64"
+    #+END_SRC
+*** 6.5 Example: Bit Vector Type
+- Sets in Go are usually implemented as a ~map[T]bool~, where ~T~ is the element
+  type.
+- Beware of situations where the ~String()~ method is declared only with the
+  pointer to named type as the receiver.
+  - In such a situation, passing the named type itself (as opposed to a pointer)
+    to functions like ~fmt.Println()~ will result in the default printing
+    behavior as opposed to calling the ~String()~ declared on the pointer type.
+*** 6.6 Encapsulation
+- Go has only one mechanism to control the visibility of names: capitalized
+  identifiers are exported from the package in which they are defined, and
+  uncapitalized names are not.
+  - This same mechanism limits access to fields of a struct or the methods of a
+    type.
+    - *As such, to encapsulate an object, we must make it a struct*. E.g.:
+      #+BEGIN_SRC go
+        type MyType struct {
+            myField []uint64 // []uint64's methods inaccessible from MyType
+        }
+
+        type MyType2 []uint64 // []uint64's methods accessible from MyType 
+      #+END_SRC
+- On *encapsulation mechanism in Go*:
+  #+BEGIN_QUOTE
+    Another consequence of this name-based mechanism is that the unit of
+    encapsulation is the package, not the type as in many other languages. The
+    fields of a struct type are visible to all code within the same
+    package. Whether the code appears in a function or method makes no
+    difference.
+  #+END_QUOTE
+- In Go, when naming a getting method, the ~Get~ prefix is generally omitted.
+  - This preference for brevity extends to all methods, and to other redundant
+    prefixs such as ~Fetch~, ~Find~, and ~Lookup~>
+  - Setters do retain the ~Set~ prefix.
+** Chapter 7 - Interfaces
+- On the purpose of interface types:
+  #+BEGIN_QUOTE
+    Interface types express generalizations or abstractions about the behaviors of
+    other types. By generalizing, interfaces let us write functions that are more
+    flexible and adaptable because they are not tied to the details of one
+    particular implementation.
+  #+END_QUOTE
+- Go's interfaces are satisfied implicitly---i.e., duck-typing.
+  - This allows creation of new interfaces that are satisfied by existing
+    concrete types within changing the existing types.
+*** 7.1 Interfaces as Contracts
+- An /interface type/ doesn't expose the representation or internal structure of
+  its value, or the set of basic operations they support; it reveals only some
+  of their methods.
+  - YJ: In this way, an /interface type/ acts as a limited contract on the
+    behavior provided by the type satisfying the interface.
+- Example of an interface (used by built-in functions like ~Fprintf()~):
+  #+BEGIN_SRC go
+    package fmt
+    
+    type Stringer interface {
+        String() string
+    }
+  #+END_SRC
+- Interface enables substitutability.
+*** 7.2 Interface Types
+- New interface types may be declared as combinations of existing ones, using
+  embedding. E.g.,
+  #+BEGIN_SRC go
+    type ReadWriter interface {
+        Reader
+        Writer
+    }
+
+    type ReadWriteCloser interface {
+        Reader
+        Writer
+        Closer
+    }
+  #+END_SRC
+*** 7.3 Interface Satisfaction
+- A type satisfies an interface if it possess all the methods the interface
+  requires.
+  - As a shorthand, Go programmers often say that a concrete type "is a"
+    particular interface type, meaning it satisfies the interface.
+- When determining whether type ~T~ satisfy a particular interface, the methods
+  declared on type ~*T~ are not considered.
+  - This is because although it is possible to call a method requiring a
+    receiver with type ~*T~ with a variable of type ~T~ (i.e., letting the
+    compiler implicitly take the address of the variable of type ~T~), this is
+    mere syntactic sugar.
+- The empty interface ~{}interface~ can be assigned any value.
+- Since interface satisfaction depends only on the methods of the two types
+  involved (the interface type and the concrete type), there is no need to
+  declare the relationship between a concrete type and the interfaces it
+  satisfies.
+  - That said, it is occasionally useful to document and assert the relationship
+    when it is intended but not otherwise enforced by the program. An example is
+    as follows:
+    #+BEGIN_SRC go
+      // *bytes.Buffer must satisfy io.Writer
+      var w io.Writer = new(bytes.Buffer)
+
+      // a more frugal declaration that avoids allocation
+      var _ io.Writer = (*bytes.Buffer)(nil)
+    #+END_SRC
+*** 7.5 Interface Values
+- Conceptually, a value of an interface type, or /interface value/, has two
+  components, a concrete type and a value of that type. These are called the
+  interface's dynamic type and dynamic value.
+  - The zero value of an interface type has both its type and value componentns
+    set to ~nil~:
+    #+BEGIN_SRC ditaa
+             +-----+
+       type  | nil |
+             +-----+
+      value  | nil |
+             +-----+
+    #+END_SRC
+- If a value of type ~*os.File~ such as ~os.Stdout~ is assigned to the interface
+  value of type ~io.Writer~, there will be an implicit conversion from a
+  concrete type to an interface type, equivalent to the explicit conversion
+  ~io.Writer(os.Stdout)~.
+  - The interface value's dynamic type is set to the type descriptor for the
+    pointer type ~*os.File~, and its dynamic value holds a /copy/ of
+    ~os.Stdout~, which is a pointer to the ~os.File~ variable representing the
+    standard output of the process.
+    #+BEGIN_SRC ditaa
+             +----------+
+       type  | *os.File |      os.File
+             +----------+      +-------------------+
+      value  |     *----|----> | fd int=1 (stdout) |
+             +----------+      +-------------------+
+    #+END_SRC
+  - Note: If the value being assigned to an interface value is not a pointer
+    type, we can conceptually think that the value being assigned is held
+    entirely within the dynamic value of the interface value, instead of needing
+    a pointer. (Although a realistic implementation will be quite different.)
+- In general, we cannot know at compile time what the dynamic type of an
+  interface value will be, so a call through an interface must use dynamic
+  dispatch.
+  - Instead of a direct call, the compiler must generate code to obtain the
+    address of the method being called from the type descriptor, then make an
+    indirect call to that address. The receiver argument for the call is a copy
+    of the interface's dynamic value.
+- Assign ~nil~ to an interface value resets both its component to ~nil~.
+- Interface values may be compared using ~==~ and ~!==~.
+  - Two interface values are equal if both are ~nil~, or if their dynamic types
+    are identical and their dynamic values are equal according to the usual
+    behavior of ~==~ for that type.
+  - Note however that while other types are either safely comparable or not
+    comparable at all, comparison of interface types may result in panic.
+    - The panic occurs when the two interface values haves the same dynamic
+      type, but that type is not comparable.
+- *An interface containing a ~nil~ pointer is non-nil*
+  - E.g.:
+    #+BEGIN_SRC go
+    	var a, b io.Writer
+    	var buf *bytes.Buffer
+    	a = nil
+    	b = buf
+    	fmt.Printf("Type of a: %T\n", a) // "Type of a: <nil>"
+    	fmt.Printf("Type of b: %T\n", b) // "Type of b: *bytes.Buffer", non-nil
+    #+END_SRC
+  - Extra care needs to taken when passing a ~nil~ pointer to a function
+    accepting an interface, and checking for ~nil~ within the function. This
+    because the value will not be ~nil~ after crossing the function boundary due
+    to the implicit copying and assignment to function argument.
+*** 7.6 Sorting with ~sort.Interface~
+- A sequence can be made sortable by defining three methods to satisfy
+  ~sort.Interface~:
+  - ~Len() int~
+  - ~Less(i, j int) bool~
+  - ~Swap(i, j int)~
+*** 7.7 The ~http.Handler~ Interface
+- An interesting example of type conversion of func to another func is as
+  follows:
+  - In ~http~ package, the ~ListenAndServe(...)~ function takes two arguments, a
+    string representing the address to listen on, and an interface with the
+    method ~ServeHttp(...)~.
+  - For the second argument, the straightforward way is to pass in a type that
+    has the ~ServeHttp(...)~ method defined, hence satisfying the required
+    interface.
+  - Alternatively, if we have a function object that matches the signature of
+    ~ServeHttep(...)~ except for the receiver, we might /convert/ that function
+    object into one that satisfy the required interface using
+    ~HandlerFunc(ourOriginalFunc)~.
+    - ~HandlerFunc()~ is defined in the ~http~ package as follows:
+      #+BEGIN_SRC go
+        package http
+
+        type HandlerFunc func(w ResponseWriter, r *Request)
+        func (f HandlerFunc) ServeHTTP(w ResponseWriter, r *Request) {
+            f(w, r)
+        }
+      #+END_SRC
+*** 7.8 The ~error~ Interface
+- The ~error~ interface has a single method ~Error()~ that returns a ~string~.
+- The simplest way to create an ~error~ is via ~errors.New()~.
+*** 7.10 Type Assertions
+- Type assertions take the form ~x.(T)~, where ~T~ is a type, called the
+  "asserted" type.
+- Type assertions may be performed with ~T~ being either a concrete type or
+  interface type.
+  - *Concrete Type*: If the asserted type ~T~ is a concrete type, the type
+    assertion checks whether ~x~'s dynamic type is identical to ~T~ and if so,
+    the result of the type assertion would be ~x~'s dynamic value. Otherwise, the
+    assertion operation panics.
+  - *Interface Type*: If the asserted type ~T~ is an interface type, the type
+    assertion checks whether ~x~'s dynamic type satisfies ~T~ and if so, the
+    result of the type assertion would still be an interface value with the same
+    dynamic type and value components, but interface type of the result is now
+    of interface type ~T~.
+    - In other words, a type assertion to an interface type changes the type of
+      the expression, making a different (and usually larger) set of methods
+      accessible, but it preserves the dynamic type and value components inside
+      the interface value.
+- No matter what type is asserted, if the operand (i.e., the ~x~), is a ~nil~
+  interface value (i.e., has ~nil~ dynamic type and value components), the type
+  assertion fails.
+- If the type assertion appears in an assignment in which two results are
+  expected, the operation does not panic on failure but instead returns an
+  additional second result, a boolean indicating success.
+*** 7.11 Discriminating Errors with Type Assertions
+- When handling errors, instead of checking for the presence or absence of a
+  substring, represent the error values using a dedicated type, and check for
+  type.
+- When designing a package, in additional or as an alternative to exporting
+  error types, consider exporting error distinguishing function that takes in an
+  error as argument, and returns whether the error is of the particular type.
+  - For example, in the code fragment below, the client code might be performing
+    a file operation and is interested in all errors representing the situation
+    that the file does not exist.
+
+    Because different platforms handle I/O differently, there are several errors
+    that correspond to this situation (in the example below, the errors might be
+    ~syscall.ENOENT~, ~ErrNotExist~, or any of the previous two wrapped in
+    ~PathError~).
+
+    The ~IsNotExist()~ function below provides a standard way to check whether
+    the error return from other functions in the package is due to a file not
+    existing.
+    #+BEGIN_SRC go
+      import (
+          "errors"
+          "syscall"
+      )
+
+      type PathError struct {
+          Op string
+          Path string
+          Err error
+      }
+      func (e *PathError) Error() string { /* ... */ }
+
+      var ErrNotExist = errors.New("file does not exist")
+
+      func IsNotExist(err error) bool {
+          if pe, ok := err.(*PathError); ok {
+              err = pe.Err
+          }
+          return err == syscall.ENOENT || err == ErrNotExist
+      }
+    #+END_SRC
+*** 7.12 Query Behaviors with Interface Type Assertions
+- When interoperating between ~[]byte~ and ~string~, memory allocation will be
+  needed for conversion between the two.
+- Another way to achieve "polymorhpism" in Go is to have a function take an
+  interface type, and in the function body, checks if the actual argument passed
+  in satisfy a more restrictive interface.
+  - If the argument does satisfy the more restrictive interface, the function
+    will use the method on such interface.
+  - If the argument does /not/ satisfy the more restrictive interface, the
+    function will default to a method on the interface defined in the function
+    parameter.
+  - In the example below, ~writeString()~ will use the more efficient
+    ~WriteString()~ method if available, and default to ~Write()~:
+    #+BEGIN_SRC go
+      func writeString(w io.Writer(w io.Writer, s string) (n int, err error) {
+          type stringWriter interface {
+              WriteString(string) (n int, err error)
+          }
+          if sw, ok := w.(stringWriter); ok {
+              return sw.WriteString(s) // avoid a copy
+          }
+          return w.Write([]byte(s)) // allocate temporary copy
+      }
+    #+END_SRC
+- In Go, defining a method of a particular type is taken as an implicit assent
+  for a certain behavioral contract.
+*** 7.13 Type Switches
+- Interfaces are used in two distinct styles:
+  1. An interface's methods express the similarities of the concrete types that
+     satisfies the interface but hide the representation details and intrinsic
+     operations of those concrete types. *The emphasis is on the methods, not on
+     the concrete types.*
+     - This is related to /subtype polymorhpism/ in traditional object-oriented
+       programming.
+  2. The second style exploits the ability of an interface value to hold values
+     of a variety of concrete types and considers the interface to be the
+     /union/ of those types. Type assertions are used to discriminate among
+     these types dynamically and treat each case differently. In this style,
+     *the emphasis is on the concrete types that satisfy the interface*, not on
+     the interface methods (if it indeedd has any), and there is no hiding of
+     information.
+     - This is related to /ah hoc polymorhpism/ in traditional object-oriented
+       programming.
+     - YJ: The second approach relates to a concept called /sum types/ that is
+       not available. See this article on [[https://making.pusher.com/alternatives-to-sum-types-in-go/][Alternatives to sum types in Go]] for
+       details on what sum types are, and how it may be simulated in Go.
+*** 7.15 A Few Words of Advice
+- Salient Quote:
+#+BEGIN_QUOTE
+When designing a new package, novice Go programmers often start by creating a
+set of interfaces and only later define the concrete types that satisfy
+them. This approach results in many interfaces, each of which has only a single
+implementation. Don't do that. Such interfaces are unnecessary abstractions;
+they also have a run-time cost. ... Interfaces are only needed when there are
+two or more concrete types that must be dealt with in a uniform way.
+#+END_QUOTE
+** Chapter 8 - Goroutines and Channels
+- Go enables two styles of concurrent programming: communicating sequential
+  processes (CSP) and shared memory multithreading.
+*** 8.1 Goroutines
+- In Go, each concurrently executing activity is called a goroutine.
+- When a program starts, its only goroutine is the one that calls the ~main~
+  function.
+- New goroutines are created by the ~go~ statement, which is an ordinary
+  function or method call prefixed by the keyword ~go~.
+- When the main goroutine exits, all goroutines are abruptly terminated and the
+  program exits.
+  - Other than by returning from ~main~ or exiting the program, there is no
+    programmatic way for one goroutine to stop another.
+*** 8.2 Example: Concurrent Clock Server
+- A simple example of a concurrent server loop might be as follows:
+#+BEGIN_SRC go
+func main() {
+    // ...
+
+    for {
+        conn, err : lister.Accept()
+        if err != nil {
+            log.Print(err) // e.g., connection aborted
+            continue
+        }
+        go handleConn(conn) // handle connections concurrently
+    }
+}
+#+END_SRC
+*** 8.3 Example: Concurrent Echo Server
+- The arguments to the function started by ~go~ are evaluated when the ~go~
+  statement itself is executed.
+*** 8.4 Channels
+- Channels are created as follows:
+  #+BEGIN_SRC go
+    cd := make(chan int) // ch has type 'chan int'
+  #+END_SRC
+- A channel is a /reference/ to the data structure created by ~make~.
+- The zero value of a channel, as with other reference types, is ~nil~.
+- Two channels of the same type may be compared using ~==~, which returns ~true~
+  only if both are references to the same channel data structure, or ~nil~.
+- A channel has two principal operations: /send/ and /receive/, collectively
+  known as communications.
+  - Send: ~ch <- x~
+  - Receive: ~x = <-ch~ or ~<-ch~ (the former assigns the result to a variable
+    whereas the latter discards the result)
+- A channel supports a third operation: /close/, i.e., ~close(ch)~.
+  - This sets a flag indicating that no more values will ever be sent on this
+    channel, and subsequent attempts to send will panic.
+  - Receive operations on a closed channel yield the values that have been sent
+    until no more values are left, and any recevie operations thereafter yields
+    the zero value of the channel's element type.
+- A channel may be buffered or unbuffered:
+  - Unbuffered channels: ~ch = make(chan int)~ or ~ch = make(chan int, 0)~
+  - Buffered channel: ~ch = make(chan int, 3)~ (buffered channel with capacity
+    of 3)
+**** 8.4.1 Unbuffered Channels
+- A send operation on an unbuffered channel blocks the sending goroutine until
+  another goroutine executes a corresponding receive on the same channel.
+  - The converse is true for the receive operation.
+- Communication over an unbuffered channel causes the sending and receiving
+  goroutines to synchronize.
+  - As such, unbuffered channels are sometimes called synchronous channels.
+- Messages sent over channels have two important aspects:
+  1. Value of the message
+  2. The fact of the communication (i.e., synchronization-related)
+     - When only the fact of the communication is important, it is common to use
+       a channel whose element type is ~struct{}~, ~bool~ or ~int~.
+**** 8.4.2 Pipelines
+- Channels can be chained together to form pipelines. E.g.:
+  - Function 1 might read or otherwise generate values and send it down channel
+    A,
+  - Function 2 might receive values from channel A, do further processing, and
+    send it down channel B, and finally,
+  - Function 3 might receive values from channel B, and output the values
+    somewhere.
+- There is no way to test directly whether a channel has been closed, but there
+  is a variant of the receive operation that produces two results: the received
+  channel element, plus a boolean value, conventionaly call ~ok~, which is
+  ~true~ for a successful receive and ~false~ for a receive on a closed and
+  drained channel.
+  - E.g.:
+    #+BEGIN_SRC go
+      for {
+          value, ok := <-theChan
+          if !ok {
+              break
+          }
+          // do something with value
+      }
+    #+END_SRC
+  - A more convenient syntax is to loop over the channel itself, as follows:
+    #+BEGIN_SRC go
+      for value := range theChan {
+         // do something with value
+      }
+    #+END_SRC
+- There is no need to close every channel when done with it.
+  - It is only necessary to close a channel when it is important to tell the
+    receiving goroutines that all data have been sent.
+  - A channel that the garbage collector determines to be unreachable will have
+    its resources reclaimed whether or not it is closed.
+**** 8.4.3 Unidirectional Channel Types
+- When a channel is supplied as a function parameter, it is typical for the
+  intent te be for the channel to be used exclusively for sending or exclusively
+  for receiving.
+  - To document this intent and prevent misuse, the Go type system provides
+    unidirectional channel types that expose only one or the other end of the
+    send and receive operations.
+    - Send-only: ~func(ch chan<- theType)~
+    - Receive-only: ~func(ch <-chan theType)~
+  - Only the sending goroutine can call ~close~ on a unidirectional channel.
+**** 8.4.4 Buffered Channels
+- A buffered channels of capacity ~x~ allows sending of up to ~x~ values on the
+  channel without the goroutine blocking.
+- If the channel is neither full nor empty, either a send operation or a receive
+  operation could proceed without blocking.
+  - This way, the channel's buffer decouples the sending and receiving
+    goroutines.
+- A channel's buffer capacity may be obtained using the ~cap()~ function, though
+  such need is usually unlikely.
+- The ~len()~ function returns the number of elements currently buffered, though
+  is a concurrent program this information is likely to be stale as soon as it
+  is retrieved, and its value is limited.
+- *If all you need is a simple queue, make one using a slice.*
+  - Don't use channels because they are deeply connected to goroutine
+    scheduling, and without another goroutine receiving from a channel, a
+    sender---and perhaps the whole program---risks becoming blocked forever.
+- A useful metaphor when reasoning about channels and goroutine is that of the
+  assembly line:
+#+BEGIN_QUOTE
+Image three cooks in a cake shap, one baking, one icking, and one inscribing
+each cake before passing it on to the next cook in the assembly line. In a
+kitchen with litle space, each cook that has finished a cake must wait for the
+next cook to become ready to accept it; this rendezvous is analogous to
+communication over an unbuffered channel.
+
+If there is space of one cake between each cook, a cook may place a finished
+cake there and immediately start work on the next; this is analogous to a
+buffered channel with capacity 1. So long as the cooks work at about the same
+rate, on averega, most of these handovers proceed quickly, smoothing out
+transient differences in their respective rates. More space between
+cooks---larger buffers---can smooth out bigger transient variations in their
+rates without stalling the assembly line, such as happens when one cook takes a
+short break, then later rushes to catch up.
+
+On the other hand, if an earlier stage of the assembly line is consistently
+faster than the following stage, the buffer between them will spend most of its
+time full. Conversely, if the later stage is faster, the buffer will ususally be
+empty. A buffer provides no benefit in either case.
+
+...
+
+To solve the problem, we could hire another cook to help the [the slower step],
+performing the same tasks but working independently. This is analogous to
+creating another goroutine communicating over the same channels.
+#+END_QUOTE
+*** 8.5 Looping in Parallel
+There are several different common ways of executing all the iterations of a
+loop in parallel:
+**** Known number of iterations; doesn't care about error or return value from each iteration
+  - Simply adding a ~go~ keyword before the function representing the
+    per-iteration processing.
+  - If the containing function needs a way to wait until all the prcossing is
+    done (e.g., if containing function is ~main~, and would otherwise exit
+    before the other goroutines are done), this may be achieved by using the
+    ~go~ statement on a literal function that does two things: call the
+    original processing, and send a ~struct{}{}~ down a channel to indicate
+    completion. The containing function can then loop through the same
+    elements, and receive a value from the channel for each element.
+  - E.g.:
+    #+BEGIN_SRC go
+    func main() {
+        ch := make(chan struct{})
+        for _, val := range values {
+            go func(v val) {
+                process(v)
+                ch <- struct{}{}
+            }(v) // passing in v captured the variable 
+        }
+        for range values {
+            <-ch // wait for completion by receiving once for each element of
+                 //   values
+        }
+    }
+    #+END_SRC
+**** Known number of iterations; terminate on first error or return on first value received
+- Use a buffered channel with capacity matching the number of iterations to
+  avoid goroutine leaks.
+- Alternatively, create another goroutine to drain the channel.
+- E.g.:
+#+BEGIN_SRC go
+func processItems(raws []item) (processeds []item, err error) {
+    type msg struct {
+        it item
+        err error
+    }
+    ch := make(chan msg, len(raw))
+
+    for _, raw := range raws {
+        go func(raw item) {
+            var m msg
+            m.it, m.err = processItem(raw)
+            ch <- m
+    }(raw)
+
+    for range raws {
+        m := <-ch
+        if m.err != nil {
+            return nil, it.err
+        }
+        processeds = append(processeds, m.it)
+    }
+
+    return processeds, nil
+}
+#+END_SRC
+**** Unknown number of iterations; interested in per-iteration return values
+- Use a ~sync.WaitGroup~:
+  - Before entering the loop, create a ~sync.WaitGroup~ (e.g., ~var wg
+    sync.WaitGroup~).
+  - Before each ~go~ statement creating a goroutine to process an iteration,
+    call ~wg.Add(1)~.
+  - Within each goroutine processing an iteration, call ~wg.Done()~ when
+    processing is done (this is usually achieved via a ~defer wg.Done()~).
+    #+BEGIN_SRC go
+      func main() {
+
+          // create channel, WaitGroup, obtain items to be processed...
+          
+          for it := range items {
+              wg.Add(1)
+              go func(it item) {
+                  defer wg.Done()
+                  // actual processing...
+                  ch <- results
+              }(it)
+          }
+          
+          // handle waiting for goroutines started in loop above...
+      }
+    #+END_SRC
+  - After the loop, start a "closer" goroutine:
+    #+BEGIN_SRC go
+      func main() {
+    
+          // loop that starts goroutines for each iteration...
+    
+          go func() {
+              wg.Wait()
+              close(ch)
+          }()
+    
+          // all goroutines started by the loop has finished at this point...
+      }
+    #+END_SRC
+    Note: The "closer" goroutine needs to be in a seperate goroutine such that
+    the ~main~ function can contiue, and start receiving frorm the
+    ~ch~. Otherwise, the earlier goroutines started in the loop will block when
+    trying to send down ~ch~, and ~wg.Wait()~ will never return.
+  - Finally, the channel may be looped over normally, since it will be closed by
+    the closer goroutine when goroutines for all iterations are done.
+*** 8.6 Example: Concurrent Web Crawler
+- A buffered channel can be used as a counting semaphore by having each
+  goroutine "acquire" the semaphore by sending on the channel and "release" by
+  receiving from the channel.
+  - The channel element is usually of type ~struct{}~.
+- When a channel is used as a task queue that may be continuously populated as
+  tasks are being processed, a way to ensure termination (instead of blocking on
+  the receive when tasks run out) is to use a traditional ~for~ loop instead of
+  the ~range~ loop over the channel.
+  - The ~for~ loop counter is initialized to the initial number of tasks on the
+    queue.
+  - The loop counter is decremented by one for each iteration of the loop which
+    receives a task from the channel processes it.
+  - The loop counter is incremented each time a task is sent to the task
+    channel.
+- An alternative to using counting semaphore is to create ~x~ number of
+  goroutines that will continuously receive from the task queue.
+  - Additional tasks generated during the processing of tasks may be added
+    directly to the tasks queue, or to a separate channel in the case of
+    multi-step processing.
+  - Goroutine termination must also be properly handled.
+*** 8.7 Multiplexing with ~select~
+- The ~time.Tick()~ function returns a channel that returns a channel on which
+  it sends events periodically, acting as a metronome.
+  - The value of each event is the timestamp.
+  - The ~time.Tick()~ function behaves as if it creates a goroutine that calls
+    ~time.Sleep~ in a loop, sending an event each time it wakes up.
+  - The ~time.Tick()~ function is only appropriate when the ticks is required
+    throughout the lifetime of the application. Otherwise it would result in a
+    goroutine leak.
+  - The alternative is to use the following:
+    #+BEGIN_SRC go
+      ticker := time.NewTicker(1 * time.Second)
+      <- ticker.C // receive from the ticker's channel
+      ticker.Stop() // cause the ticker's goroutine to stop
+    #+END_SRC
+- The ~select~ statement is used to multiplex operations, e.g.:
+  #+BEGIN_SRC go
+    select {
+    case <-ch1:
+        // ...
+    case x := <-ch2:
+        // ...
+    case ch3 <- y:
+        // ...
+    default:
+        // ...
+    }
+  #+END_SRC
+- The ~select~ statement waits until a communication (i.e., a send or receive on
+  a channel)for any case is ready to proceed, it then performs the communication
+  and executes the case's associated statements.
+  - If multiple cases are ready, ~select~ picks one at random, which ensures
+    that every case has an equal chance of being selected.
+- A ~select~ statement may be used to poll a channel until it is ready to
+  communicate.
+  - This is achieved by having a ~default~ case that does nothing, and looping
+    over the ~select~ statement.
+- Send or receive operations on a ~nil~ channel blocks forever.
+  - As such, ~nil~ values may be used to disable cases on a ~select~ statement.
+*** 8.8 Example: Concurrent Directory Traversal
+*** 8.9 Cancellation
+- To reliably cancel an arbitrary number of goroutines, we need a reliable
+  mechanism to broadcast an event over a channel so that many goroutines can see
+  it as it occurs and later see that it has occurred..
+- A channel can be used as a broadcast mechanism: by closing it instead of
+  sending values.
+- Cancellation of goroutines using channels general require three different
+  components:
+  1. A utility function to poll the cancellation state, an example is as follows:
+     #+BEGIN_SRC go
+       var done = make(chan struct{})
+     
+       func cancelled() bool {
+           select {
+           case <- done:
+               return true
+           case default:
+               return false
+           }
+       }
+     #+END_SRC
+  2. A goroutine to watch for the cancellation condition, and close the
+     cancellation channel when the condition is met. An example (where the
+     cancellation condition is any byte received from the standard input) is as
+     follows:
+     #+BEGIN_SRC go
+       go func() {
+           os.stdin.Read(make([]byte, 1)) // read a single byte
+           close(done) // done is the cancellation channel, following on from
+                       //   the previous example.
+       }
+     #+END_SRC
+  3. Finally, the various goroutines that may be cancelled need to check for the
+     cancellation state at appropriate points in each of their processing.
+     - E.g., to transform a goroutine that currently iterates over a channel
+       using ~range~ into one that responds to cancellation, we can multiplex a
+       cancellation check with the receive communication on the work channel, as
+       follows:
+       #+BEGIN_SRC go
+         for {
+             select {
+             case x, ok := <-work:
+                 // Do work...
+       
+             case <- done:
+                 // Drain work channel to allow existing goroutines to finish.
+                 for range work:
+                     // Do nothing.
+                 return // Or break.
+             }
+         }
+       #+END_SRC
+     - Other places to check for cancellation state (and terminating early if
+       cancelled) include:
+       - At the beginning of a goroutine.
+       - Multiplexed with acquisition of a counting semaphore.
+       - Right before spawning another goroutine with the ~go~ statement.
+*** 8.10 Example: Chat Server
+** Chapter 9 - Concurrency with Shared Variables
+*** 9.1 Race Conditions
+- A function is concurrency-safe if it continues to work correctly even when
+  called concurrently---i.e., from two or more goroutines without additional
+  synchronization.
+- A type is concurrency-safe if all its accessible methods and operations are
+  concurrency-safe.
+- Generally, concurrency-safe /types/ are the exception rather than the rule,
+  and we avoid accessing them concurrently.
+  - Concurrent access can be avoid by (a) confining the variable to a single
+    goroutine, or (b) using a higher-level invariant of mutual exclusion.
+- On the other hand, exported package-level functions are generally expected to
+  be concurrency-safe.
+  - This is because package-level variables cannot be confined to a single
+    goroutine, functions that modify them must enforce mutual exclusion. 
+- One particular kind of race condition is called the /data race/---where two
+  goroutines access the same variable concurrently and at least one of the
+  access is write.
+  - Ways to avoid data race includes:
+    1. Avoid writes where possible, by initializing the data structure prior to
+       concurrent access.
+    2. Confining the variable to a single goroutine (called the /monitor
+       goroutine/), and where other goroutines need to query or update the
+       variable, they send a monitor goroutine a request via a channel.
+       - This is what is meant by the Go mantra "/Do not communicate by sharing
+         memory; instead, share memory by communicating./"
+    3. Use mutual exclusion (next chapter).
+*** 9.2 Mutual Exclusion: ~sync.Mutex~
+- A counting semaphore of that counts only to 1 is also called a binary semaphore.
+- Using a binary semaphore to protect a resource ensure mutually exclusive
+  access to that resource.
+- The ~sync~ package provides the ~Mutex~ type with ~Lock()~ and ~Unlock()~
+  methods to acquire and release the lock.
+  - E.g.:
+    #+BEGIN_SRC go
+      import "sync"
+
+      var (
+          mu sync.Mutex
+          balance int
+      )
+
+      func Deposit(amount int) {
+          mu.Lock()
+          balance = balance + amount
+          mu.Unlock()
+      }
+
+      func Balance() int {
+          mu.Lock()
+          b := balance
+          mu.Unlock()
+          return b
+      }
+
+      // Alternative implementation of Balance()
+      func Balance() int {
+          mu.Lock()
+          defer mu.Unlock()
+          return balance
+      }
+    #+END_SRC
+- By convention, the variables guarded by a mutex are declared immediately after
+  the declaration of the mutex itself.
+- The region of code between ~Lock()~ and ~Unlock()~ in which a goroutine is
+  free to read and modify the shared variables is called a critical section.
+- A common concurrency pattern is for a set of exported functions to encapsulate
+  one or more variables so that the onl yway to access the variables is through
+  these functions (recall that methods are really just functions with a receiver).
+  - Each function acquires a mutex at the beginning and releases it at the end.
+  - This arrangement of functions, mutex lock, and variables is called a
+    /monitor/.
+- ~sync.Mutex~ is *not re-entrant*, i.e., a goroutine that has already acquired
+  the lock cannot require the lock.
+  - For example, the following function will not work:
+    #+BEGIN_SRC go
+      func Withdraw(amount int) bool {
+          mu.Lock()
+          defer mu.Unlock()
+          Deposit(-amount)
+          if Balance() < 0 {
+              Deposit(amount)
+              return false // insufficient funds
+          }
+          return true
+      }
+    #+END_SRC
+  - The reason Go's mutex lock is not re-entrant is because the purpose of a
+    mutex is to ensure certain invariants of share variables are maintained at
+    critical points of a program.
+    - When a goroutine acquires a mutex lock, it may assume that all these
+      invariants hold; when a goroutine releases the lock, it must guarantee
+      that order has been restored and the invariants once again hold.
+    - A re-entrant mutex would only ensure the invariant that no other
+      goroutines are accessing the shared variables, it does not ensure other
+      invariants.
+- A way around Go's mutex not being re-entrant is to split the functions into
+  two: an unexported function that assumes the lock is already held and does the
+  real work, and an exported function that acquires that lock before calling the
+  first function.
+*** 9.3 Read/Write Mutexes: ~sync.RWMutex~
+- A /multiple reader, single writer/ lock allows read operations to proceed
+  parallel with each other as long as there is no write operation in
+  parallel. Write operations require fully exclusive access.
+- In Go, such a lock is provided in ~sync.RWMutex~.
+  - An example usage is as follows:
+#+BEGIN_SRC go
+  var mu sync.RWMutex
+  var balance int
+
+  func Balance() int {
+      mu.RLock() // readers lock
+      defer mu.RUnlock()
+      return balance
+  }
+#+END_SRC
+*** 9.4 Memory Synchronization
+- Often times, read operations would require synchronization to prevent reading
+  of stale values that have been cached in the processor.
+- Relevant quote:
+  #+BEGIN_QUOTE
+  In a modern computer there may be dozens of processors, each with its own local
+  cache of the main memory. For efficiency, writes to memory are buffered within
+  each processor and flushed out to the main memory only when necessary.
+  
+  ...
+  
+  Within a goroutine, the effects of each statement are guaranteed to occur in the
+  order of execution; goroutines are sequentially consistent. But in the absence
+  of explicit synchronization using a channel or mutex, there is no guarantee that
+  events are seen in the same order by all goroutines.
+
+  ... (Next section)
+
+  In the absence of explicit synchronization, the compiler and CPU are free to
+  reorder memory access in any number of ways, so long as the behavior for each
+  goroutine is sequentially consistent.
+  #+END_QUOTE
+- For example, consider the following snippet of code:
+  #+BEGIN_SRC go
+    var x, y int
+    go func() {
+        x = x + 1
+        fmt.Print("y:", y, " ")
+    }()
+    go func() {
+        y = y + 1
+        fmt.Print("x:", x, " ")
+    }
+  #+END_SRC
+  one might think the only possible outputs are:
+  #+BEGIN_SRC go
+    y: 0 x: 1
+    x: 0 y: 1
+    y: 1 x: 1  // Where the bottom goroutine executes after the first statement
+               // in the top goroutine has executed.
+    x: 1 y: 1  // Where the top goroutine executes after the first statement in
+               // the bottom has executed.
+  #+END_SRC
+  however, the following are also possible (i.e., each goroutine prints a stale
+  value of the variable it didn't increment):
+  #+BEGIN_SRC go
+    y: 0 x: 0
+    x: 0 y: 0
+  #+END_SRC
+*** 9.5 Lazy Initialization: ~sync.Once~
+- The problem of lazy initialization in a concurrent application, simply put, is
+  as follows:
+  1. We want to defer initialization to the last possible moment to avoid wasted
+     computation.
+  2. Option A: Do it without synchronization, and assume that the worst possible
+     that could happen is that two or more goroutines concurrenty initializes
+     the variable.
+     - Problem: The assumption is wrong because while the first goroutine is
+       halfway through initializing the variable, a second goroutine might
+       already see the variable as initialized, and proceed to use it.
+  3. Option B: Add a simple mutex.
+     - Problem: This forces the variable to be accessed exclusively even after
+       initialization.
+  4. Option C: Use a ~sync.RWMutex~.
+     - E.g.:
+       #+BEGIN_SRC go
+         var mu sync.RWMutex
+         var theVariable MyVariableType
+       
+         // Concurrency-safe.
+         func TheVariable() someValueType {
+             mu.RLock()
+             if theVariable != nil {
+                 v := theVariable.GimmeThyValue()
+                 mu.RLock()
+                 return v
+             }
+             mu.RLock()
+       
+             // Acquire an exclusive lock.
+             mu.Lock()
+             if theVariable != nil {
+                 initTheVariable()
+             }
+             v := theVariable.Gimmethyvalue()
+             mu.Unlock()
+             return v
+         }
+       #+END_SRC
+     - Problem: Code becomes complicated and error-prone. And there are now two
+       critical sections.
+  5. Option D (Solution): Use ~sync.Once~'s ~Do()~ method.
+     - Conceptually, ~sync.Once~ comprises a mutex and a boolean variable
+       recording whether the initialization has taken place. The mutex guards
+       both the mutex and the client data structure.
+     - E.g.:
+       #+BEGIN_SRC go
+         var initOnce sync.Once
+         var theVariable MyVariableType
+       
+         // Concurrency-safe.
+         func TheVariable() someValueType {
+             initOnce.Do(initTheVariable)
+             return theVariable.Gimmethyvalue()
+         }
+       #+END_SRC
+*** 9.6 Race Detector
+- Go runtime and toolchain provides a /race detector/ dynamic analysis tool.
+- By adding the ~-race~ flag to commands like ~go build~, ~go run~ and ~go
+  test~, the compiler will build a modified version of the application or test
+  with additional instrumentation.
+  - The additional instrumentation will effectively record all access to shared
+    variables that occurred during execution, along with the goroutine that read
+    or wrote the variable.
+  - The instrumentation also records all sychronization events: ~go~ statements,
+    channel operations, and calls to ~(\*sync.Mutex).Lock~,
+    ~(\*sync.WaitGroup).Wait~ etc.
+- The race detector will use the additional information provided by
+  instrumentation to detect situations where one goroutine read or write to a
+  variable that was most recently modified by another goroutine without in
+  intervening synchronization event.
+  - This indicates a data race.
+  - However, the race detector can only detect data races that actually occurred
+    during a particular run.
+*** 9.7 Example: Concurrent Non-Blocking Cache
+*** 9.8 Goroutines and Threads
+- Go's stack has growable sizes. They start small (around 2KB) and can grow (up
+  to around 1GB).
+- Go runtime has its own scheduler and uses a technique known as /m:n scheduling/.
+  - Unlike an OS thread which is managed by the kernel and requires a full
+    context switch
+  - Go's scheduler is also no invoked periodically by a hardware timer, instead,
+    it is triggered implicitly by Go's language construct.
+- The ~GOMAXPROCS~ parameter of the Go scheduler determines how many OS threads
+  may be actively executing Go code simultaneously.
+- Goroutines have no notion of identity that is accessible to the programmer.
+  - This is by design, and prevents use of "thread-local" storage by
+    programmers.
+** Chapter 10 - Packages and the Go Tool
+*** 10.1 Introduction
+- Packages provide encapsulation by controlling which names are visible or
+  exported outside the package.
+*** 10.5 Blank Imports
+- It is an error to import a package into a file but not refer to the names it
+  defines within the file.
+- However, on occasion we import a package merely for the side effects of doing
+  so: evaluation of the initializer expressions of its package-level variables
+  and its ~init~ function.
+  - This may be done by using a renaming import in which the alternative name is
+    ~_~, the blank identifier.
+  - E.g., importing ~"image/png"~ to register the ability to decode PNG files
+    using ~image.Decode()~. This works because ~image~ package has a
+    ~image.RegisterFormat()~ function which is called in the ~init()~ function
+    of ~"image/png"~.
+*** 10.6 Packages and Naming
+- When creating a package, keep its name short, but not so short as to be cryptic.
+*** 10.7 The Go Tool
+- The directories that ~go get~ creates are true clients of the remote
+  repositories, not just copies of the files.
+  - E.g., it is possible to run ~git remote -v~ within the folder to see the
+    remote paths (assuming the source code is version controlled using Git).
+- Building packages:
+  - Since each directory contains one package, each executable program requires
+    its own directory. These directories are sometimes children of a directory
+    named =cmd=, such as =golang.org/x/tools/cmd/godoc=.
+  - Packages may be specified by their import paths, or by a relative directory
+    name, which must start with ~.~ or ~..~.
+  - ~go install~ is similar to ~go build~, except that it saves the compiled
+    code and command instead of throwing it away.
+- Documenting packages:
+  - The ~go doc~ tool prints the declaration and ~doc~ comment of the entity
+    specified on the command line, which may be a package, a package member, or
+    a method.
+  - The ~godoc~ tool serves cross-linked HTML pages that provide the same
+    information as ~go doc~ and much more.
+- Internal packages:
+  - The ~go build~ tool treats a package specially if its import path contains a
+    path segment name ~internal~.
+  - Such packages are called /internal packages/.
+  - An internal package may be imported only by another package that is inside
+    the tree rooted at the parent of the ~internal~ directory.
+  - E.g., given the packages below, ~net/http/internal/chunked~ can be imported
+    from ~net/http/httputil~ or ~net/http~, but not from ~net/url~. However,
+    ~net/url~ may import ~net/http/httputil~:
+    #+BEGIN_SRC go
+      net/http
+      net/http/internal/chunked
+      net/http/httputil
+      net/url
+    #+END_SRC
+- Query packages:
+  - The ~go list~ tool reports information about available packages.
+  - In its simplest form, ~go list~ test whether a package is present in the
+    workspace and prints its import path if so.
+  - An argument to ~go list~ may contain the "..." wildcard, which matches any
+    substring of a package's import path.
+    - We can use it to enumerate all the packages within a Go workspace: ~go
+      list ...~; within a specific subtree: ~go list gopl.io/ch3/...~; or
+      related to a particular topic: ~go list ...xml...~.
+** Chapter 11 - Testing
+*** 11.1 The ~go test~ Tool
+- In a package directory, files whose names end with ~_test.go~ are not part of
+  the package normally built by ~go build~, but are built by ~go test~.
+- ~*_test.go~ files treat three kinds of functions specially: tests, benchmarks,
+  and examples.
+  - A test function begins with ~Test~
+  - A benchmark function begins with ~Benchmark~
+  - An example function begins with ~Example~, provides machine-checked
+    documentation.
+*** 11.2 Test Functions
+- Each test file must import the ~testing~ package.
+- Test functions have the following signature:
+  #+BEGIN_SRC go
+    func TestName(t *testing.T) {
+        // ...
+    }
+  #+END_SRC
+- The ~-v~ flag prints the name and execution time of each test in the package.
+- The ~-run~ flag takes a regular expression and causes ~go test~ to run only
+  those tests whose function name matches the pattern.
+- It is common to use table-driven tests in Go.
+- Test failure messages are usually of the form "f(x) = y, want z".
+- It is possible to test the ~main~ package by having a test file in the same
+  package. The ~go test~ command will ignore the ~main()~ function of the
+  package and run the test functions.
+- White-box testing vs black-box testing:
+  - One way of categorizing tests is by the level of knowledge they require of
+    the internal workings of the package under test.
+  - *Black-box*: assumes nothing about the package other than what is exposed by
+    the APIs.
+  - *White-box*: has privileged access to the internal functions and data
+    structures of the package and can make observations and changes that an
+    ordinary client cannot.
+  - The two approaches are complementary
+- Mocking in Go maybe done using global variables.
+  - I.e., the function under test relies on certain global variables, and the
+    test code replaces the global variables with the necessary stubs before
+    executing the function under test, and uses ~defer~ to restore the global
+    variables as necessary for subsequent tests.
+- External test packages
+  - Sometimes testing a lower-level package requires importing a higher-level
+    package, which already depends on the lower-level package. This results in a
+    cycle. E.g., ~net/http~ depends on the lower-level ~net/url~, but testing of
+    ~net/url~ includes examples that requires importing ~net/http~.
+  - To solve this issue, it is possible to create an /external test package/
+    within the package directory of ~net/url~ with an additional ~_test~ suffix
+    to the package declaration.
+    - Sometimes an external test package requires privileged access to the
+      internals of the package under test. In such situations, an in-package
+      ~<name>_test.go~ file is used to expose the necessary internals by
+      assigning such internals to exported symbols.
+*** 11.3 Coverage
+- The ~cover~ tool provides information about test coverage.
+- Information about the ~cover~ tool may be printed using: ~go tool cover~.
+- The cover tool may be runned as follows:
+  - Run the tests, creating the coverage profile: ~go test -coverprofile=c.out~.
+  - Generate HTML report and open in browser: ~go tool cover -html=c.out~.
+- For just a summary, the test command may be runned as follows: ~go test
+  -cover~.
+*** 11.4 Benchmark Functions
+- A benchmark function might look something like the following:
+  #+BEGIN_SRC go
+    import "testing"
+  
+    func BenchmarkIsPalindrome(b *testing.B) {
+        for i := 0; i < b.N; i++ {
+            isPalindrome("A man, a plan, a canal: Panama")
+        }
+    }
+  #+END_SRC
+- Benchmark might be run a the command: ~go test -bench=.~.
+  - The ~.~ pattern causes all benchmark functions to be matched.
+- Generally, the fastest program is often the one that makes the fewest memory
+  allocations.
+  - The ~go test -bench=. -benchmem~ command will include memory allocation
+    statistics in its report.
+- Comparative benchmarks may take the form below. ~benchmark~ function the is
+  not executed directly by the benchmark tool, but is invoked repeated by the
+  ~Benchmark*~ functions.
+  #+BEGIN_SRC go
+    func benchmark(b *testing.B, size int) {/* ... */}
+    func Benchmark10(b *testing.B, size int) { benchmark(b, 10) }
+    func Benchmark100(b *testing.B, size int) { benchmark(b, 100) }
+    func Benchmark1000(b *testing.B, size int) { benchmark(b, 10000) }
+  #+END_SRC
+*** 11.5 Profiling
+- Go supports different kinds of profiling:
+  - *CPU profile*: Identifies the functions whose execution requires the most CPU
+    time.
+    - The currently running thread on each CPU is interrupted periodically by
+      the operating system every few milliseconds, with each interruption
+      recording one profile event before normal execution resumes.
+  - *Heap profile*: Identifies the statements responsible for allocating the most
+    memory.
+    - The profiling library samples calls to the internal memory allocation
+      routines so thet on average, one profile event is recorded per 512KB of
+      allocated memory.
+  - *Blocking profile*: Identifies the operations responsible for blocking
+    goroutines the longest, such as system calls, channel sends and receives,
+    and acquisition of locks.
+    - The profiling library records an event every time a goroutine is blocked
+      by one of these operations.
+- Profiles might be generated as follows:
+  #+BEGIN_SRC go
+    go test -cpuprofile=cpu.out
+    go test -memprofile=mem.out
+    go test -blockprofile=block.out
+  #+END_SRC
+  - Be careful when using more than one flag at a time as the machinery for
+    gathering one kind of profile may skew the results of others.
+- Adding profiling support to non-test programs:
+  - *Short-live command-line tools*
+  - *Long-running server applications*: Go runtime's profiling features can be
+    enabled under programmer control using the =runtime API=.
+  - The profile is analyzed using the pprof tool, accessed via ~go tool pprof~.
+*** 11.6 Example Functions
+- An example function might look something like the following:
+  #+BEGIN_SRC go
+  func ExampleIsPalindrome() {
+      fmt.Println(IsPalindrome("A man, a plan, a canal: Panama"))
+      fmt.Println(IsPalindrome("palindrome"))
+      // Output:
+      // true
+      // false
+  }
+  #+END_SRC
+  - Notice that the function has no parameter, and contains comment starting
+    with ~// Output:~.
+- Example functions serve three purposes:
+  1. *Documentation*: A good example can be a more succint or intuitive way to
+     convey the behavior of a library function than its prose description,
+     especially when used as a reminder or quick reference.
+     - Based on the suffix of the example function, the web-based documentation
+       server ~godoc~ associates example functions with the function or package
+       they exemplify. An example function just called ~Example~ would be
+       associated with the package as a whole.
+  2. *Executable Tests*: Example functions are executable tests run by ~go
+     test~. If the example function contains a final ~// Output:~ comment, the
+     test driver will execute the function adn check that what it printed to its
+     standard output matches the text within the comment.
+  3. *Hands-On Experimentation*: The ~godoc~ server at =golang.org= uses the Go
+     Playground to let the user edit and run each example function from within a
+     browser. This is often the fastest way to get a feel for a particular
+     function or language feature.
+** Chapter 12 - Reflection
+* To Internalize /Now/
+# things that can be put to use almost immediately, and which I should
+- Things I should put into my day-to-day toolbox include ...
+* To Learn/Do Soon
+- Perhaps read up about Communicating Sequential Processes, which heavily
+  influenced goroutines and channels in Go.
+- Learn about Go's standard library packages.
+  - E.g., ~bufio~, ~bytes~ and ~strings~, ~container/*~, ~context~, ~database~,
+    ~encoding/binary~, ~encoding/csv~, ~encoding/gob~, ~encoding/json~,
+    ~errors~, ~expvar~, ~flag~, ~fmt~, ~go/ast~, ~go/printer~, ~go/token~,
+    ~go/types~, ~html/*~, ~image/*~, ~io/*~, ~log/*~ ~index/suffixarray~,
+    ~net/httep~, ~net/http/httptest~, ~net/http/httptrace~, ~os/exec~,
+    ~os/signal~, ~path/*~, ~regexp/*~, ~sort~, ~strconv~, ~sync/*~, ~testing/*~,
+    ~text/*~, ~time~, ~unicode~
+  - Sub-repositories: ~perf~, ~sync~, ~text~, ~time~
+- Read up on how to systematically design a concurrent application using the
+  communicating sequential processes approach. (This is in relation to chapter
+  8.)
+- Learn about profiling Go code, including long-running server
+  applications. (This is in relation to Section 11.5)
+* To Revisit When Necessary
+** Chapter 2 - Program Structure
+*** 2.3 Variables
+- Refer to this section for an example of how the ~flag~ package is used set
+  variables using command-line flags.
+** Chapter 3 - Basic Data Types
+*** 3.2 Floating-Point Number
+- Refer to this section for an interesting example on how to plot 3D
+  mathematical functions, and also the Mandelbrot set.
+** Chapter 4 - Composite Types
+*** 4.5 JSON
+- Refer to this section for examples of JSON marshaling and unmarshaling.
+*** 4.6 Text and HTML Templates
+- Refer to this section for examples of Go's built-in templating language
+** Chapter 5 - Functions
+*** 5.1 Function Declarations
+- Refer to this section on the different ways to declare a function, and the
+  implications of each. E.g., what happens if a named results list is provided.
+** Chapter 7 - Interfaces
+*** 7.4 Parsing Flags with ~flag.Value~
+- Refer to this section for a simple example on how to use the ~flag~ package
+  for parsing command-line flags.
+*** 7.6 Sorting with ~sort.Interface~
+- Refer to this section for example usage of the ~sort~ package.
+*** 7.7 The ~http.Handler~ Interface
+- Refer to this section for a simple example usage of the ~http~ package.
+** Chapter 8 - Goroutines and Channels
+*** 8.6 Example: Concurrent Web Craweler
+- Refer to this section for an example program that uses channels and goroutines
+  to create a tasks queue that is continuously populated as tasks are being
+  processed (akin to graph exploration).
+- The example also uses buffered channel as a counting semaphore.
+*** 8.8 Example: Concurrent Directory Traversal
+- Refer to this section for a rather comprehensive example demonstrating
+  different features / nuances when coding with channels and goroutines:
+  - Usage of channel as counting semaphore
+  - Usage of ~sync.WaitGroup~ and "closer" goroutine
+  - Usage of ~select~ statement that receives a periodic input
+  - Usage of ~select~ statement where a particular case might be disabled via
+    command-line argument
+*** 8.10 Example: Chat Server
+- Refer to this section for an example of a fairly involved concurrent
+  application, with different goroutines serving different purposes, and
+  multiple channels accompanyning such goroutines. Note also that channels
+  themselves are being communicated across channels.
+** Chapter 9 - Concurrency with Shared Variables
+*** 9.7 Example: Concurrent Non-Blocking Cache
+- Refer to this section for an example of building a concurrent non-blocking
+  cache step-by-step:
+  - Starting from a non-concurrent cache and using it serially
+  - Attempting to use the non-concurrent cache in a parallel fashion
+  - Debugging the ensuing data race using the race detector
+  - Adding synchronization but accidentally removing the parallelization
+  - Modifying the synchronization (into two critical section, one for read and
+    one for write) to make the application parallel again
+  - Implementing /duplicate suppression/ using a broadcast channel associated
+    with each cached item.
+- The section also contrast the above implementation---which is based on shared
+  variables---with one based on communicating sequential processes.
+** Chapter 11
+*** 11.2 Test Functions
+- Refer to this section for an example of table-driven test.
+- The section also provides a simple example of randomized tests.
+*** 11.2.5 Writing Effective Go Tests
+- Refor to this section on Go's testing philosophy:
+  - Lack of standard set-up and tear-down methods
+  - Lack of standard comparison functions
+  - Etc.
+* Other Resources Referred To
+- The [[https://blog.golang.org/][Go Blog]] publishes some of the best writing on Go, with articles on the
+  state of the language, plans for the future, reports on conferences, and
+  in-depth explanations of a wide variety of Go-related topics.
+- The [[https://golang.org][official website]] contains tutorials, text and video resources.
