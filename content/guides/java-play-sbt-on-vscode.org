@@ -1,0 +1,194 @@
+---
+title: "How to set up Java Play Framework sbt project on VSCode"
+date: 2020-09-10T00:06:04+08:00
+draft: false
+categories: ["IDE-setup"]
+tags: ["Java", "sbt", "maven", "vscode"]
+---
+
+This guide will show you how to use Visual Studio Code to work on Java Play
+  Framework project that is using sbt for dependency management.
+
+* Background
+I have a Java Play Framework project to work on, but I have also used Visual
+  Studio Code for many years and don't want to move to IntelliJ Idea and
+  re-learn all the new bindings just for this project. Furthermore, IntelliJ
+  Idea is just extremely sluggish on my machine.
+
+This guide aims to achieve the following (in decreasing priority):
+- Code navigation in Visual Studio Code (e.g., jumping to definition should
+  work, and should jump to =.class= file if actual source files are not
+  available)
+- Interactive Debugging
+
+* Step 1: Generate =pom.xml=
+1. Clone the project repository, and ~cd~ to the root directory.
+2. Generate a POM file by running ~sbt makePom~.
+3. Copy the generated POM file from =target/scala-<version>/<project-name>.pom=
+   to the project root directory, and rename it to =pom.xml=.
+
+* Step 2: Fix the =pom.xml= file
+This step is necessary because the generated POM file assumes the project is
+  using the default Maven project structure, which is move likely not the case
+  if your project is using sbt in the first place.
+
+1. Specify the paths containing application and test source code:
+   - In =pom.xml=, under the ~<project>~ tag, add the following:
+     #+BEGIN_SRC xml
+     <build>
+       <sourceDirectory>app</sourceDirectory>
+       <testSourceDirectory>test</testSourceDirectory>
+     </build>
+     #+END_SRC
+
+2. Specify the paths containing the application and test resource files:
+   - In =pom.xml=, modify the ~<build>~ tag added above to the following:
+     #+BEGIN_SRC xml
+     <build>
+       ...
+       <resources>
+         <resource>
+           <directory>resources</directory>
+         </resource>
+       </resources>
+       <testResources>
+         <testResource>
+           <directory>test/resources</directory>
+         </testResource>
+       </testResources>
+     </build>
+     #+END_SRC
+
+3. (If necessary) Specify the source and target versions (both are 1.8 in the
+   example below) for the compilation:
+   - In =pom.xml=, modify the ~<build>~ tag added above to following:
+     #+BEGIN_SRC xml
+     <build>
+       ...
+       <plugins>
+         <plugin>
+           <groupId>org.apache.maven.plugins</groupId>
+           <artifactId>maven-compiler-plugin</artifactId>
+           <version>3.8.1</version>
+           <configuration>
+             <source>1.8</source>
+             <target>1.8</source>
+           </configuration>
+         </plugin>
+       </plugins>
+     </build>
+     #+END_SRC
+
+4. (If necessary) Add support for processing of twirl templates:
+   - In =pom.xml=, modify the ~<build>~ tag added above to the following:
+     #+BEGIN_SRC xml
+     <build>
+       ...
+       <plugins>
+         ...
+         <plugin>
+           <groupId>com.jakewharton.twirl</groupId>
+           <artifactId>twirl-maven-plugin</artifactId>
+           <version>1.2.0</version>
+           <executions>
+             <execution>
+               <phase>generate-source</phase>
+               <goals>
+                 <goal>compile</goal>
+               <goals>
+               <configuration>
+                 <templateDirectory>app</templateDirectory>
+                 <outputDirectory>target/classes<outputDirectory>
+               </configuration>
+             </execution>
+           </executions>
+         </plugin>
+       </plugins>
+     </build>
+     #+END_SRC
+
+     Note: I couldn't find detailed documentation regarding the
+     ~<configuration>~ tag for this plugin, but was able to glimpse the
+     ~<templateDirectory>~ and ~<outputDirectory>~ tags from the [[https://github.com/JakeWharton/twirl-maven-plugin/blob/master/twirl-maven-plugin/src/main/java/com/jakewharton/twirl/CompileMojo.java#L48][source code]].
+
+5. (If necessary) Add any missing dependencies directly to the POM file:
+   - For example:
+	   #+BEGIN_SRC xml
+     <project>
+       ...
+       <dependencies>
+         ...
+         <dependency>
+           <groupId>xml-apis</groupId>
+           <artifactId>xml-apis<artifactId>
+           <version>1.4.01</version>
+         </dependency>
+       </dependencies>
+     </project>
+	   #+END_SRC
+
+* Step 2: Set up Visual Studio Code
+1. Install the [[https://marketplace.visualstudio.com/items?itemName=vscjava.vscode-java-pack][Java Extension Pack]].
+2. Configure the various =JAVA_HOME=:
+   - Add the following to the Visual Studio Code settings (add the necessary
+     runtime paths as required, and set the default accordingly):
+     #+BEGIN_SRC javascript
+     "java.configuration.runtimes": [
+       {
+         "name": "JavaSE-1.8",
+         "path": "</path/to/jdk-8>",
+       },
+       {
+         "name": "JavaSE-11",
+         "path": "</path/to/jdk-11>",
+       },
+       {
+         "name": "JavaSE-14",
+         "path": "</path/to/jdk-14>",
+         "default": true
+       },
+     ]
+     #+END_SRC
+   - For details, refer to the official documentation of relevant extension
+     (Language support for Java ™ for Visual Studio Code) at [[https://github.com/redhat-developer/vscode-java#setting-the-jdk][Setting the JDK]].
+3. Configure the Java to use for launching the language server:
+   - Add the following to the Visual Studio Code settings:
+     #+BEGIN_SRC javascript
+     "java.home": "</path/to/jdk/>",
+     #+END_SRC
+   - Refer to the official documentation for other supported settings in
+     relation to the language server: [[https://github.com/redhat-developer/vscode-java#supported-vs-code-settings][Supported VS Code Settings]].
+
+* Step 3: Open the project in Visual Studio Code
+- Select "File: Open Folder..." from the Command Palette, and select the project
+  root directory (i.e., the folder containing the =pom.xml= file).
+- Verify that the following files are created in the project root directory by
+  Visual Studio Code:
+  - =.settings/org.eclipse.jdt.apt.core.prefs=
+  - =.settings/org.eclipse.jdt.core.prefs=
+  - =.settings/org.eclipse.m2e.core.prefs=
+  - =.classpath=
+  - =.factorypath=
+  - =.project=
+  - If not, try selecting "Java: Update project configuration" from the Command
+    Palette.
+- Select "Maven: Execute Commands..." from the Command Palette, and select the
+  relevant command (e.g., select "compile" to compile the project).
+
+* Troubleshooting
+- If the project is not compiling, verify that the dependencies are resolved
+  correctly.
+  - Follow the instructions on the page on [[http://maven.apache.org/plugins/maven-dependency-plugin/examples/resolving-conflicts-using-the-dependency-tree.html][Resolving conflicts using the
+    dependency tree]] from the Apache Maven Project to see the dependencies
+    resolved by Maven.
+  - Google how to see the dependencies resolved by sbt, and compare it with that
+    above.
+- If the dependencies cannot be satisfied properly, you may need to manually
+  install the dependencies to the local machine.
+  - First, understand how the concept of local repositories work, by reading
+    [[https://maven.apache.org/guides/introduction/introduction-to-repositories.html][Introduction to Repositories]].
+  - Next, manually install the relevant jar files to the local repository, by
+    following the instructions at [[https://maven.apache.org/guides/mini/guide-3rd-party-jars-local.html][Guide to installing 3rd party JARs]].
+- If the ~mvn~ command fails within Visual Studio Code's integrated terminal,
+  try running ~java -version~ within the same integrated terminal instance to
+  double check that the Java version is correct.
