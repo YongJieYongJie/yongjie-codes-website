@@ -1,0 +1,119 @@
+---
+title: "Many Routes to Gin"
+alternateTitle: "How various ways of declaring routes on Gin affects performanec"
+date: 2020-10-09T21:14:00+08:00
+Description: ""
+image: ""
+imageCredit: ""
+Tags: [gin-web-framework, routing]
+Categories: [performance-optimizationo]
+DisableComments: false
+---
+
+/With great choices comes greater confusion/. The flexible ways to declare routes
+in Gin Web Framework means raise questions about whether any particular way is
+more performant. This post seeks to answer that question.
+
+* Background
+One fine day, I was working with Go and the Gin Web Framework, trying to structure
+the code base in a way to enhance maintainability. In particular, I wanted to
+understand how the following two ways of setting up routes in the Gin Web
+Framework would affect routing performance (if at all):
+
+#+BEGIN_SRC go
+  // Approach #1: Using route group
+  routeGroup := r.Group("/basePath", AuthMiddleware)
+  {
+      routeGroup.POST("/endpoint1", RouterHandler1)
+      routeGroup.POST("/endpoint2", RouterHandler2)
+      routeGroup.POST("/endpoint3", RouterHandler3)
+  }
+
+  // Approach #2: Plain declarations
+  r.POST("/basePath/endpoint1", AuthMiddleware, RouterHandler1)
+  r.POST("/basePath/endpoint2", AuthMiddleware, RouterHandler2)
+  r.POST("/basePath/endpoint3", AuthMiddleware, RouterHandler3)
+#+END_SRC
+
+The short answer is that either approach works fine, so you are free to choose
+whichever style suits your code base.
+
+But if you are not convinced, do read on for how I convinced myself of this
+conclusion by (a) exploring the Gin's documentation and code base, and (b) doing
+some basic debugging to examine the route object generated using each approach.
+
+* Looking up Documentation and Code base
+My first instinct was to look up the godoc of Gin Web Framework, to check
+whether there is anything in the ~Group()~ method regarding performance: [[https://godoc.org/github.com/gin-gonic/gin#RouterGroup.Group][here]].
+
+- Unfortunately, there was nothing in the documentation. However, I did notice
+  that each of the ~GET()~, ~POST()~ etc. methods are in fact just shortcuts for
+  the ~router.Handle(...)~ method.
+
+So the second thing I did was to click through on the godoc of the ~Handle(...)~
+method to jump to the github repository, and traced through [[https://github.com/gin-gonic/gin/blob/master/routergroup.go#L93][this]], [[https://github.com/gin-gonic/gin/blob/540b1eff7069128df5d95e09968569f2266d9a6a/routergroup.go#L75][this]] and [[https://github.com/gin-gonic/gin/blob/540b1eff7069128df5d95e09968569f2266d9a6a/routergroup.go#L75][this]]
+until I arrived at the ~addRoute(...)~ method in =tree.go=.
+
+- Scrolling through the body of ~addRoute(...)~, I see functions and variables
+  like ~longestCommonPrefix()~ and ~parentFullPathIndex~, and I knew there will
+  be be some resolution of the routes and handlers.
+
+- (/On hindsight, how silly of me to have not foresee this: how else would a/
+  /routing component makes sure no routes are duplicated, and to prioritize/
+  /handlers when there are multiple matches/.)
+
+In any case, the above gave me confidence that either of the approaches listed
+at the beginning of this post would be similar, if not identical.
+
+* Examining actual router struct by debugging
+Nonetheless, as I'm still very new to Go, I decided to set up a simple toy
+project to find out whether there are indeed any difference between the two
+approaches. In particular, I wanted to dig into the guts of the router struct to
+see whether there are any differences from the two approaches.
+
+The code I used is as below. (Note that I am using [[https://github.com/davecgh/go-spew][go-spew]] library to print the
+entire structure of the final struct out, before running a diff with my favorite
+editor.)
+#+BEGIN_SRC go
+  package main
+
+  import (
+      "github.com/davecgh/go-spew/spew"
+      "github.com/gin-gonic/gin"
+  )
+
+  func AuthMiddleware(c *gin.Context) {
+      // Does nothing
+  }
+
+  func RouterHandler(c *gin.Context) {
+      // Does nothing
+  }
+
+  func main() {
+      r := gin.Default()
+
+      // Approach #1: Using route group
+      // routeGroup := r.Group("/basePath", AuthMiddleware)
+      // {
+      // 	routeGroup.POST("/endpoint1", RouterHandler)
+      // 	routeGroup.POST("/endpoint2", RouterHandler)
+      // 	routeGroup.POST("/endpoint3", RouterHandler)
+      // }
+
+      // Approach #2: Plain declarations
+      // r.POST("/basePath/endpoint1", AuthMiddleware, RouterHandler)
+      // r.POST("/basePath/endpoint2", AuthMiddleware, RouterHandler)
+      // r.POST("/basePath/endpoint3", AuthMiddleware, RouterHandler)
+
+      spew.Dump(r) // Set breakpoint here to view r in debugger.
+  }
+#+END_SRC
+
+And here's the diff (no difference except the pointer address to the handlers):
+
+[[/img/post-gin-router-performance-diff.png]]
+
+* Conclusion
+And that's it, my brief exploration into a small part of the routing mechanics
+of Gin Web Framework.
