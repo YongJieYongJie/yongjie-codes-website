@@ -92,13 +92,13 @@ This step is necessary because the generated POM file assumes the project is
            <version>1.2.0</version>
            <executions>
              <execution>
-               <phase>generate-source</phase>
+               <phase>generate-sources</phase>
                <goals>
                  <goal>compile</goal>
-               <goals>
+               </goals>
                <configuration>
                  <templateDirectory>app</templateDirectory>
-                 <outputDirectory>target/classes<outputDirectory>
+                 <outputDirectory>target/classes</outputDirectory>
                </configuration>
              </execution>
            </executions>
