@@ -1,0 +1,1043 @@
+---
+short_title: "Seven Databases in Seven Weeks (Second Edition)"
+title: "Seven Databases in Seven Weeks (Second Edition)"
+source: Googl-ing useful book that gives a broad survey of modern databases
+author: Luc Perkins; Eric Redmond; Jim R. Wilson
+isbn: 978-1680502534
+reading_period: 2020.10–2020.12.26
+date: 2020-12-31T20:18:19+08:00
+draft: false
+---
+
+* General Review
+- The book provides pragmatic quickstart guide for the seven databases covered,
+  in a consistent language and presentation. This is actually very valuable,
+  given that documentation can vary vastly across projects. Note however that
+  this necessary means that the author has left things out that doesn't fit the
+  narrative of the book.
+- Databases covered:
+  1. PostgreSQL
+  2. HBase
+  3. MongoDB
+  4. CouchDB
+  5. Neo4J
+  6. DynamoDB
+  7. Redis
+- Each chapter starts with an analogy of the database examined in that chapter
+  with a particular physical tool---ranging from power drills to earth
+  movers---providing an instinctive sense of the underlying characteristics of
+  the database.
+* Specific Takeaways
+** Chapter 2 - PostgreSQL
+- PostgreSQL has domain-specific plug-ins for things like natural language
+  parsing, multidimensional indexing, geographic queries, custom datatypes, and
+  much more.
+*** Day 1: Relations, CRUD, and Joins
+- Relational databases is built upon relational algebra, and allows queries to
+  be optimized based on the math. This also allows the declarative nature of SQL
+  (as opposed to an iterative one which requires manual iteration and checking
+  for the conditions).
+- One thing that sets relational databases apart from other databases is their
+  ability to join tables together when reading them.
+- *Outer Joins* are a way of merging two tables when the results of one table
+  must always be returned.
+- Creating a foreign key references may not automatically create an index on the
+  referenced column.
+- Index may represented using a b-tree (default) or hash. If using hash, the
+  column must contain only default value.
+*** Day 2: Advanced Queries, Code, and Rules
+**** Aggregate Functions
+- The ~GROUP BY~ condition has its own filter keyword: ~HAVING~, which is like
+  the ~WHERE~ clause, but it can filter by aggregate functions. For example:
+  #+BEGIN_SRC sql
+    SELECT user_id
+    FROM blog_post
+    GROUP BY user_id
+    HAVING count(*) >= 2 AND user_id IS NOT NULL;
+  #+END_SRC
+- The ~DISTINCT~ keyword may actually implemented as a ~GROUP BY~, for example
+  the two queries below may be equivalent:
+  #+BEGIN_SRC sql
+    SELECT user_id  FROM blog_post GROUP BY user_id;
+    SELECT DISTINCT user_id FROM blog_post;
+  #+END_SRC
+**** Window Functions
+- Whereas a ~GROUP BY~ clause will return one record per matching group value, a
+  window function does not collapse the results per group, and can return a
+  separate record for each row.
+- Consider the following data:
+  Table name: =blog_post=
+  | post_id | user_id |
+  |---------+---------|
+  |       1 | a       |
+  |       2 | b       |
+  |       3 | c       |
+  |       4 | b       |
+  |       5 | b       |
+- A ~GROUP BY~ query may look something like the following:
+  #+BEGIN_SRC sql
+    SELECT user_id, count(*)
+    FROM blog_post
+    GROUP BY user_id,
+    ORDER by user_id;
+  #+END_SRC
+  and return the following:
+  | user_id | count(*) |
+  |---------+----------|
+  | a       |        1 |
+  | b       |        3 |
+  | c       |        1 |
+- A query using a window function may look like the following:
+  #+BEGIN_SRC sql
+    SELECT user_id, count(*)
+      OVER (PARTITION BY user_id)
+    FROM events
+    ORDER BY venue_id;
+  #+END_SRC
+  and return the following:
+  | user_id | count(*) |
+  |---------+----------|
+  | a       |        1 |
+  | b       |        3 |
+  | b       |        3 |
+  | b       |        3 |
+  | c       |        1 |
+**** Transactions
+- RDBMS generally provides ACID guarantee:
+  - *Atomicity* (either all operations succeed or none do)
+  - *Consistency* (the data will always be in a good state and never in an
+    inconsistent state; note: this is different from the consistency in CAP
+    theorem)
+  - *Isolated* (transactions don't interfere with one another)
+  - *Durability* (a commited transaction is safe, even after a server crash)
+**** Stored Procedures
+- Stored procdures can offer huge performance advantages, but also bound the
+  application code to the database. Always consider whether the performance
+  gains are worth it.
+- Some examples usage of stored procedures:
+  - Creation of a referenced value if it does not already exists.
+**** Triggers
+- Triggers automatically fire stored procedures when some event happens.
+**** Views
+- Views are essentially saved queries that can be treated like a table.
+- However, views cannot handle updates.
+- Plain ~VIEWs~ offer no performance gains; if performance gains are desired,
+  consider using ~MATERIALIZED VIEWs~ (assuming the additional disk space
+  required is acceptable).
+**** Rules
+- Rules can be used to alter the parsed SQL query tree, allowing for
+  modification of the query before execution.
+- This allow handling of updates through views.
+*** Day 3: Full Text and Multidimensions
+- SQL generally supports ~LIKE~ and ~ILIKE~ for wildcard searches (~ILIKE~ is
+  case-insensitive). The ~%~ character generally matches any number of
+  characters whereas the ~_~ character matches a single character.
+- Postgres supports regex-base string matching via the ~~~ operator, with an
+  optional ~*~ after the ~~~ to mean case-insensitive.
+- The =fuzzystrmatch= contrib package in PostgreSQL provides the ~levenshtein()~
+  function for calculating the number of steps required to change a string into
+  another.
+- The =pg_trgm= contrib package provides a functions for generating
+  character trigrams.
+- PostgreSQL supports full-text search using the ~@@~ operator. The operator
+  supports matching based on words, even accounting for pluralization.
+*** Wrap-Up
+- Strengths of PostgreSQL includes:
+  - Maturity: the project has been used in production systems in many years and
+    most issues should have been ironed out.
+  - Works well on data that is fairly homogeneous (as with all other RDBMS).
+  - Highly customizable, with numerous contributed packages that add
+    functionality.
+- PostgreSQL may not be appropriate in the following circumstances:
+  - If there is a need to scale out rather than up.
+  - If very high-volume reads and writes are required.
+  - If we only need to store large BLOBs of data.
+** Chapter 3 - HBase
+- Tool analogy:
+  #+BEGIN_QUOTE
+  Apache HBase is made for big jobs, like a nail gun.
+  #+END_QUOTE
+- While many of the words used to describe components in HBase's components are
+  similar to RDBMS, they mean quite different things.
+  - Rows in HBase don't act like records, and columns are completely variable
+    and not enforced by any predefined schema.
+- Unlike relational databases, which sometimes have trouble scaling out, HBase
+  doesn't scale down.
+- Some reasons for using HBase:
+  - Scalability
+  - Versioning
+  - Compression
+  - Garbage collection (for expired data)
+  - In-memory tables
+  - OLAP (because while individual operations may sometimes be slower than
+    equivalent operations in other databases, scanning through enormous datasets
+    is an area where HBase truly excels)
+- HBase guarantees atomicity at row level.
+- HBase is often used to back heavy-duty logging and search systems.
+*** Introducing HBase
+- HBase is based on Bigtable, a proprietary database developed by Google.
+- HBase can gracefully recover from individual server failures because it uses
+  both write-ahead logging and distributed configuration.
+*** Day 1: CRUD and Table Administration
+- By default, HBase uses a temporary directory to store its data files. It is
+  thus important to override this using the configuration file (via the
+  =hbase.rootdir= property) in any real usage.
+- HBase comes with HBase shell for interactive sessions.
+- HBase is essentially a big map of maps.
+  - Keys are arbitrary strings that each map to a /row/ of data.
+  - A row itself is a map in which keys are called /columns/ and values are
+    stored as uninterpreted arrays of bytes.
+  - Columns are grouped into /column families/, so a column's full name consists
+    of two parts: the column family name and the /column qualifier/, ofter
+    concatenated together using a colon (e.g,. =family:qualifier=).
+- Columns in HBase doesn't need to be predefined when creating the table.
+- HBase stores an integer timestamp for all data values. And when a new value is
+  written to the same cel, the old value remains, and is indexable by its
+  timestamp.
+- A way to think about HBase is that each row is a mini-database.
+- Some benefits of using multiple column families are as followis:
+  - The performance characteristics of each column family can be tuned
+    separately.
+  - Column families are store in different directories.
+*** Day 2: Working with Big Data
+- By default, in HBase, data is flushed automatically to disk periodically.
+- HBase supports two compression algorithms: Gzip and Lempel-Ziv-Oberhumre.
+- HBase supports using Bloom filters to determine whether a particular column
+  exists for a given row key or whether a given row exists.
+- In HBase, rows are kept in order, sorted by the row key.
+  - A region is a chunk of rows, identified by the starting key (inclusive) and
+    ending key (exclusive).
+  - Region never overlap, and each is assigned to a specific region server in
+    the cluster.
+- For performance reasons, edits are not necessarily written to disk
+  immediately.
+- The =hbase:meta= special table is responsible for keeping track of which
+  region tables are responsible for which part (i.e., region) of the user's
+  tables.
+- Assignment of of regions to region servers is handled by the /master/ node.
+- The generaly guidance for column families in the HBase community is to try to
+  keep the number of families per table down.
+  - This can be achieved by (a) combining columns into a single family, or (b)
+    putting families in different tables entirely.
+*** Day 3: Taking It to the Cloud
+- AWS's Elastic MapReduce (EMR) provides a managed Hadoop platform, allowing you
+  to run various tools in the Hadoop ecosystem, including HBase.
+*** Wrap-Up
+**** HBase's Strengths
+- A robust scale-out architecture and built-in versioning and compression
+  capabilities.
+- HBase is rack aware, and can replicate data within and between datacenter
+  racks so that node failures can be handled gracefully and quickly.
+**** HBase's Weaknesses
+- HBase doesn't scale down. Five nodes seem to be the minimum number to use.
+- Nonexpert documentation is hard to come by.
+- HBase is almost never deployed alone, but is used with Hadoop, Apache Spark.
+- HBase doesn't offer any sorting or indexing capabilities aside from row
+  keys. No sorting is done on any other field, such as column names and values.
+- HBase has no concept of datatypes, all field values in HBase are treated as
+  uninterpreted arrays of bytes.
+** Chapter 4 - MongoDB
+- Tool analogy:
+  #+BEGIN_QUOTE
+  MongoDB is in many ways like a power drill. Your ability to complete a task is
+  framed largely by the components you choose to use... MongoDB's strength lies in
+  its versatility, power, ease of use, and ability to handle jobs both large and
+  small.
+  #+END_QUOTE
+- MongoDB is a (JSON) document database, and enforces no schema.
+- A Mongo document can be likened to a relational table row without a schema.
+- MongoDB provides GridFS, a way of storing files bigger than the per document
+  limit by automatically splitting the file into chunks.
+*** Day 1: CRUD and Nesting
+- Unlike a relational database, Mongo does not support server-side joins; a
+  single JavaScript call will retrieve a document /and/ all of its nested
+  content.
+- Example queries:
+  #+BEGIN_SRC javascript
+    // Inserting into the =orders= collection
+    db.orders.insert({
+        name: "...",
+        itemIDs: [ ... ],
+        metadata: { ... },
+        date: ISODate("2020-11-22"),
+        totalPrice: 123.4
+    })
+
+    // List everything in the =orders= collection
+    db.orders.find()
+
+    // Listing help
+    db.help()
+    db.orders.help()
+
+    // Inspecting the source code of a function (just call the function
+    // without parentheses)
+    db.orders.insert
+
+    // Selecting specific document
+    db.orders.find({ "_id": ObjectId("<the-object-id>")})
+
+    // Selecting specific document, and retrieving only "totalPrice" field
+    db.orders.find({ "_id": ObjectId("<the-object-id>"), { totalPrice: 1 })
+
+    // Selecting specific document, and retrieving all except "totalPrice" field
+    db.orders.find({ "_id": ObjectId("<the-object-id>"), { totalPrice: 0 })
+
+    // Advanced filtering
+    db.orders.find(
+      {
+        name: /myregex/,
+        totalPrice: { $lt: 100, $gt: 10 },
+        metadata.nestField: "exactMatch"
+      }
+    )
+
+    // $elemMatch can be used to enforce that a particular document or
+    // nested document matches all the criteria.
+
+    // .update(<criteria>, <operation>) can be used to update existing
+    // documents
+
+    // .remove(<criteria>) can be used to remove documents, the criteria
+    // is like in .find()
+  #+END_SRC
+- The Mongo community suggests using ={ $ref: "collection_name", $id:
+  "reference_id" }= to create references between documents.
+- The ~.find()~ function also supports passing in a function that'll be runned
+  on every document to decide whether each document is a match.
+  - This should however be used as the last option because you can't index such
+    a query, and Mongo cannot optimize it.
+*** Day 2: Indexing, Aggregating, and Mapreduce
+- MongoDB provides several data structures for indexing, such as B-tree, and
+  two-dimensional and spherical GeoSpatial indexes.
+- Whenever a new collection is created, Mongo automatically creates an index by
+  the =_id=.
+- Index can also be built on nested values.
+- This following query shows all indexis in the database:
+  #+BEGIN_SRC javascript
+    db.getCollectionNames().forEach(function(collection) {
+        print("Indexes for the " + collection + " collection:");
+        printjson(db[collection].getIndexes());
+    });
+  #+END_SRC
+- To examine execution statistics, use a command like the following:
+  #+BEGIN_SRC javascript
+    db.orders.find({<criteria>}).explain("executionStats").executionStats
+  #+END_SRC
+  - ~.explain()~ is useful for testing a specific query. For a more
+    comprehensive profiling, use the system profiler by using the function
+    ~.setProfilingLevel(...)~, which creates a new object in the
+    =system.profile= collection, which you can read for profiling stats.
+- Indexing in Mongo is likely slower and more resource-intensive compared to
+  indexing in a traditional RDBMS. As such, you should consider building indexes
+  at off-peak times, as opposed to using automated index creation.
+- Mongo also comes with a range of command-line tools for various purposes
+  (e.g., data dump, restoration).
+- The ~.aggregate()~ function can be used to perform complex aggregation query
+  in Mongo.
+- The ~.listCommands()~ function can be used to list commands available.
+- Mongo supports mapreduce operation.
+*** Day 3: Replica Sets, Sharding, GeoSpatial, and GridFS
+- We can neither write to a secondary node nor read directly from it.
+- Mongo only allows a single master.
+- Mongo requires an odd number of nodes, and in the event of failure / network
+  partition, it requires a majority vote.
+- It is possible to bring up a arbiter node that only votes, but does no
+  replicate data. It is also possible to increase voting rights on the servers
+  (generally not recommended).
+- Mongo supports automatic sharding. To start a sharded start, use a command
+  like the following:
+  #+BEGIN_SRC bash
+    mkdir ./data_dir_1 ./data_dir_2
+    mongod --shardsvr --dppath ./data_dir1 --port 27017
+    mongod --shardsvr --dppath ./data_dir2 --port 27018
+
+    # Config server for keeping track of which shard is storing what
+    mkdir ./mongoconfig
+    mongod --configsvr --replSet configSet --dpbath ./mongoconfig --port 27019
+    # We also need to connect to the config server and run
+    # rs.initiate(...) to initialize the server. Details are omitted here.
+
+    # Main server for client
+    mongos --configdb configSet/localhost:27019 --port 27020
+    # We also need to connect to the client-facing server to (a) add the
+    # shard servers using sh.addShard(...) for each shard server, (b)
+    # enable sharding using db.runCommand({ enablesharding: "myDatabase"
+    # }), and (c) specify the field to shard by, by using db.runCommand({
+    # shardcollection: "myDatabase.myCollection", key: {myKey: 1} })
+  #+END_SRC
+*** Wrap-Up
+**** Mongo's Strengths
+- Ability to handle huge amounts of data
+- User-friendliness: e.g., similarity between Mongo commandsand traditional SQL
+**** Mongo's Weaknesses
+- Lack of schema: e.g., if there is a typo in the collection or field name,
+  Mongo will not complain, it'll happily creata a new collection or field as the
+  case may be.
+** Chapter 5 - CouchDB
+- Tool analogy:
+  #+BEGIN_QUOTE
+  Ratchet wrenches are light and convenient tools you carry around for a range of
+  jobs, big and small. As with power drills, you can swap out variously sized bits
+  like sockets or screws. Unlike a power drill that needs to be plugged into 120
+  volts of AC power, however, a wrench is happy to rest in your pocket and run on
+  elbow grease. Apache CouchDB is like that. Able to scale down as well as up, it
+  fits problem spaces of varying size and complexity with ease.
+  #+END_QUOTE
+- CouchDB is a JSON- and REST-based document-oriented database. It is designed
+  with the web in mind.
+- CouchDB does not support ad-hoc querying at all. Indexed views must be
+  produced by incremental mapreduce operations.
+- CouchDB supports a variety of deployment scenarios, from datacenter-scale and
+  down to running on a single smartphone.
+- CouchDB uses an append-only storage model, and the data is easy to replicate,
+  back up and restore.
+*** Day 1: CRUD, Fauxton, and cURL Redux
+- All documents in CouchDB have an =_id= field. Additionally, documents also
+  have a =_rev= filed that is update everytime the document changes. To update
+  or delete an existing document, you must provide both an =_id= and the
+  matching =_rev=.
+- There are no transactions or locking in CouchDB.
+- All communications with CouchDB is REST-based.
+- Unlike MongoDB, in which you modiy documents in place, with CouchDB you always
+  overwrite the entire document to make any change.
+*** Day 2: Creating and Querying Views
+- CouchDB, a /view/ is a window into the documents contained in a
+  database. Views are the principal way that documents are accessed.
+- A view consists of mapper and reducer functions that are used to generate an
+  ordered list of key-value pairs.
+  - The mapper function is runned on each document. Within the mapper function,
+    the ~emit(<key>, <value>)~ function may be called zero, once or multiple
+    times to emit key-value pairs. These key-value pairs will form documents
+    that are queryable by the key (assuming there is no reducer).
+- Views can be stored within CouchDB itself as /design documents/, and will be
+  replicated like all other documents.
+*** Day 3: Advanced Views, Changes API, and Replicating Data
+- The high-level outline of the steps CouchDB takse to build a view is as
+  follows:
+  1. Send documents off to the mapper function.
+  2. Collect all the emitted values.
+  3. Sort emitted rows by their keys.
+  4. Send chunks of rows with the same keys to the reduce function.
+  5. If there was too much data to handle all reduction in a single call, call
+     the reduce function again but with previously reduced values.
+  6. Repeat recursive calls to the reduce function as necessary until no
+     duplicate keys remain.
+- Reduce functions in CouchDB takes three arguments: =key=, =values=, and
+  =rereduce=.
+  - =key= is a array of tuples---two element arrays containing the key emitted
+    by the mapper and the =_id+ of the document that produced it.
+  - =values= is an array of values corresponding to the keys.
+  - =rereduce= is a Boolean value that will be true if this invocation of the
+    reduce function (in which case the =key= will be ~null~, and =value= will be
+    the products previous reducer calls).
+- Unlike other implementation of MapReduce which discards the values produced
+  during the map stage, CouchDB keep the intermediate value until a change to a
+  document would invalidate the data. When that happens, CouchDB will run
+  mappers and reducers only for the updated data.
+- CouchDB provides a Changes API for watching a database for changes and getting
+  updates instantly.
+  - "The Changes API makes CouchDB a perfect candidate for a system of record."
+- There are three ways to use the Changes API: polling, long-polling, and
+  continuous.
+  - In the *polling* approach, the application sends a GET request, usually
+    specifying a =since= parameter to get all the changes since.
+    - This is appropriate when the application can cope with long delays between
+      updates.
+  - In the *long polling* approach, CouchDB will keep the connection open for
+    some time, waiting for changes to happen.
+  - In the *continuous* approach, CounchDB will keep the connection open, and
+    send JSON-serialized change notification objects as changes become
+    available. If there is no changes for a certain period of time, CouchDB will
+    close the connection with a terminal message.
+- It is possible to add a filter function to a view, so that when using the
+  Changes API, route parameters can be used to filter for a subset of changes.
+- Replicating data in CouchDB
+  - CouchDB supports multiple master nodes, i.e., master-master replication.
+  - When there is conflicting changes, CouchDB uses a deterministic approach to
+    always choose the same document as the "winner", while keeping the
+    conflicted versions around so that application code can resolve the
+    conflict.
+*** Wrap-Up
+**** CouchDB's Strengths
+- CouchDB is robust and stable.
+- CouchDB supports a variety of deployment situations, both large and small.
+**** CouchDB's Weaknesses
+- CouchDB doesn't suppotr ad-hoc queries in any meaningful way.
+** Chapter 6 - Neo4j
+- Tool analogy:
+  #+BEGIN_QUOTE
+  A bungee cord is a helpful tool because you can use it to tie together the most
+  disparate of things, no matter how awkwardly shapedor ill fitting they may
+  be. In a lot of ways, Neo4j is the bungee cord of databases, a system intended
+  not so much to store information about things as to /tie them together and
+  record their connections with each other/.
+  #+END_QUOTE
+- Neo4j is a graph database, because it stores data a (mathematical) graph.
+- Neo4j is known for being "whiteboard friendly" because virtually any diagram
+  that can be drawn using boxes and lines on a whiteboard can be store in Neo4j.
+- Neo4j focuses more on the relationships between values than on the
+  commonalities among sets of values (such as collections of documents or tables
+  of rows).
+  - As such, it can store highly variable data in a natural and straight-forward
+    way.
+  - One (toy) example of such higly variable data as provided in the book is as
+    follows:
+    #+BEGIN_QUOTE
+    Imagine you need to create a wine suggestions engine in which wines are
+    categorized by different varieties, regions, wineries, vintages, and
+    designations. Imagine that you also need to keep track of things like
+    articles describing those wines written by various authors and to enable
+    users to track their favorite wines.
+    #+END_QUOTE
+- Neo4j is small enough to be embedded into almost any application, and yet also
+  supports master-slave replication to support large deployments (storing tens
+  of billions of nodes and relationships).
+*** Day 1: Graphs, Cypher, and CRUD
+- A node in Neo4j is a vertex between edges that may hold data. The data is
+  stored as a set of key-value pairs. (Note that in traditional graph theory,
+  these might be called vertices instead of nodes.)
+- Connections between nodes are called relationships (rather than edges).
+- The standard query language for Neo4j is Cypher.
+  - A typical Cypher query looks like this:
+    #+BEGIN_SRC cyhper
+    MATCH [some set of nodes and/or relationships]
+    WHERE [some set of properties holds]
+    RETURN [some set of results captured by the MATCH and WHERE clauses]
+    #+END_SRC
+  - In addition to =MATCH=, we can create nodes and relationships using
+    =CREATE=, and update them using =UPDATE=.
+- When creating and/or updating nodes, /label(s)/ can be applied.
+- Some examples of queries that can be made in Neo4j:
+  - For a particular node, find all the related nodes of a specific type
+  - For a particuler node, find all friends of friends of that node (i.e., it
+    takes two traversal along a relationship of a particular type to reach the
+    destination node)
+- Cypher provides a variety of functions that act like stored procedure (e.g.,
+  string manipulation, calculating spatail distances).
+  - We can also write our own functions in Java and call them from Cypher.
+- Neo4j also supports indexes and constraints.
+*** Day 2: REST, Indexex, and Algorithms
+- Neo4j supports CRUD operations over REST.
+- Neo4j supports finding paths between nodes, for example:
+  - shortest
+  - all simple paths (no loops)
+  - all paths (allowing loops)
+  - Dijsktra (i.e., weighted edges).
+- Neo4j supports full-text search inverted index, using Lucene.
+*** Day 3: Distributed High Availability
+- Neo4j is ACID-compliant by default, but running it in high-availability will
+  lose pure ACID-compliant transactions.
+- Neo4j in HA mode is eventually consistent.
+- The master server is Neo4j is responsible for managing data distribution.
+- The slave servers in Neo4j accept write, which will be synchronized with the
+  master, which will then propagate those changes to the other slaves.
+*** Wrap-Up
+**** Neo4j's Strengths
+- Good for unstructured data, in many ways even more so than document databases.
+- "Graph traversals are constant time."
+**** Neo4j's Weaknesses
+- Neo4j currently does not support sharding.
+** Chapter 7 - DynamoDB
+- Tool analogy:
+  #+BEGIN_QUOTE
+  Earth movers are epic pieces of machinery, able to shuffle around massive bits
+  of dirt and other material with great eas. DynamoDB is a bit like the rented
+  earth mover of NoSQL databases. You don't have to build it yourself or fix it
+  when it's broken; you just have to drive it and pay for your usage. But it's
+  complex to handle so you'll need to make very intelligent decisions about how to
+  use it lest you end up incurring unexpected costs or jamming the engine.
+  #+END_QUOTE
+- DynamoDB is a cloud-based database available only through AWS.
+- Some sense fo DynamoDB's support for scale:
+  - You can store as many items as you want in any DynamoDB table.
+  - Each item (the equivalent of a row in an SQL database) can hold as many
+    attributes as you want, although there is a hard size limit of 400 KB per
+    item.
+  - Assuming data modeling is done right, there will be very little performance
+    degradation even when the tables store petabytes of data.
+- DynamoDB's data model strongly resembles that of a key-value store, such as
+  Redis.
+- In DynamoDB, you use the /control plane/ to perform operations like creating,
+  modifying and deleting tables.
+  - You store /items/ inside of tables.
+  - Items roughly correspond to rows in RDBMS.
+  - Items consist of one or more /attributes/, which roughly correspond to RDBMS
+    columns.
+- DynamoDB requires you to define some aspects of tables at the outset, most
+  importantly the structure of keys and local secondary indexes, but is
+  otherwise schemaless.
+- DynamoDB allows querying based on secondary indexes rather than solely on the
+  basis of a primary key.
+  - E.g., you can select items from a table with filter on the secondary
+    index. The filter may be a range.
+- DynamoDB supports both eventually consistent and also strongly consistent
+  ACID-compliant modes, and the desired mode can be specified on a per-read
+  basis.
+  - Consistent reads "cost" twice as much in terms of read capacity than
+    non-consistent reads.
+  - DynamoDB supports only item-level consistency, which is analogous to
+    row-level consistency in RDBMS.
+*** Day 1: Let's Go Shopping!
+- DynamoDB's Data Types
+  - DynamoDB offers five simple types: null, number, Booleans, strings and
+    binary strings.
+  - DynamoDB also offers some /set/ and /document/ types (e.g., a set of
+    strings, a list of heterogenous simple types, and a map with strings as keys
+    and values of any type).
+- DynamoDB provides two types of keys: hash and range.
+- Some guidelines when designing keys:
+  1. If you're using a hash key as your partition key, you should always strive
+     for a data model in which the application knows the key in advance because
+     this will enable you to target the item directly rather than relying on
+     range and other queries.
+  2. You should use partition keys that don't cluster around just a few
+     values. This is because the partition key determines where data is stored.
+  3. In cases where you ned to use a composite key---a hash key plus a range
+     key---you should opt for fewer partition keys and more range keys.
+     - For example, if your system requires keying on user IDs and date, and the
+       number of unique dates is greater than the number of unique user IDs,
+       then the user ID should be used as the hash key with the date used as the
+       range/sort key.
+- /Local secondary indexes/ let you query or scan attributes outside of your
+  primary hash and sort key.
+  - The word "local" means items sharing a partition key.
+  - Note that local secondary indexes can't be modified after a table has been
+    created.
+- /Global secondary indexes/ are indexes that aren't restricted to items with
+  the same partition key.
+*** Day 2: Building a Streaming Data Pipeline
+- You shouldn't use DynamoDB unless you are after extremely good performance at
+  massive scale.
+- DynamoDB allows setting read capacity units (RCUs) and write capacity units
+  (WCUs) separately for every table. 1 WCU is 1 KB per second, and 1 RCU is 4 KB
+  per second.
+*** Day 3: Building an "Internet of Things" System Around DynamoDB
+- Amazon's Data Pipeline can be used to easily export data from DynamoDB into
+  other places (e.g., into S3, which can be made queryable using SQL via Athena).
+*** Wrap-Up
+**** DynamoDB's Strengths
+- The bulk of the usual operational tasks (like installing the server, and
+  maintaining and tuning it) is taken care of by Amazon.
+**** DynamoDB's Weaknesses
+- You have to make sure that the problem meshes well with DynamoDB's
+  partitioning system. Effort might be required to ensure the data model
+  matches.
+** Chapter 8 - Redis
+- Tool analogy:
+  #+BEGIN_QUOTE
+  Redis is like grease. It's most often used to lubricate moving parts and keep
+  them working smoothly by reducing friction and speeding up their overall
+  function. Whatever the machinery of your system, it could very well be
+  improved with a bit poured over it. Sometimes the answer to your problem is
+  simply a judicious use of more Redis.
+  #+END_QUOTE
+*** Day 1: CRUD and Datatypes
+- Useful commands in Redis includes:
+  - Basic setting and getting:
+    - ~SET myKey myValue~
+    - ~GET myKey~
+    - ~MSET myKey1 myValue1 myKey2 myValue2 ...~
+    - ~MGET myKey1 myKey2 ...~
+  - Basic numeric operations:
+    - ~SET count 2~
+    - ~INCR count~
+    - ~GET count~ (returns 3)
+- Transactions:
+  #+BEGIN_SRC redis
+  > MULTI
+  OK
+  > SET myKey myValue
+  QUEUED
+  > INCR count
+  QUEUED
+  > EXEC
+  OK
+  (integer) 4 // Assuming count was 3 before this
+  #+END_SRC
+**** Complex Datatypes
+- Redis commands generally follows the following naming convention:
+  - SET commands begin with =S=
+  - Commands dealing with hashes begin with =H=
+  - Commands dealing with sorted sets begin with =Z=
+  - Commands dealing with lists begin with either =L= (for left) or =R= (for
+    right)
+***** Hashes
+- Hashes in Redis associates a key to multiple key-value pairs, for example:
+  #+BEGIN_SRC redis
+  // HMSET <main key> <key1> <value1> <key2> <value2> ...
+  > HMSET menu:macdonalds breakfast hashbrown lunch mcspicy 
+  OK
+  > HVALS menu:macdonalds
+  1) "hashbrown"
+  2) "mcspicy"
+  > HKEYS menu:macdonalds
+  1) "breakfast"
+  2) "lunch"
+  > HGET menu:macdonalds lunch
+  "mcspicy"
+  #+END_SRC
+***** Lists
+- Lists contain multiple ordered values and can act as both queues and
+  stacks. There are also operations for inserting into the middle, constraining
+  the size, and moving values between lists.
+- Example:
+  #+BEGIN_SRC redis
+  > RPUSH posts:top-visited postID1 postID2 postID3
+  (integer) 3
+
+  // Retrieves items 0 through -1 from list
+  > LRANGE posts:top-visited 0 -1
+  1) postID1
+  2) postID2
+  3) postID3
+
+  // Removes all items matching postID2
+  // LREM <key> <how-many-to-remove> <value-to-remove>
+  > LREM posts:top-visited 0 postID2
+
+  // Removes and retrieves one value
+  > LPOP posts:top-visited
+  "postID1"
+
+  // Pops items from one list into another
+  // RPOPLPUSH <list-from> <list-to>
+  #+END_SRC
+****** Blocking Lists
+#+BEGIN_SRC redis
+// Pops a value from the list, waiting for up to 300 seconds if no item exist
+> BRPOP myList 300
+#+END_SRC
+***** Sets
+- Sets are unordered collections with no duplicate values.
+- Examples:
+  #+BEGIN_SRC redis
+  // myValue1 in example below will be deduplicated
+  > SADD myKey myValue1 myValue2 myValue3 myValue1 ...
+
+  // Return the intersection of sets
+  > SINTER set1 set2
+
+  // Return everything in set1 but not in set2
+  > SDIFF set1 set2
+
+  // Find the union of sets
+  > SUNION set1 set2
+ 
+  // Store union of existing sets into new set
+  > SUNIONSTORE setNew set1 set2
+
+  // SMOVE can be used to move item from one set to another
+
+  // SPOP removes a random value from the set
+  #+END_SRC
+***** Sorted Sets
+- Elements in sorted sets are:
+  - ordered like in lists,
+  - unique like in sets,
+  - field-value pairs like hashes (though in sorted set, the fields are numeric
+    scores denoting the order of the values instead of plain strings).
+- Inserts take log(N) time, instead of the constant time for hashes or lists.
+- Examples:
+  #+BEGIN_SRC redis
+  // Add to sorted set "pagevisit" the three field-value pairs
+  > ZADD pagevisits 369 home 123 about 666 faqs
+  (integer) 3
+
+  // Increment the count of faqs by 1
+  > ZINCRBY pagevisits 1 faqs
+  "667"
+
+  // Retrieve values in positions 0 to 1, both inclusive. Results are sorted in
+  // ascending order. 
+  > ZRANGE pagevisits 0 1
+  1) "about"
+  2) "home"
+
+  // Retrieve values with by index scores (i.e., the field), and in reverse
+  // order.
+  > ZREVRANGE pagevisits 0 -1 WITHSCORES
+  1) "faqs"
+  2) "667"
+  3) "home"
+  4) "369"
+  5) "about"
+  6) "123"
+
+  // Retrieve values by scores (both inclusive)
+  > ZRANGEBYSCORE pagevisits 123 369
+  1) "about"
+  2) "home"
+
+  // Retrieve values by scores (123 not inclusive)
+  > ZRANGEBYSCORE pagevisits (123 369
+  1) "home"
+
+  // Retrieve entire set
+  > ZRANGEBYSCORE pagevisits -inf inf
+  1) "about"
+  2) "home"
+  3) "faqs"
+
+  // Use the commands ZREMRANGEBYRANK and ZREMRANGEBYSCORE for removal by
+  // position and score respectively.
+
+  // Sorted sets also supports union operation:
+  // ZUNIONSTORE <destination-set> <num-keys> key [key ...]
+  //   [WEIGHTS weight [weight ...]] [AGGREGATE SUM|MIN|MAX]
+  
+  #+END_SRC
+**** Expiry
+- Example:
+  #+BEGIN_SRC redis
+  > SET theBomb "has been planted"
+  OK
+  > EXPIRE theBomb 10
+  (integer) 1
+  > EXISTS theBomb
+  (integer) 1
+  // After 10 seconds
+  > EXISTS theBomb
+  (integer) 0
+
+  // Set key and expiry in one command:
+  > SETEX theBomb 10 "has been planted"
+
+  // Checking the TTL
+  > TTL theBomb
+  (integer) 4 // i.e., 4 seconds left
+
+  // Remove expiry (only works if an item is not expired)
+  > PERSIST theBomb
+  #+END_SRC
+**** Database Namespaces
+- Redis support namespaces. In Redis nomenclature, a namespace is called a
+  /database/ and is keyed by number. The default namespace is =0=.
+- Examples:
+  #+BEGIN_SRC redis
+  > SET myKey myValue
+  OK
+  > SELECT 1 // Switch to database 1
+  OK
+  > GET myKey
+  (nil) // myKey does not exist in database 1
+  > SELECT 0
+  OK
+  > MOVE myKey 2 // Move myKey to database 2
+  (integer) 2
+  > SELECT 2
+  OK
+  > GET myKey
+  "myValue"
+  #+END_SRC
+*** Day 2: Advanced Usage, Distribution
+- Redis has a TCP interface where raw strings command can be used.
+- Redis provides ~SUBSCRIBE~, ~PUBLISH~, ~UNSUBSCRIBE~ commands for simple
+  pub-sub.
+- The ~INFO~ commands prints several information about the server.
+**** Configurations
+- *Snapshot*
+  - The default snapshotting configuration will trigger a save every 60 seconds
+    if 10,000 keys changed, every 300 seconds if 10 keys changed, and 900
+    seconds if 1 key changed:
+    #+BEGIN_SRC redis
+    save 900 1
+    save 300 10
+    save 60 10000
+    #+END_SRC
+- *Security*
+  - The =requirepath= setting and ~AUTH~ command in Redis supports setting of
+    plaintext passwords. But security is better achieve via firewalls and SSH.
+- Misc
+  - The dangerous ~FLUSHALL~ command which deletes all keys can be disabled by
+    renaming the command to an empty string in the configuration file:
+    =rename-command FLUSHALL ""=
+  - Redis provides a benchmarking tool that connects locally to port 6379 by
+    default and issues 10,000 requests using 50 parallel clients.
+**** Master-Slave Replication
+- Redis supports master-slave replication.
+- A simple master-slave replication set-up can be achieved by simply copying the
+  configuration of the master to the slave, and adding a line like =slaveof
+  <master-ip> <master-port>=.
+**** Redis Cluster
+- Redis providse a cluster mode that automatically shards keys across multiple
+  master nodes. Some client implementation (e.g., in Ruby) provides access to
+  this cluster mode. As of 2020.12.26, it seems that the popular Python client
+  redis-py does not provide this feature.
+**** Bloom Filters
+- The ~SETBIT~ and ~GETBIT~ commands in Redis allow implementation of efficient
+  bloom filters.
+*** Day 3: Playing with Other Databases
+** Chapter 9 - Wrapping Up
+- How databases store their data can largely be divided into five genres:
+  1. Relational
+  2. Key-value
+  3. Columnar
+  4. Document
+  5. Graph
+*** Relational
+**** Characteristics
+- Implemented as two-dimensional tables with rows and columns, based on set
+  theory.
+- Types are enforced.
+- Some databases (like PostgreSQL) provides many useful extensions.
+**** Good For
+- When the layout of the data is known in advance but how you plan to use the
+  data later may not be.
+- I.e., you pay the organizational complexity up front to achieve query
+  flexibility later.
+**** Not-So-Good For:
+- When the data is highly variable or deeply hierarchical.
+- Data problems that exhibit a high degree of record-to-record variation will be
+  problematic.
+*** Key-Value
+**** Characteristics
+- Generally provides fast look-up because the keys are stored like a hashtable.
+- Depending on the database, the keys can be mapped to simple values like
+  strings, but also to complex values like a huge hashtable.
+**** Good For:
+- Easy horizontal scaling, extremely fast, or both.
+- Particularly suitable for problems where the data are not highly related. For
+  example, user session data in a web application: each user's session activity
+  will be different and largely unrelated to the activity of other users.
+**** Not-So-Good For:
+- Because such databases generally lack indexes and scanning capbilities, they
+  are not suited for situations where queries beyond the basic CRUD is required.
+*** Columnar
+- Yong Jie: Please note that the summary provided by the book seem to be based
+  only on HBase's implementation.
+**** Characteristics
+- Columns are inexpensive to add (unlike in traditional RDBMS).
+- HBase is a classic implementation of columnar database. (Yong Jie: This
+  statement might not be very accurate because HBase seems to be a nested
+  hashmap.)
+**** Good For: 
+- Columnar databases have traditionally been developed with horizontal
+  scalability in mind, and are thus suited to big data.
+**** Not-So-Good For:
+- Different columnar databases have rather different features, and require
+  careful consideration of the requirements vs feature set.
+- Generally, columnar database are require designing of the schema based on how
+  you intend to query the data. So if it is not possible to design the data in
+  advance, columnar database may not be appropriate.
+*** Document
+**** Characteristics
+- Allows for any number of fields per object and arbitrary levels of nesting (by
+  nesting document as fields of other document(s)).
+- Generally uses JSON.
+- Generalyl easy to shard and replicate across several servers.
+- Examples: MongoDB and CouchDB.
+**** Good For:
+- Problems involving highly variable domains, when you don't know in advance
+  what exactly your data will look like.
+**** Not-So-Good For:
+- Joining data across documents; generally, the document should contain all the
+  relevant information.
+*** Graph
+**** Characteristics
+- Focuses more on the interrelation between data nodes than the actual values
+  stored in those nodes.
+**** Good For:
+- Networking applications (e.g., social network).
+- "If you can model your data on a whiteboard, you can model it in a graph."
+**** Not-So-Good For:
+- Doesn't scale out well.
+- It is likely that if you are using a graph database, it'll be one piece of a
+  larger system, with the bulk of the data stored elsewhere, and only the
+  relationships maintained in the graph.
+*** Making a Choice
+** Appendix 2 - The CAP Theorem
+- CAP proves that you can create a distributed database that can have at most
+  two out of three of the following qualities:
+  - /consistent/ (writes are atomic and all subsequent requests
+    retrieve the new value),
+  - /available/ (the database will always return a value as long as a
+    single server is running),
+  - /partition tolerant/ (the system will still function even if server
+    communication is temporarirly lost---i.e., there is a network partition)
+- A CA system that gives up partition tolerant is essentially not distributed,
+  and is unlikely to be in common use.
+*** Eventual Consistency
+- The idea behind eventual consistency is that each node is always available to
+  serve requests. As a trade-off, data modifications are propagated in the
+  background to other nodes. This means that at any time the system may be
+  inconsistent, but the data is still largely accurate.
+- The Internet's DNS is a prime example of an eventually consistent
+  system. After registering a domain, it may take a few days to propagate to all
+  DNS servers across the Internet, but the individual servers are still
+  available in the interim.
+*** CAP in the Wild
+- Redis, PostreSQL, and Neo3J are consistent and available (CA); they don't
+  distribute data and so partitioning is not an issue.
+- MongoDB and HBase are generally consistent and partition tolerant (CP).
+- In practice, hardware failure is handled gracefully---other still-networked
+  nodes can cover for the downed server---but strictly speaking, in the CAP
+  theorem sense, they are unavailable.
+- CouchDB is available and partition tolerant (AP). Even though two or more
+  CouchDB servers can replicate data between them, CouchDB doesn't guarantee
+  consistency between any two servers.
+- Note however that the databases listed above can generally be configured to
+  change their CAP type.
+*** The Latency Trade-Off
+- It is important to consider more than just the CAP theorem when choosing
+  database.
+- One other important factor might be latency.
+* To Internalize /Now/
+* To Learn/Do Soon
+- How does write-ahead logging works in the case of HBase?
+- How to design a schema for HBase?
+* To Revisit When Necessary
+** Chapter 2 - PostgreSQL
+*** Day 2: Advanced Queries, Code, and Rules
+- Refer to this section for an example of how to use PostgreSQL to generate
+  pivot table.
+*** Day 3: Full Text and Multidimensions
+- Refer to this section for an example of how to do text-related operations in
+  PostgreSQL, including wildcard search based on character matching, word-based
+  search using ~@@~ operator, and similar sounding text search using metaphones.
+- Refer to this section for an example usages of the ~cube~ datatype provided by
+  a contributed package. This datatype supports querying for nearest neighbors
+  with n-dimensions.
+** Chapter 3 - HBase
+*** Day 1: CRUD and Table Administration
+- Refer to this section for some ideas on how to design the schema for HBase.
+** Chapter 4 - MongoDB
+*** Day 2: Indexing, Aggregating, and MapReduce
+- Refer to this section for an example of mapreduce in Mongo.
+*** Day 3: Replica Sets, Sharding, GeoSpatial, and GridFS
+- Refer to this section for a simple example on how to use MongoDB for efficient
+  and simple geospatial query (i.e., finding nearby location using latitudes and
+  longitudes).
+** Chapter 5 - CouchDB
+*** Day 2: Creating and Querying Views
+*** Day 3: Advanced Views, Changes API, and Replicating Data
+- Refer to this section for an example of how to use the Changes API using long
+  polling approach.
+** Chapter 6 - Neo4j
+*** Day 1: Graphs, Cypher, and CRUD
+- Refer to this section for a moderately extensive (toy) example about storing
+  information about (a) wines, wineries, and publications, and (b) people
+  affiliated with the wines and relationships among these people.
+** Chapter 7 - DynamoDB
+*** Day 2: Building a Streaming Data Pipeline
+- Refer to this section for an example of a sensor data streaming application
+  using Amazon Kinesis, Lambda and DynamoDB.
+*** Day 3: Building an "Internet of Things" System Around DynamoDB
+- Refer to this section for an example of a AWS Data Pipeline involving
+  exporting data from DynamoDB into S3 for querying using SQL via Athean.
+** Chapter 8 - Redis
+*** Day 3: Playing with Other Databases
+- Refer to this chapter for an example of a /polyglot persistence model/, using
+  CouchDB as the system of record (the canoncial data source), Neo4j to handle
+  data relationships, and Redis to help with data population and caching.
+** Appendix 1 - Database Overview Tables
+- Refer to this appendix for helpful comparison tables for the seven databases
+  covered, across numerous metrics ranging from implementation language,
+  interface protocol, replication strategies, strengths and weaknesses, etc.
+* Other Resources Referred To
+- Dynamo: amazon's highly available key-value store:
+  - https://dl.acm.org/doi/10.1145/1323293.1294281
+  - This is a research paper by Amazon containing information about their dynamo
+    key-value store. Although it is not clear to what extent does AWS's DynamoDB
+    actually follows the paper, the paper is nonetheless an interesting
+    exploration of distributed database concepts.
