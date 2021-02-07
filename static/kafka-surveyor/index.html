@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8"><meta charset="utf-8">
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Meta tags Generated using https://metatags.io/ -->
+    <!-- Primary Meta Tags -->
+    <title>Kafka Surveyor</title>
+    <meta name="title" content="Kafka Surveyor">
+    <meta name="description" content="A tool for visualizing your Kafka topology as a force-directed graph built using D3.js.">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://yongjie.codes/kafka-surveyor/">
+    <meta property="og:title" content="Kafka Surveyor">
+    <meta property="og:description" content="A tool for visualizing your Kafka topology as a force-directed graph built using D3.js.">
+    <meta property="og:image" content="">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://yongjie.codes/kafka-surveyor/">
+    <meta property="twitter:title" content="Kafka Surveyor">
+    <meta property="twitter:description" content="A tool for visualizing your Kafka topology as a force-directed graph built using D3.js.">
+    <meta property="twitter:image" content="">
+  </head>
+  <body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/6.5.0/d3.min.js"
+      integrity="sha512-0XfwGD1nxplHpehcSVI7lY+m/5L37PNHDt+DOc7aLFckwPXjnjeA1oeNbru7YeI4VLs9i+ADnnHEhP69C9CqTA=="
+      crossorigin="anonymous"></script>
+    <script src="script.js"></script>
+
+    <!-- input form -->
+    <form id="data-form" spellcheck="false" onsubmit="ಠ_ಠ(); return false;">
+      <legend>Kafka Surveyor</legend>
+      <textarea id="data-textarea"></textarea>
+      <input id="btn-submit" class="button" type="submit" value="Plot!" />
+      <div id="hint-text">* Visit <a href="https://gist.github.com/YongJieYongJie/fc898d9ba470f80c600bc399819661db">this link</a> for a helper script to generate a JSON of your Kafka consumer topology.</div>
+    </form>
+    <input id="btn-reload" class="button" type="button" value="Reload" onclick="window.location.reload();" />
+
+    <!-- d3 plot -->
+    <svg id="the-svg">
+      <defs>
+        <marker id="triangle" viewBox="-0 -5 10 10" refX="13" refY="0"
+            orient="auto" markerWidth="13" markerHeight="13"
+            markerUnits="userSpaceOnUse" xoverflow="visible">
+          <path d="M 0,-3 L 10,0 L 0,3"></path>
+        </marker>
+        <marker id="triangleFaded" class="faded" viewBox="-0 -5 10 10"
+            refX="13" refY="0" orient="auto" markerWidth="13" markerHeight="13"
+            markerUnits="userSpaceOnUse" xoverflow="visible">
+          <path d="M 0,-3 L 10 ,0 L 0,3"></path>
+        </marker>
+        <marker id="triangleHighlight" class="highlight" viewBox="-0 -5 10 10"
+            refX="13" refY="0" orient="auto" markerWidth="13" markerHeight="13"
+            markerUnits="userSpaceOnUse" xoverflow="visible">
+          <path d="M 0,-3 L 10 ,0 L 0,3"></path>
+        </marker>
+        <filter id="labelBackground" x="0" y="0" width="1" height="1">
+          <feFlood flood-color="#414245"></feFlood>
+          <feComposite></feComposite>
+        </filter>
+      </defs>
+    </svg>
+
+  </body>
+</html>

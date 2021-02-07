@@ -94,3 +94,9 @@ url = "mailto:khooyongjie@gmx.com"
   weight = 400
   identifier = "Portfolio"
   url = "/portfolio/"
+
+  [[menu.main]]
+  name = "Kafka Surveyor (NEW!)"
+  weight = 450
+  identifier = "Kafka-Surveyor"
+  url = "/kafka-surveyor/"

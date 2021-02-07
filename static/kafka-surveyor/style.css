@@ -1,0 +1,143 @@
+:root {
+  --background: #292a2d;
+  --primary: #99ddc8;
+  --secondary: #c1666b;
+  --accent1: #659b5e;
+  --accent2: #95bf74;
+}
+
+html {
+  height: 100%;
+  width: 100%;
+  background: var(--background);
+  font-family: verdana, sans-serif;
+}
+
+body {
+  margin: 0;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+form {
+  align-self: center;
+}
+
+form legend {
+  color: white;
+  font-size: 2em;
+  font-style: bold;
+}
+
+form textarea {
+  display: block;
+  min-width: 50em;
+  min-height: 30.9em;
+  white-space: pre; /* disable wrapping */
+}
+
+form input {
+  display: block;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+svg {
+  display: none; /* intially hidden */
+  flex-basis: 100%;
+}
+
+#btn-reload {
+  display: none;
+  position: fixed;
+  background-color: var(--accent1);
+  border: none;
+  color: white;
+  padding: 0.2rem 0.4rem;
+  font-size: 1em;
+  margin: 0;
+  cursor: pointer;
+  bottom: 0;
+  left: 0;
+}
+
+#btn-submit {
+  background-color: var(--accent1);
+  border: none;
+  color: white;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  font-size: 2em;
+  margin: 0;
+  cursor: pointer;
+}
+
+#hint-text {
+  color: white;
+  font-style: italic;
+  font-size: 0.8em;
+  text-align: right;
+}
+
+#hint-text a {
+  color: white;
+}
+
+  /***********/
+ /** LINKS **/
+/***********/
+.links {
+  stroke: var(--primary);
+  stroke-opacity: 0.3;
+}
+
+.links .faded {
+}
+
+.links .highlight {
+  stroke: var(--secondary);
+  stroke-width: 2px;
+  stroke-opacity: 0.5;
+  font-weight: bold;
+}
+
+/* The arrow heads */
+marker {
+  fill: var(--primary);
+  fill-opacity: 0.5;
+}
+
+marker.faded {
+  fill-opacity: 0.1;
+}
+
+marker.highlight {
+  fill: var(--secondary);
+  fill-opacity: 0.7;
+}
+
+
+  /***********/
+ /** NODES **/
+/***********/
+.nodes {
+  fill: var(--primary);
+  pointer-events: all;
+}
+
+.nodes .faded {
+  fill-opacity: 0.3;
+}
+
+.nodes .highlight {
+  fill: var(--secondary);
+  font-weight: bold;
+}
+
+.nodes .selected {
+  fill: var(--accent2);
+  font-weight: bold;
+}
+
