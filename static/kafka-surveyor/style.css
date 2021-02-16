@@ -4,6 +4,8 @@
   --secondary: #c1666b;
   --accent1: #659b5e;
   --accent2: #95bf74;
+  --accent3: #b0a1ba;
+  --accent4: #ff5a5f;
 }
 
 html {
@@ -103,6 +105,14 @@ svg {
   font-weight: bold;
 }
 
+.link.producing {
+  stroke: var(--accent4);
+}
+
+.link.consuming {
+  stroke: var(--accent3);
+}
+
 /* The arrow heads */
 marker {
   fill: var(--primary);
@@ -118,6 +128,13 @@ marker.highlight {
   fill-opacity: 0.7;
 }
 
+marker.producing {
+  fill: var(--accent4);
+}
+
+marker.consuming {
+  fill: var(--accent3);
+}
 
   /***********/
  /** NODES **/
@@ -133,7 +150,7 @@ marker.highlight {
 
 .nodes .highlight {
   fill: var(--secondary);
-  font-weight: bold;
+  /* font-weight: bold; */
 }
 
 .nodes .selected {

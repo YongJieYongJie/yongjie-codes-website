@@ -93,13 +93,34 @@ function plot(data) {
   let svgWidth = +svgBase.node().getBoundingClientRect().width;
   let svgHeight = +svgBase.node().getBoundingClientRect().height;
 
+  function getClassForLink(d) {
+    let classes = ['link', 'default'];
+    if (d.hasOwnProperty('type')) {
+      classes.push(d.type);
+    }    return classes.join(' ');
+  }
+
+  /*
+   * Returns the appropriate marker-end svg element based on whether the link
+    * has type of `producing` or `consuming`. Defaults to a standard marker
+    * with same color as the nodes.
+   */
+  function getAppropriateMarkerEnd(d) {
+    if (d.hasOwnProperty('type')) {
+      if (d.type === 'producing') return 'url(#triangle-default-producing)';
+      if (d.type === 'consuming') return 'url(#triangle-default-consuming)';
+    }
+    return 'url(#triangle-default)';
+  }
+
   const d3Links = svg.append('g')
     .attr('class', 'links')
     .selectAll('line')
     .data(LINKS)
     .enter()
     .append('line')
-      .attr('marker-end', 'url(#triangle)');
+      .attr('class',getClassForLink)
+      .attr('marker-end', getAppropriateMarkerEnd);
 
   const d3Nodes = svg.append('g')
     .attr('class', 'nodes')
@@ -197,22 +218,42 @@ function plot(data) {
       d.setAttribute('class', null);
     }
     function removeClassResetMarkerEnd(d) {
-      d.setAttribute('class', null);
-      d.setAttribute('marker-end', 'url(#triangle)');
+      d.setAttribute('class', changeLinkToDefault(d.getAttribute('class')));
+      d.setAttribute('marker-end', changeMarkerEndToDefault(d.getAttribute('marker-end')));
     }
     applyToAllLinks(d3Links, removeClassResetMarkerEnd, removeClassResetMarkerEnd, null);
     applyToAllNodes(d3Nodes, LINKS, removeClass, removeClass, removeClass, null);
   }
 
+  function changeLinkToDefault(classAttr) {
+    return classAttr.replace(/highlight|faded/, 'default')
+  }
+  function changeLinkEndToHighlight(classAttr) {
+    return classAttr.replace(/default|faded/, 'highlight')
+  }
+  function changeLinkEndToFaded(classAttr) {
+    return classAttr.replace(/default|highlight/, 'faded')
+  }
+
+  function changeMarkerEndToDefault(markerEndAttr) {
+    return markerEndAttr.replace(/highlight|faded/, 'default')
+  }
+  function changeMarkerEndToHighlight(markerEndAttr) {
+    return markerEndAttr.replace(/default|faded/, 'highlight')
+  }
+  function changeMarkerEndToFaded(markerEndAttr) {
+    return markerEndAttr.replace(/default|highlight/, 'faded')
+  }
+
   function highlightSelectedNode(selectedNode) {
     function fadeLink(lnk) {
-      lnk.setAttribute('class', 'faded');
-      lnk.setAttribute('marker-end', 'url(#triangleFaded)');
+      lnk.setAttribute('class', changeLinkEndToFaded(lnk.getAttribute('class')));
+      lnk.setAttribute('marker-end', changeMarkerEndToFaded(lnk.getAttribute('marker-end')));
     }
 
     function highlightLink(lnk) {
-      lnk.setAttribute('class', 'highlight');
-      lnk.setAttribute('marker-end', 'url(#triangleHighlight)');
+      lnk.setAttribute('class', changeLinkEndToHighlight(lnk.getAttribute('class')));
+      lnk.setAttribute('marker-end', changeMarkerEndToHighlight(lnk.getAttribute('marker-end')));
     }
 
     function superHighlightNode(n) {
@@ -281,7 +322,6 @@ function plot(data) {
  */
 function applyToAllLinks(allLinks, connectedFunc, notConnectedFunc, selectedNode) {
   for (lnk of allLinks._groups[0]) {
-
     const hasNodeSelected = selectedNode !== null;
     if (!hasNodeSelected) {
       notConnectedFunc(lnk);
