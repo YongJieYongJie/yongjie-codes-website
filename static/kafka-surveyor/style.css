@@ -1,3 +1,14 @@
+/*
+ * Hierachy of classes for links
+ * default
+ * producing (never changing)
+ * consuming (never changing)
+ * pointing-to (implies highlight)
+ * pointing-from (implies highlight)
+ * highlight (still relevant when there is no producer / consumer info)
+ * faded
+ *
+ */
 :root {
   --background: #292a2d;
   --primary: #99ddc8;
@@ -6,6 +17,15 @@
   --accent2: #95bf74;
   --accent3: #b0a1ba;
   --accent4: #ff5a5f;
+  --accent5: #cca43b;
+  --accent6: #46b1c9;
+  --topic-node: var(--accent3);
+  --app-node: var(--accent4);
+  --selected-node: var(--accent2);
+  --pointing-to-node: var(--accent5);
+  --pointing-from-node: var(--accent6);
+  --link-producing: var(--accent4);
+  --link-consuming: var(--accent3);
 }
 
 html {
@@ -106,11 +126,19 @@ svg {
 }
 
 .link.producing {
-  stroke: var(--accent4);
+  stroke: var(--link-producing);
 }
 
 .link.consuming {
-  stroke: var(--accent3);
+  stroke: var(--link-consuming);
+}
+
+.link.pointing-to {
+  stroke: var(--pointing-to-node);
+}
+
+.link.pointing-from {
+  stroke: var(--pointing-from-node);
 }
 
 /* The arrow heads */
@@ -136,6 +164,14 @@ marker.consuming {
   fill: var(--accent3);
 }
 
+marker.pointing-to {
+  fill: var(--pointing-to-node);
+}
+
+marker.pointing-from {
+  fill: var(--pointing-from-node);
+}
+
   /***********/
  /** NODES **/
 /***********/
@@ -158,3 +194,27 @@ marker.consuming {
   font-weight: bold;
 }
 
+.node.app {
+  fill: var(--app-node);
+  pointer-events: all;
+}
+
+.node.topic {
+  fill: var(--topic-node);
+  pointer-events: all;
+}
+
+.node.selected {
+  fill: var(--selected-node);
+  font-weight: bold;
+}
+
+.node.pointing-to {
+  fill: var(--pointing-to-node);
+  pointer-events: all;
+}
+
+.node.pointing-from {
+  fill: var(--pointing-from-node);
+  pointer-events: all;
+}

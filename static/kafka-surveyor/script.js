@@ -58,10 +58,18 @@ function parseUniqueNodesFromLinks(links) {
   let nodesSet = {};
   for (l of links) {
     if (!nodesSet.hasOwnProperty(l.source)) {
-      nodesSet[l.source] = { 'id': l.source, 'type': 'from' };
+      nodesSet[l.source] = { 'id': l.source };
+      if (l.hasOwnProperty('type')) {
+        if (l.type === 'producing') nodesSet[l.source].type = 'app';
+        if (l.type === 'consuming') nodesSet[l.source].type = 'topic';
+      }
     }
     if (!nodesSet.hasOwnProperty(l.target)) {
-      nodesSet[l.target] = { 'id': l.target, 'type': 'to' };
+      nodesSet[l.target] = { 'id': l.target };
+      if (l.hasOwnProperty('type')) {
+        if (l.type === 'producing') nodesSet[l.target].type = 'topic';
+        if (l.type === 'consuming') nodesSet[l.target].type = 'app';
+      }
     }
   }
   return nodesSet;
@@ -122,12 +130,20 @@ function plot(data) {
       .attr('class',getClassForLink)
       .attr('marker-end', getAppropriateMarkerEnd);
 
+  function getClassForNode(d) {
+    let classes = ['node', 'default'];
+    if (d.hasOwnProperty('type')) {
+      classes.push(d.type);
+    }    return classes.join(' ');
+  }
+
   const d3Nodes = svg.append('g')
     .attr('class', 'nodes')
     .selectAll('circle')
     .data(NODES)
     .enter()
-    .append('g');
+    .append('g')
+      .attr('class', getClassForNode);
 
   const circles = d3Nodes.append('circle')
     .attr('r', 5);
@@ -213,16 +229,46 @@ function plot(data) {
     resetHighlightAndFade();
   }
 
+  function changeNodeToFaded(classAttr) {
+    return classAttr.replace(/default|pointing-to|pointing-from|selected/, 'faded')
+  }
+  function changeNodeToSelected(classAttr) {
+    return classAttr.replace(/default|pointing-to|pointing-from|faded/, 'selected')
+  }
+  function changeNodeToPointingTo(classAttr) {
+    return classAttr.replace(/default|pointing-from|selected|faded/, 'pointing-to')
+  }
+  function changeNodeToPointingFrom(classAttr) {
+    return classAttr.replace(/default|pointing-to|selected|faded/, 'pointing-from')
+  }
+  function changeNodeToDefault(classAttr) {
+    return classAttr.replace(/pointing-to|pointing-from|highlight|faded/, 'default')
+  }
+
   function resetHighlightAndFade() {
-    function removeClass(d) {
-      d.setAttribute('class', null);
+    function resetLink(lnk) {
+      const existingClass = lnk.getAttribute('class');
+      let newClass = removeClass(existingClass, 'faded', 'highlight', 'pointing-to', 'pointing-from');
+      newClass = addClass(newClass, 'default');
+      lnk.setAttribute('class', newClass);
+
+      if (existingClass.includes('producing')) {
+        lnk.setAttribute('marker-end', 'url(#triangle-default-producing)');
+      } else if (existingClass.includes('consuming')) {
+        lnk.setAttribute('marker-end', 'url(#triangle-default-consuming)');
+      } else {
+        lnk.setAttribute('marker-end', 'url(#triangle-default)');
+      }
+    }
+    function resetNode(d) {
+      d.setAttribute('class', changeNodeToDefault(d.getAttribute('class')));
     }
     function removeClassResetMarkerEnd(d) {
       d.setAttribute('class', changeLinkToDefault(d.getAttribute('class')));
       d.setAttribute('marker-end', changeMarkerEndToDefault(d.getAttribute('marker-end')));
     }
-    applyToAllLinks(d3Links, removeClassResetMarkerEnd, removeClassResetMarkerEnd, null);
-    applyToAllNodes(d3Nodes, LINKS, removeClass, removeClass, removeClass, null);
+    applyToAllLinks(d3Links, resetLink, resetLink, null);
+    applyToAllNodes(d3Nodes, LINKS, resetNode, resetNode, resetNode, null);
   }
 
   function changeLinkToDefault(classAttr) {
@@ -247,29 +293,73 @@ function plot(data) {
 
   function highlightSelectedNode(selectedNode) {
     function fadeLink(lnk) {
-      lnk.setAttribute('class', changeLinkEndToFaded(lnk.getAttribute('class')));
-      lnk.setAttribute('marker-end', changeMarkerEndToFaded(lnk.getAttribute('marker-end')));
+      const existingClass = lnk.getAttribute('class');
+      let newClass = removeClass(existingClass, 'default', 'pointing-to', 'pointing-from');
+      newClass = addClass(newClass, 'faded');
+      lnk.setAttribute('class', newClass);
+
+      if (existingClass.includes('producing')) {
+        lnk.setAttribute('marker-end', 'url(#triangle-faded-producing)');
+      } else if (existingClass.includes('consuming')) {
+        lnk.setAttribute('marker-end', 'url(#triangle-faded-consuming)');
+      } else {
+        lnk.setAttribute('marker-end', 'url(#triangle-faded)');
+      }
     }
 
-    function highlightLink(lnk) {
-      lnk.setAttribute('class', changeLinkEndToHighlight(lnk.getAttribute('class')));
-      lnk.setAttribute('marker-end', changeMarkerEndToHighlight(lnk.getAttribute('marker-end')));
+    function highlightPointingToLink(lnk) {
+      const existingClass = lnk.getAttribute('class');
+      let newClass = removeClass(existingClass, 'default', 'faded', 'pointing-from');
+      newClass = addClass(newClass, 'pointing-to', 'highlight');
+      lnk.setAttribute('class', newClass);
+
+      lnk.setAttribute('marker-end', 'url(#triangle-pointing-to)');
     }
+
+    function highlightPointingFromLink(lnk) {
+      const existingClass = lnk.getAttribute('class');
+      let newClass = removeClass(existingClass, 'default', 'faded', 'pointing-to');
+      newClass = addClass(newClass, 'pointing-from', 'highlight');
+      lnk.setAttribute('class', newClass);
+
+      lnk.setAttribute('marker-end', 'url(#triangle-pointing-from)');
+    }
+
+    // function highlightLink(lnk) {
+    //   lnk.setAttribute('class', changeLinkEndToHighlight(lnk.getAttribute('class')));
+    //   lnk.setAttribute('marker-end', changeMarkerEndToHighlight(lnk.getAttribute('marker-end')));
+    // }
 
     function superHighlightNode(n) {
-      n.setAttribute('class', 'selected');
+      const existingClass = n.getAttribute('class');
+      let newClass = removeClass(existingClass, 'default', 'faded', 'pointing-to', 'pointing-from');
+      newClass = addClass(newClass, 'selected');
+      n.setAttribute('class', newClass);
     }
 
-    function highlightNode(n) {
-      n.setAttribute('class', 'highlight');
+    function highlightPointingToNode(n) {
+      const existingClass = n.getAttribute('class');
+      let newClass = removeClass(existingClass, 'default', 'faded', 'pointing-from', 'selected');
+      newClass = addClass(newClass, 'pointing-to');
+      n.setAttribute('class', newClass);
+    }
+
+    function highlightPointingFromNode(n) {
+      const existingClass = n.getAttribute('class');
+      let newClass = removeClass(existingClass, 'default', 'faded', 'pointing-to', 'selected');
+      newClass = addClass(newClass, 'pointing-from');
+      n.setAttribute('class', newClass);
     }
 
     function fadeNode(n) {
-      n.setAttribute('class', 'faded');
+      const existingClass = n.getAttribute('class');
+      let newClass = removeClass(existingClass, 'default', 'selected', 'pointing-to', 'selected');
+      newClass = addClass(newClass, 'faded');
+      n.setAttribute('class', newClass);
     }
 
-    applyToAllLinks(d3Links, highlightLink, fadeLink, selectedNode);
-    applyToAllNodes(d3Nodes, LINKS, superHighlightNode, highlightNode, fadeNode, selectedNode);
+    applyToAllLinksV2(d3Links, highlightPointingToLink, highlightPointingFromLink, fadeLink, selectedNode);
+    applyToAllNodesV2(d3Nodes, LINKS, superHighlightNode, highlightPointingToNode, highlightPointingFromNode, fadeNode, selectedNode);
   }
 
   /////////////
@@ -337,6 +427,26 @@ function applyToAllLinks(allLinks, connectedFunc, notConnectedFunc, selectedNode
   }
 }
 
+function applyToAllLinksV2(allLinks, pointingToFunc, pointingFromFunc, notConnectedFunc, selectedNode) {
+  for (lnk of allLinks._groups[0]) {
+    const hasNodeSelected = selectedNode !== null;
+    if (!hasNodeSelected) {
+      notConnectedFunc(lnk);
+      continue;
+    }
+
+    const pointingTo = lnk.__data__.target === selectedNode;
+    const pointingFrom = lnk.__data__.source === selectedNode;
+    const isConnected = pointingTo || pointingFrom;
+    if (isConnected) {
+      if (pointingTo) pointingToFunc(lnk);
+      if (pointingFrom) pointingFromFunc(lnk);
+    } else {
+      notConnectedFunc(lnk);
+    }
+  }
+}
+
 /*
  * Apply different functions to the nodes, depending on whether it is the
  * selected node, connected to the selected node, or not directly connected
@@ -377,6 +487,40 @@ function applyToAllNodes(allNodes, links, selectedFunc, connectedFunc, notConnec
   }
 };
 
+function applyToAllNodesV2(allNodes, links, selectedFunc, pointingToFunc, pointingFromFunc, notConnectedFunc, selectedNode) {
+  function isConnected(idTarget, idOther) {
+    if (idTarget === null || idOther === null) {
+      return false;
+    }
+
+    for (l of links) {
+      if (l.source.id === idTarget && l.target.id === idOther) return 'pointing-to';
+      if (l.source.id === idOther && l.target.id === idTarget) return 'pointing-from';
+    }
+    return false;
+  }
+
+  for (n of allNodes._groups[0]) {
+
+    const hasNodeSelected = selectedNode !== null;
+    if (!hasNodeSelected) {
+      notConnectedFunc(n);
+      continue;
+    }
+
+    const isSameNode = n.__data__.id === selectedNode.id;
+    if (isSameNode) {
+      selectedFunc(n);
+    } else if (isConnected(n.__data__.id, selectedNode.id)) {
+      let connectionType = isConnected(n.__data__.id, selectedNode.id);
+      if (connectionType === 'pointing-to') pointingToFunc(n);
+      if (connectionType === 'pointing-from') pointingFromFunc(n);
+    } else {
+      notConnectedFunc(n);
+    }
+  }
+};
+
 function logEvent(event, datum) {
   console.log('Event triggered:');
   console.log(event);
@@ -384,6 +528,29 @@ function logEvent(event, datum) {
     console.log('... with datum:');
     console.log(datum);
   }
+}
+
+function addClass(classAttr, ...clss) {
+  let classes = classAttr.split(' ');
+  for (cls of clss) {
+    if (classes.includes(cls)) {
+      continue;
+    }
+    classes.push(cls);
+  }
+  return classes.join(' ');
+}
+
+function removeClass(classAttr, ...clss) {
+  let classes = classAttr.split(' ');
+  for (cls of clss) {
+    let idx = classes.indexOf(cls);
+    if (idx === -1) {
+      continue;
+    }
+    classes.splice(idx, 1);
+  }
+  return classes.join(' ');
 }
 
 // Sample Data (notice that the trailing comma is legal)
