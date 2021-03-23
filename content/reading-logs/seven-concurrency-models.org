@@ -1,0 +1,490 @@
+---
+short_title: "Seven Concurrency Models in Seven Weeks"
+title: "Seven Concurrency Models in Seven Weeks: When Threads Unravel"
+source: Recommended in various other books
+author: Paul Butcher
+isbn: 978-1-937785-65-9
+reading_period: 2021.01–2021.01.16
+date: 2021-01-16T00:00:00+08:00
+draft: false
+---
+
+* General Review
+- This books provides an okay overview of some of the approaches to concurrency
+  and parallelism. What the book does well is to provide working code samples
+  for the various ways to achieve concurrency and/or parallelism---ranging from
+  bare threads and locks, to functional programming in Clojure, actor model in
+  Elixir, communicating sequential processes in Clojure, hardware parallelism in
+  OpenCL, and application level parallelism with the Lambda architecture.
+* Specific Takeaways
+** Chapter 1 - Introduction
+- Concurrency is about dealing with lots of things at once, parallelism is about
+  doing lots of things at once.
+- Concurrency is possible with a single processing core, but parallelism is only
+  possible with multiple processing cores.
+- There are various levels of parallelism:
+  - bit-level parallelism: e.g., a 32-bit processor can process 32-bit at a
+    time, essentially doing in parallel what an 8-bit processor would have
+    needed to do sequentially
+  - instruction-level parallelism: i.e., techniques like pipelining,
+    out-of-order execution, and speculative execution
+  - data parallelism: e.g., image processing on GPU, where each pixel can be
+    usually processed in parallel
+  - task-level parallelism: i.e., multiple processing cores in a modern CPU,
+    what people typically associate with the term "parallel"
+** Chapter 2 - Threads and Locks
+- One of the fundamental problem with using threads and locks is as follows:
+  with multiple threads accessing shared data, mutual exclusion via locks (or
+  other synchonization mechanism) is required to avoid /race conditions/ and
+  ensure a consistent view of the shared data; however, mutual exclusion may in
+  turn result in /deadlocks/ or /livelocks/.
+- Memory Visibility
+  - The Java memory model defines when changes to memory made by one thread
+    become visible to another thread.
+    - http://docs.oracle.com/javase/specs/jls/se7/html/jls-17.html#jls-17.4
+- Deadlock
+  - Deadlock may occur when processes require are multiple shared resources,
+    each guarded by a lock, and different processes successfully acquire
+    different resources, and are waiting for one another to release the
+    resources acquired.
+    - One way to avoid deadlock is to ensure locks are always acquired in a
+      fixed, global order.
+  - Another potential source of deadlock in when executing third party code: our
+    own process might have acquired a lock before triggering and third party
+    code, and is waiting for such third party code to be completed before
+    releasing the lock; but unbeknowst to us, the third party code tries to
+    acquire the same lock that we are already holding, resulting in deadlock.
+  - Other alternatives to prevent, reduce or enable recovery from deadlocks
+    include:
+    - Using a interruptible lock such as an ~ReentrantLock~ in Java, such that
+      deadlocked threads can be interrupted without shutting down the JVM.
+    - Using timeouts when acquiring locks.
+    - Using hand-over-hand locking: i.e., instead of locking the whole data
+      structure, lock only the required parts, releasing and acquiring locks to
+      adjacent parts as required.
+    - Using non-locking classes in ~java.util.concurrent.atomic~ where possible.
+- A standard recipe for using condition variable in Java is as follows:
+  #+BEGIN_SRC java
+    ReentranctLock lock = new ReentrantLock();
+    Condition condition = lock.newCondition();
+
+    lock.lock();
+    try {
+        while (! condition_is_true()) {
+            condition.await();
+            // Use shared resources here...
+        } finally {
+            lock.unlock();
+        }
+    }
+  #+END_SRC
+- Some of the useful Java classes for writing threads and locks based code are
+  as follows:
+  - ~CopyOnWriteArrayList~: for simpler and efficient listener-management code
+  - ~ArrayBlockingQueue~: for communication between producers and consumers
+  - ~ConcurrentHashMap~: for highly concurrent access to map
+*** Wrap-up
+- Strengths:
+  - Threads and locks form the basis of concurrency is many programming
+    languages. Many other paradigms to concurrency is implemened using threads
+    and locks.
+  - By following certain conventions, writing threads and locks can be
+    relatively safe too.
+- Weaknesses:
+  - Threads and locks based code are harded to maintain and to test.
+** Chapter 3 - Functional Programming
+- Some of the problem with mutable states include:
+  - Hidden mutable state: e.g., ~SimpleDateFormat~ in Java
+  - Escaping mutable state: e.g., although method calls are synchronized, the
+    method returns the mutable objects, resulting in escaping of mutable state.
+- Clojure related notes:
+  - The ~fold~ function from ~clojure.core.reducers~ package allow effortless
+    parallelization of ~reduce~ call. Simply replace ~reduce~ with ~fold~.
+  - ~mapcat~ is similar to ~map~, save that the former will flatten the
+    resulting sequence of sequences into a flat sequence.
+  - ~clojure.core.reducers/map~ and ~pmap~ may be used in place to ~map~ to map
+    over the sequence in a parallel and semi-lazy manner. Note the
+    ~partition-all~ may also be needed to be applied to the sequence to batch it
+    into multiple sequences for ~pmap~.
+  - ~defprotocol~ is used to define a protocol in Clojure, similar to interfaces
+    in Java / Go.
+    - ~reify~ is then used to create an annonymous implementation of the
+      particular protocol.
+  - ~future~ takes a body of code and executes it in another thread.
+    - The return value is a future object, which can be deferenced using the
+      ~deref~ function or ~@~ shorthand. Derefencing is a blocking operation.
+  - ~promise~ is similar to a future, in that it can be deferenced to obtain the
+    underlying value. However, using ~promise~ by itself does not result in code
+    being executed in another thread. It is our responsibility to use ~deliver~
+    to provide a value to the ~promise~, so that any code blocking on a
+    derefencing call can continue.
+- There are often various ways to process the same data in a functional
+  programming language. For example:
+  - ~(reduce + (map (partial * 2) (range 10000)))~
+    - Reduces a lazy sequence built on top of a lazy sequence---elements in each
+      lazy sequence are generate on an as-needed basis.
+  - ~(reduce + (doall (map (partial * 2) (range 10000))))~
+    - First generates the entirety of the mapped sequence (because of ~doall~)
+      and then reduces it.
+  - ~(reduce + (pmap (partial * 2) (range 10000)))~
+    - Reduces a semi-lazy sequence, which is generated in parallel.
+  - ~(reduce + (clojure.core.reducers/map (partial * 2) (range 10000)))~
+    - Reduces a single lazy sequence with a single reducing function constructed
+      by combining ~+~ with ~(partial *2)~.
+  - ~(clojure.core.reducers/fold + (clojure.core.reducers/map (partial * 2)
+    (into [] range 10000)))~
+    - generates the entirety of the range first and then reduces that in
+      parallel by creating a tree of reduce and combine operations.
+** Chapter 4 - The Clojure Way---Separating Identity from State
+*** Atoms and Persistent Data Structures
+- Clojure's mutable variables work in concert with persistent data structures to
+  separate identity from state, allowing multiple threads to access mutable
+  variables concurrently without locks (and the associated danger of deadlock)
+  and without any of the problems of escaped or hidden mutable state.
+- A variable in an imperative language complects (interweaves, interconnects)
+  identity and state because a single identity can only ever have a single
+  value; persistent data structures separate identity from state because after
+  we retrieve the state from an identity backed by persistent data structure,
+  future state changes to the persistent data structure will not affect past
+  states that were retrieved..
+- Clojure-related notes:
+  - Operations relating to atoms:
+    #+BEGIN_SRC clojure
+      ;; Declaring and initializing an atom
+      (def my-atom (atom 42))
+
+      ;; Dereferencing an atom (2 ways)
+      (deref my-atom)
+      @my-atom
+
+      ;; Updating the value of an atom (by passing in function and params).
+      ;; Note: It is essential that the function passed in has no side
+      ;; effect; this is because it may be runned multiple times when
+      ;; Clojure is attempting to update the value.
+      (swap! my-atom inc)
+      (swap! my-atom + 2) ;; new value will be result of (+ @my-atom 2)
+
+      ;; Updating the value without depending on current value
+      (reset! my-atom 0)
+
+      ;; Atoms can be created with validator function
+      (def non-negative (atom 0 :validator #(>= %0)))
+      (reset! non-negative -1) ;; Throws IllegalStateException Invalid reference state
+
+      ;; Atoms can have watchers attached to them (by passing a key and the function).
+      ;; The watcher function will be passed four arguments when the atom's
+      ;; value changes: the key that was given to the add-watch, a reference
+      ;; to the atom, the previous value, and the new value.
+      (def a (atom 0))
+      (add-watch a :print #(println "Changed  from " %3 " to " %4))
+    #+END_SRC
+*** Agents and Software Transactional Memory
+- Clojure-related notes:
+  - An /agent/ encapsulates a reference to a single value which can be retrieved
+    with ~deref~ or ~@~.
+    #+BEGIN_SRC clojure
+      ;; Declaring and initializing an agent
+      (def my-agent (agent 0))
+
+      ;; Dereferencing an agent
+      @my-agent
+
+      ;; Modifying the value of an agent using send.
+      ;;
+      ;; Unlike using swap!, send will return immediately (before the value
+      ;; of the agent has been changed). The function passed via send will
+      ;; not be retried. If multiple threads call send concurrently, the
+      ;; various functions passed in will be applied sequentially.
+      ;;
+      ;; As such, the function passed via send can contain side effects.
+      (send my-agent inc)
+      (send my-agent + 2)
+
+      ;; send is asynchronous
+      ;; The await function blocks until all actions dispatched from the
+      ;; current thread to the given agent(s) have completed
+      (def my-agent (agent 0))
+      (send my-agent #((Thread/sleep 2000) (inc %)))
+      (await my-agent)
+      @my-agent ;; returns 1
+
+      ;; In addition to send, agents also support send-off and
+      ;; send-via. send executes the given function in a common thread pool,
+      ;; send-off creates a new thread, and send-via takes an executor as an
+      ;; argument.
+
+      ;; agents also supports validators and watchers
+      (def non-negative (agent 1 :validator (fn [new-val] (>= new-val 0))))
+      (send non-negative dec)
+      (send non-negative dec)
+      @non-negative ;;; returns 0 even though we sent dec twice to 1
+      (send non-negative inc) ; Using agent after validation failure throws
+                              ; IllegalStateException reference state...
+
+      ;; Checking whether an agent is in error state
+      (agent-error non-negative) ; returns <IllegalStateException ...>
+
+      ;; Restarting an agent
+      (restart-agent non-negative 0)
+      (agent-error non-negative) ; returns nil
+
+      ;; It is possible to create agents with the :continue error mode to
+      ;; avoid the need to manually restart (by default they are created
+      ;; with :fail error mode.
+    #+END_SRC
+  - Refs provides software transactional memory, allowing us to make concurrent,
+    coordinated changes to multiple records.
+    #+BEGIN_SRC clojure
+      (def my-ref (ref 0))
+      @my-ref ; returns 0
+
+      ;; Updates must be made in transactions, which are atomic, consistent
+      ;; and isolated. Everything within the body of dosync constitutes a
+      ;; single transaction.
+      (dosync (ref-set my-ref 42))
+      @my-ref ; returns 42
+      (dosync (alter my-ref inc))
+      @my-ref ; returns 43
+
+      ;; In addition to dosync, refs also support commune, which allows
+      ;; loosening of requirement that changes are isolated from each
+      ;; other. This may be useful when optimizing code.
+
+      ;; Example of modifying multiple refs (typical bank transfer)
+      (defn transfer [from to amount]
+        (dosync
+         (alter from - amount)
+         (alter to + amount)))
+      (def checking (ref 1000))
+      (def savings (ref 2000))
+      (transfer savings checking 100)
+      @checking ; returns 1100
+      @savings ; returns 1900
+
+      ;; Transactions may be retried, so the function within transactions
+      ;; should be side-effect free.
+      ;;
+      ;; Note however that agents are transaction-aware, so the function
+      ;; dispatched using send will only take place if the transaction
+      ;; succeeds.
+
+      ;; If a transaction requires that the state of a particular ref to not
+      ;; have changed, even though the transaction itself doesn't change the
+      ;; ref's value, then the ensure function can be used. This is
+      ;; necessary because the transaction would otherwise only check that
+      ;; the refs modified by the transaction itself are not modified
+      ;; elsewhere.
+    #+END_SRC
+  - In summary, Clojure provides three mechanisms to support shared mutable
+    state:
+    1. atom---allows synchronous changes to a single value
+    2. agent---allows asynchronous changes to a single value
+    3. ref---allows synchronous, coordinated changes to multiple values
+  - It is generally relatively easy to take an STM-based solution that uses
+    multiple refs and turn it into a solution that uses a single atom instead
+    (by storing everything in the single atom).
+    - It is usually a method of preference and style which approach to use.
+    - However, experienced Clojure programmerss tend to find that atoms suffice
+      for most problems.
+** Chapter 5 - Actors
+- An actor is like an object in an object-oriented program---it encapsulates
+  state and communicates with other actors by exchanging messages. The
+  difference is that actors really communicate by sending messages to each other
+  (unlike usual objects that actually just call each other's methods).
+- Elixir is an impure, dynamically typed functional language (just like
+  Clojure), running on the Erlang virtual machine (BEAM).
+- An actor in Elixir is called a /process/, and is very lightweight---lighter
+  than most systems' threads (in terms of both resource consumption and startup
+  cost).
+- In actor programming, messages are sent asynchronously: instead of directly to
+  an actor, they are placed in a mailbox.
+  - This means that actors are decoupled---the consumption speed of one does not
+    affect the sending speed of another (within reasonable bounds).
+  - Messages are consumed sequentially, without concurrency concerns.
+  - Concurrency concerns lie only in sending of messages.
+- State can be maintained using recursion in place of mutable variables. This is
+  achieved by passing a modified variable to the recursive call; this variable
+  will potentially be modified again in that call.
+- When it comes to error handling, instead of using code that anticipates the
+  error (e.g., try-catch blocks or return error codes), Elixir separates error
+  handling into a separate supervisor process.
+  - Elixir allows linking of processes such that when one terminates
+    unexpectedly, the linked process will terminate too.
+- When it comes to message delivery guarantees, Elixir provides two basic
+  guarantees:
+  1. Message delivery is guaranteed if nothing breaks.
+  2. If something break, we'll know about it (assuming we've linked to, or
+     monitored, the process in question).
+- Interesting quote by Tony Hoare:
+  #+BEGIN_QUOTE
+  There are two ways of constructing a software design: One way is to make it so
+  simple that there are obviously no deficiencies and the other way is to make
+  it so complicated that there are no obvious deficiencies.
+  #+END_QUOTE
+- Actor programming supports an approach to writing fault-tolerant code using
+  the error-kernel pattern.
+  - A software system's /error kernel/ is the part that must be correct if the
+    system is to function correctly. Well-written programs make this error
+    kernel as small and as simple sa possible---so small and simple that there
+    are obviously no deficiencies.
+- Actor programs tend to avoid defensive programming and subscribe to the "let
+  it crash" philosophy, allowing an actor's supervisor to address the problem
+  instead. This has several benefits:
+  - The code is simple and easier to understand, with a clear separation between
+    the "happy path" and the fault-tolerant code.
+  - Actors are separate from one another and don't share state, so there is
+    little danger that a failure in one actor will adversely affect another.
+  - Supervisors can log the errors in addition to fixing it.
+- Most real-life Elixir code leverages Erlang's OTP library.
+  - OTP provides ~GenServer~ which is /behaviour/ (akin to interfaces in Java)
+    that allows us to automate the details of creating a stateful actor.
+- Elixir allows easy distribution of work across different machines because each
+  process (i.e., the actor) can be on a different machine.
+** Chapter 6 - Communicating Sequential Processes
+- Communicating sequential process is (in a way) similar to actors-based
+  programming, except that the focus is on the channels through whith messages
+  are sent, rather than the entities sending the messages.
+  - In Clojure's ~core.async~, a channel is a thread-safe queue, and any task
+    with reference to a channel can add messages to one end and remove messages
+    from the other. Unlike actors, the senders/receivers using channels do not
+    need to care about the other end of the channel.
+- Clojure-specific notes:
+  - The ~alt!~ function allows us to write code that can deal with more than one
+    channel, for example:
+    #+BEGIN_SRC clojure
+      (go-loop []
+        (alt!
+          ch1 ([x] (println "Read" x "from channel 1"))
+          ch2 ([x] (println "Twice" x "is" (* x 2))))
+        (recur))
+    #+END_SRC
+    This also allows creation of timeout:
+    #+BEGIN_SRC clojure
+      (let [t (timeout 10000)]
+        (go (alt!
+              ch ([x] (println "Read" x "from channel"))
+              t (println "Timed out"))))
+    #+END_SRC
+  - Adding ~:priority true~ immediately after the ~alt!~ keyword ensures that if
+    multiple channels within the ~alt!~ block can execute, the first channel in
+    lexical order will be selected.
+  - A simple polling function can be implemented as follows:
+    #+BEGIN_SRC clojure
+      (defn poll-fn [interval action]
+        (let [seconds (* interval 1000)]
+          (go (while true
+                (action)
+                (<! (timeout seconds))))))
+    #+END_SRC
+    but the above will not work if ~action~ contains a parking call; instead, a
+    polling macro is required:
+    #+BEGIN_SRC clojure
+      (defmacro poll [interval & body]
+        `(let [seconds# (* ~interval 1000)]
+           (go (while true
+                 (do ~@body)
+                 (<! (timeout seconds#))))))
+    #+END_SRC
+- *Strengths fo CSP*
+  - CSP is more flexible than actors-based code. In actors-based code, the
+    medium of communication is tightly coupled to the unit of execution---each
+    actor has precisely one mailbox. In CSP code, channels are first class and
+    can be independently created, written to, read from, and passed between
+    tasks.
+- *Weaknesses of CSP*
+  - Traditionally, distribution and fault tolerance has not been the focus of
+    CSP-based languages.
+  - CSP programs are susceptible to deadlock and have no direct support for
+    parallelism.
+** Chapter 7 - Data Parallelism
+- General-purpose computing on the GPU (GPGPU programming) is a form of data
+  parellelism.
+- Open Computing Language (OpenCL) is one of the technologies that has emerged
+  to abstract away the details of GPU implementation, providing a more
+  consistent approach for GPGPU).
+  - Each different GPU manufacturer provides its own compilers and drivers that
+    allow program to be compiled and runned on its hardware.
+- Modern GPUs use very techniques to implement / optimize data parellelism,
+  including pipelining and have multiple arithmetic logic unit (ALS).
+- An OpenCL program typically comprises (a) the kernel, and (b) the host
+  program.
+  - The kernel contains instructions for each smallest work-item to be performed
+    by the GPU. It is a function that accepts as arguments pointers to input and
+    output buffers). It is embedded in the host program.
+  - The host program performs the following:
+    1. Create a context within which the kernel will run together with a command
+       queue.
+       - For example, we select which of the attached GPU device(s) we want to
+         use, and create a command queue.
+    2. Compile the kernel.
+    3. Create buffers for input and output data.
+    4. Enqueue a command that executes thet kernel once for each work-item.
+    5. Retrieve the results.
+** Chapter 8 - The Lambda Architecture
+- The Lambda architecture comprises a batch layer and a real-time (streaming)
+  layer.
+  - As the name suggest, the batch layer runs at fixed intervals on batches of
+    data. One limitation with the batch layer is the latency introduced due to
+    the batching interval.
+  - To provide realtime view of the data, there is a streaming layer that
+    processes data as they enter the system. At user-facing application can then
+    combine the outputs from this streaming layer and batch layer to provide the
+    enter realtime view.
+** Chapter 9 - Wrapping Up
+- The next challenge facing software engineering---after this current wave limit
+  single core performance, leading to the need to deal with concurrency and
+  distributed processing---is likely the limit on memory bandwith:
+  - If the number of cores continues to increase at the current rate, shared
+    memory is going to become the bottleneck, which means that we're going to
+    have to worry about distributed memory.
+- Some concurrency / parallelism paradigms not covered in the book include:
+  - Fork/join and work-stealing
+  - Dataflow (this is likely important is hardware design, like VHDL and
+    Verilog)
+  - Reactive programming
+  - Functional reactive programming
+  - Grid computing (e.g., SETI@Home project)
+  - Tuple spaces
+* To Internalize /Now/
+- Nothing in particular. This book is about providing overview, not how to
+  perform specific tasks.
+* To Learn/Do Soon
+- Learn about data lake, data warehouse:
+  - use cases
+  - how to set up a production-ready data lake / warehouse (e.g., with notebook
+    access)
+  - (I might wish to refer to Databricks's offering; and also learn about Apache
+    Spark).
+* To Revisit When Necessary
+** Chapter 2 - Threads and Locks
+- Refer to this chapter for a simple example usage of ~CopyOnWriteArrayList~.
+- Refer to this chaptre for an example of a concurrency word count program
+  implemented using threads and locks.
+  - The example includes a demonstration of how lock contention might result
+    worst performance by the concurrent version (as compared to the sequential
+    version), and how ~ConcurrentHashMap()~ can be used to avoid contention.
+** Chapter 3 - Functional Programming
+- Refer to this chapter for various examples of using Clojure:
+  - Parallel versions of ~reduce~ and ~map~
+  - ~future~ and ~promise~
+** Chapter 5 - Actors
+- Refer to this chapter for example of using Elixir, including using ~GenServer~
+  from OTP.
+** Chapter 6 - Communicating Sequential Processes
+- Refer to this chapter for examples of
+  - using ~go~ blocks in Clojure, together with examples of using channels like
+    sequences, differences between blocking and parking operations, etc;
+  - using ~core.async~ for asynchronous IO
+  - using ~core.async~ in ClojureScript for client-side programming
+** Chapter 7 - Data Parallelism
+- Refer to this chapter for example programs written in OpenCL, including matrix
+  multiplication, reduction, use of barriers for synchronization.
+
+* Other Resources Referred To
+- I should check out the following references made in the book
+- In the self-study sections of the various chapters, there are references to
+  talks by Rich Hickey.
+- Refer to Simon Peyton Jone's /Beautiful Concurrency/ for an introduction to
+  Haskell.
+- For more on GPUPG, also look at other frameworks like CUDA, DirectCompute, and
+  RenderScript Computation.
