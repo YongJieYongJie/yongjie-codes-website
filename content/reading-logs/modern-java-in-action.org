@@ -1,0 +1,837 @@
+---
+short_title: "Modern Java in Action"
+title: "Modern Java in Action: Lambdas, streams, functional and reactive programming"
+source: Googl-ing online for essential Java books
+author: Raoul-Gabriel Urma; Mario Fusco; Alan Mycroft
+isbn: 9781617293566
+reading_period: 2020.09–2021.03.20
+date: 2021-03-20T00:00:00+08:00
+draft: false
+---
+
+* General Review
+- An excellent book that introduces and go into details the new features of Java
+  8 in a holistic manner, explaining the improvements brought about by the new
+  features, and also the idiomatic usages.
+* Specific Takeaways
+** Part 1 - Fundamentals
+*** Chapter 2 - Passing code with behavior parameterization
+- Behavior parameterization is when the exact behavior of a function is
+  parameterized by the argument passed in. For example, the ~comparing~ method
+  in the ~Comparator~ interface takes a function that extracts the specific
+  value from the object to be compare.
+- With lambdas and method references being added in Java 8, behavior
+  parameterization now requires much less boilerplate code.
+*** Chapter 3 - Lambda expressions
+- When using lambda expressions, we are in fact providing an implementation of a
+  functional interface.
+  - A functional interface is any interface with only one abstract method.
+  - When a function accepts as parameter a functional interface, we can pass in
+    any lambda that matches the functional interface. Note the special case
+    where a lambda that has a return value would match a functional interface
+    which has an abstract method that returns void, provided that the parameters
+    list matches.
+- To avoid having to catch exceptions within the lambda, we can define the
+  abstract method on functional interface to throw the relevant exception.
+  - For example, if a function were to accept the ~BufferedReaderProcessor~
+    interface below as argument, the lambda that we actually pass in does not
+    need to catch ~IOException~:
+    #+BEGIN_SRC java
+      @FunctionalInterface
+      public interface BufferedReaderProcessor {
+          String process(BufferedReader b) throws IOException;
+      }
+    #+END_SRC
+- Lambda does not form closure over the surrounding scope (like in JavaScript
+  and Python). As such, an variable from the surrounding scope that is used
+  within the lambda has to be final or effectively final.
+- Lambda expressions that have been assigned to variables using functional
+  interfaces can be composed using ~lambdaVar.andThen(...)~ and
+  ~lambdaVar.compose(...)~ methods.
+** Part 2 - Functional-Style Data Processing with Streams
+*** Chapter 4 - Introducing streams
+- One benefit of using streams over traditional loops is that streams allow the
+  programmer to declaratively state the desired processing, and the iteration is
+  "internalize" by the Java library code. This allows for optimization that are
+  generally hard to reason about (e.g., parallelizing the processing).
+- Streams have two groups of operations:
+  - intermediate operations: e.g., ~filter~, ~map~, and ~limit~
+  - terminal operation: e.g., ~collect~
+*** Chapter 5 - Working with streams
+- When processing a stream, if each element will be mapped to a stream of
+  elements, and the intention is to return a flat stream of elements (as oppose
+  to a stream of streams), use the ~flatMap~ method on the ~Stream~.
+- Summary table of intermediate and terminal operations:
+  | Operation | Type          | Return type | Type / functional interface used |
+  |-----------+---------------+-------------+----------------------------------|
+  | filter    | intermediate  | Stream<T>   | Predicate<T>                     |
+  | distinct  | intermediate* | Stream<T>   |                                  |
+  | takeWhile | intermediate  | Stream<T>   | Predicate<T>                     |
+  | dropwhile | intermediate  | Stream<T>   | Predicate<T>                     |
+  | skip      | intermediate† | Stream<T>   | long                             |
+  | limit     | intermediate† | Stream<T>   | long                             |
+  | map       | intermediate  | Stream<R>   | Function<T, R>                   |
+  | flatMap   | intermediate  | Stream<R>   | Function<T, Stream<R>>           |
+  | sorted    | intermediate* | Stream<T>   | Comparator<T>                    |
+  | anyMatch  | terminal      | boolean     | Predicate<T>                     |
+  | noneMatch | terminal      | boolean     | Predicate<T>                     |
+  | allMatch  | terminal      | boolean     | Predicate<T>                     |
+  | findAny   | terminal      | Optional<T> |                                  |
+  | findFirst | terminal      | Optional<T> |                                  |
+  | forEach   | terminal      | void        | Consumer<T>                      |
+  | collect   | terminal      | R           | Collector<T, A, R>               |
+  | reduce    | terminal†     | Optional<T> | BinaryOperator<T>                |
+  | count     | terminal      | long        |                                  |
+  * These operations are stateful and unbounded.
+  † These operations are stateful and bounded.
+- When using numeric stream, beware of the boxing and unboxing costs. Use the
+  specialized primitive streams to avoid such costs whereever possible.
+  - For example, instead of using ~map()~ to extract an ~Integer~ and performing
+    operation on the ~Integer~ that incurs additional boxing and unboxing costs,
+    use ~mapToInt()~ to extract an ~int~ directly.
+  - Use ~boxed()~ on the stream to convert it back to a boxed stream.
+- Use ~IntStream.range()~ or ~IntStream.rangeClosed()~ to provide a stream of
+  ~int~ values. The former is exclusive, whereas the latter is inclusive.
+- Streams may be created from any of the following:
+  - values
+  - nullables
+  - arrays
+  - files
+  - functions
+*** Chapter 6 - Collecting data with streams
+- The collectors provided can generally be classified into three different
+  types:
+  - reducing and summarizing: these collectors reduces the stream into a single
+    value (e.g, calculating the sum, joining the strings, etc.).
+  - grouping
+  - partitioning: a special case of grouping whether there are only two groups:
+    true and false.
+- The ~Collectors~ class provides specific factory methods for common arithmetic
+  operations.
+  - For example:
+    #+BEGIN_SRC java
+      int totalCalories = menu.stream().collect(summingInt(Dish::getCalories));
+    #+END_SRC
+*** Chapter 7 - Parallel data processing and performance
+- Calling ~.parallel()~ on a stream makes the whole stream execute in parallel,
+  whereas calling ~.sequential()~ makes the whole stream executes sequentially,
+  the last calls trumps.
+- A parallel stream internally uses the default ~ForkJoinPool~ which by default
+  has as many threads as there are processors. This may be changed globally
+  using the system property
+  =java.util.concurrent.ForkJoinPool.common.parallelism=
+- Summary table of stream sources and decomposability:
+  | Source          | Decomposability |
+  |-----------------+-----------------|
+  | ArrayList       | Excellent       |
+  | LinkedList      | Poor            |
+  | IntStream.range | Excellent       |
+  | Stream.iterate  | Poor            |
+  | HashSet         | Good            |
+  | TreeSet         | Good            |
+- General guidelines when considering whether to parallelize stream processing:
+  - *If in doubt, measure*. A parallel stream isn't always faster than the
+    corresponding sequential version. Moreover, parallel streams can sometimes
+    work in a counter-intuitive way, so the first and most important suggestion
+    when choosing between sequential and parallel streams is to always check
+    their performance with an appropriate benchmark.
+  - *Watch out for boxing*. Automatic boxing and unboxing operations can
+    dramatically hurt performance. Java 8 includes primitive streams
+    (~IntStream~, ~LongStream~, and ~DoubleStream~) to avoid such operations, so
+    use them when possible.
+  - *Some operations naturally perform worse on a parallel stream than on a
+    sequential stream*. In particular, operations such as ~limit()~ and
+    ~findFirst()~ that rely on the order of the elements are expensive in a
+    parallel stream. For example, ~findAny()~ will perform better than
+    ~findFirst()~ because it isn't constrained to operate in the encounter
+    order. You can always turn an ordered stream into an unordered stream by
+    invoking the method unordered on it. For instance, if you need N elements of
+    your stream and you're not necessarily interested in the first N ones,
+    calling limit on an unordered parallel stream may execute more efficiently
+    than on a stream with an encounter order (for example, when the source is a
+    ~List~).
+  - *Consider the total computational cost of the pipeline of operations
+    performed by the stream*. With N being the number of elements to be
+    processed and Q the approximate cost of processing one of these elements
+    through the stream pipeline, the product of N*Q gives a rough qualitative
+    estimation of this cost. A higher value for Q implies a better chance of
+    good performance when using a parallel stream.
+  - *For a small amount of data, choosing a parallel stream is almost never a
+    winning decision*. The advantages of processing in parallel only a few
+    elements aren't enough to compensate for the additional cost introduced by
+    the parallelization process.
+  - *Take into account how well the data structure underlying the stream
+    decomposes*. For instance, an ~ArrayList~ can be split much more efficiently
+    than a ~LinkedList~, because the first can be evenly divided without
+    traversing it, as it's necessary to do with the second. Also, the primitive
+    streams created with the range factory method can be decomposed
+    quickly.
+  - *The characteristics of a stream, and how the intermediate operations*
+    *through the pipeline modify them, can change the performance of the
+    decomposition process*. For example, a ~SIZED~ stream can be divided into
+    two equal parts, and then each part can be processed in parallel more
+    effectively, but a filter operation can throw away an unpredictable number
+    of elements, making the size of the stream itself unknown.
+  - *Consider whether a terminal operation has a cheap or expensive merge step
+    (for example, the combiner method in a ~Collector~)*. If this is expensive,
+    then the cost caused by the combination of the partial results generated by
+    each substream can outweigh the performance benefits of a parallel stream.
+- The fork/join framework was designed to recursively split a parallelizable
+  task into smaller tasks and then combine the results of each subtask to
+  produce the overall result.
+  - To submit tasks to this pool, you have to create a subclass of
+    ~RecursiveTask<R>~, where ~R~ is the type of the result produced by the
+    parallelized task (and each of its subtasks) or of ~RecursiveAction~ if the
+    task returns no result (it could be updating other nonlocal structures,
+    though). To define ~RecursiveTasks~ you need only implement its single
+    abstract method, compute:
+
+    ~protected abstract R compute();~
+
+    This method defines both the logic of splitting the task at hand into
+    subtasks and the algorithm to produce the result of a single subtask when
+    it’s no longer possible or con- venient to further divide it. For this
+    reason an implementation of this method often resembles the following
+    pseudocode:
+
+    #+BEGIN_QUOTE
+    if (task is small enough or no longer divisible) {
+        compute task sequentially
+    } else {
+        split task in two subtasks
+        call this method recursively possibly further splitting each subtask
+        wait for the completion of all subtasks
+        combine the results of each subtask
+    }
+    #+END_QUOTE
+- The ~Spliterator~ interface (which stands for "splitable iterator") is used to
+  traverse elements of a source in parallel.
+  - The interface is as follows:
+    #+BEGIN_SRC java
+      public interface Spliterator<T> {
+          boolean tryAdvance(Consumer<? super T> action);
+          Spliterator<T> trySplit();
+          long estimateSize();
+          int characteristics();
+      }
+    #+END_SRC
+  - The algorithm for spliting a stream into multiple parts works as follows:
+    1. Recursively call ~trySplit()~ to split the ~Spliterator~ into two, until
+       it returns ~null~ meaning that the stream cannot / should not be further
+       split.
+    2. Call ~tryAdvance()~, which accepts as argument an action to perform an a
+       element. ~tryAdvance()~ calls ~action.Accept(element)~ to perform the
+       action an an element.
+** Part 3 - Effective Programming with Streams and Lamdas
+*** Chapter 8 - Collection API enhancements
+- Methods like ~List.removeIf()~ and ~List.replaceAll()~ were added in Java 8 to
+  prevent erroneous like the following, where the underlying ~Iterator~ created
+  by the for each loop goes out-of-sync of the collection ~myItems~ because we
+  are concurrently modifying the collection directly):
+  #+BEGIN_SRC java
+    for (MyItem myItem : myItems) {
+        if (toRemove(myItem)) {
+            myItems.remove(myItem);
+            
+        }
+    }
+  #+END_SRC
+  - Similar effect can be achieved using streaming code. the The differences is
+    that streaming code produces new collections, whereas methods like
+    ~removeIf()~ and ~replaceAll()~ mutates in place.
+- One use of ~Map.computeIfAbsent()~ is to cache information. Another use is for
+  handling maps that stores multiple values per key, and the container for the
+  values need to be initialized only when adding a value to that key for the
+  first time.
+- ~Map.forEach()~ can be used with ~Map.merge()~ to merge one map into another
+  when there are duplicated keys.
+  - If there are no dulicated keys or if it is okay to overwrite existing keys,
+    the ~Map.puttAll()~ method can be used instead.
+- ~ConcurrentHashMap~ supports three new kinds of operations (in Java 8):
+  /forEach/, /reduce/, and /search/.
+  - Each kind of operation above supports four forms, for working with keys,
+    values, keys and values, and ~Map.Entry~ objects.
+  - These operations don't lock the state of the ~ConcurrentHashMap~.
+*** Chapter 9 - Refactoring, Testing and Debugging
+- Consider using helper static methods such as ~comparing~ and ~maxBy~ in
+  streaming code whenever possible; for example:
+  #+BEGIN_SRC java
+    // instead of:
+    myItems.sort(
+      (MyItem item1, MyItem item2) -> item1.getSomeProperty().compareTo(
+      item2.getSomeProperty()));
+
+    // we can use:
+    myItems.sort(comparing(MyTime::getSomeProperty));
+  #+END_SRC
+- Consider using built-in collectors instead of the more general ~map~ followed
+  by ~reduce~ (or other collection method); for example:
+  #+BEGIN_SRC java
+    // instead of:
+    int totalAmount =
+        myItems.stream().map(MyItem::getProperty)
+                        .reduce(0, (amount1, amount2) -> amount1 + amount2);
+
+    // we can use:
+    int totalAmount = myItems.stream().collect(summingInt(MyItem::getProperty));
+  #+END_SRC
+- Two common scenarios where refactoring from traditional iterative code to
+  lambda-style code are:
+  1. Conditional deferred execution
+     - For example, in logging-related code, instead of checking the log level
+       in the top-level logic each time, we abstract the check into a method
+       like ~log(LogLevel logLevel, Supplier<String> msgSupplier)~. This method
+       will accept a ~Supplier<String>~ to be used to supply the log message /if
+       logging is enabled for the particular level/.
+  2. Code around
+     - For example, when we need to perform the same preparation and cleanup
+       operations in various different part of our code.
+- Lambdas can also be used to remove the need for template design patterns where
+  we have an abstract class and the concrete implementation classes overrides
+  the abstract method(s) to customize behavior.
+  - Instead of using abstract methods, we can pass in the desired behavior
+    directly as lambdas (or method reference).
+- In streaming code, the ~.peek()~ method can be useful when debugging as it
+  allows us to print (or otherwise inspect) elements flowing through the stream.
+*** Chapter 10 - Domain-specific language using lambdas
+- Language like Scala allows development of very nice DSLs; for example, the
+  following set-up:
+  #+BEGIN_SRC scala
+  implicit def intToTimes(i: Int) = new {
+    def times(f: => Unit): Unit = {
+      def times(i: Int, f: => Unit): Unit = {
+        f
+        if (i > 1) times(i - 1, f)
+      }
+      times(i, f)
+    }
+  }
+  #+END_SRC
+  allows the following code to work as expected:
+  #+BEGIN_SRC scala
+  3 times {
+    println("Hello World")
+  }
+  #+END_SRC
+- The Java ~Comparator~-related APIs is a demonstration of a nice DSL within
+  Java itself. The relevant DSL methods include ~comparing()~,
+  ~thenComparing()~, ~reverse()~
+- A good example of why streaming code can ofter be clearer than imperative code
+  is given in Listing 10.1:
+  #+BEGIN_SRC java
+    List<String> errors = new ArrayList<>();
+    int errorCount = 0;
+    BufferedReader bufferedReader
+        = new BufferedReader(new FileReader(fileName));
+    String line = bufferedReader.readLine();
+    while (errorCount < 40 && line != null) {
+        if (line.startsWith("Error")) {
+            errors.add(line);
+            errorCount++;
+        }
+        line = bufferedReader.readLine(0;
+    }
+  #+END_SRC
+  - In the above code, the logic for reading the file line by line is scattered
+    across multiple places (around 3); the logic for limiting the number of
+    lines collected to 40 is also scattered acrouss multiple places (around 3)
+  - Using the ~Stream~ interface, the logic can be expressed much more clearly:
+    #+BEGIN_SRC java
+      List<String> errors = Files.lines(Paths.get(fileName))
+          .filter(line -> line.startsWith("ERROR"))
+          .limit(40)
+          .collect(toList());
+    #+END_SRC
+- (Based on example at 10.3.1) One way to create a DSL is to do it fluently
+  using method chaining:
+  1. Define the domain models (i.e., the POJOs)
+  2. Define the desired fluent DSL (e.g., like the DSLs of testing frameworks
+     that allows method chaining); something like:
+     #+BEGIN_SRC java
+       Order order = forCustomer("BigBank")
+               .buy(80)
+               .stock("IBM")
+                   .on("NYSE")
+               .sell(50)
+               .stock("GOOGLE")
+                   .on("NASDAQ")
+               .at(375.00)
+           .end();
+     #+END_SRC
+  3. Use various builders that has:
+     - a ~public static~ constructor with meaning name as entry point
+     - return an appropriate builder with a limited number of methods on the
+       class to ensure the fluent DSL methods are called in the correct order
+- (Based on example at 10.3.2) Another way to create a DSL is to use nested
+  function:
+  #+BEGIN_SRC java
+    Order order = order("Bigbank",
+                        buy(80,
+                            stock("IBM", on("NYSE")),
+                            at(125.00)),
+                        sell(50,
+                             stock("GOOGLE", on("NASDAQ")),
+                             at(375.00))
+                        );
+  #+END_SRC
+- (Based on example at 10.3.3) Yet another way to create a DSL is to use lambda:
+  #+BEGIN_SRC java
+    Order order = order(o -> {
+            o.forCustomer("BigBank");
+            o.buy(t -> {
+                    t.quantity(80);
+                    t.price(125.00);
+                    t.stock(s -> {
+                            s.symbol("IBM");
+                            s.market("NYSE");
+                        });
+                });
+            o.sell(t -> {
+                    t.quantity(50);
+                    t.price(375.00);
+                    t.stock(s -> {
+                            s.symbol("GOOGLE");
+                            s.market("NASDAQ");
+                        });
+                });
+        });
+  #+END_SRC
+- (Based on example at 10.3.4) The various ways to create a DSL can be combined:
+  #+BEGIN_SRC java
+    Order order = forCustomer("BigBank",
+                              buy(t -> t.quantity(80)
+                                        .stock("IBM")
+                                        .on("NYSE")
+                                        .at(125.00)),
+                              sell(t -> t.quantity(50)
+                                         .stock("GOOGLE")
+                                         .on("NASDAQ")
+                                         .at(125.00)));
+  #+END_SRC
+- (Based on example at 10.3.5) Suppose that we want to add tax calculation to
+  the above DSL, we can design it as follows:
+  #+BEGIN_SRC java
+    double value = new TaxCalculator().withTaxRegional()
+                                      .withTaxSurcharge()
+                                      .calculate(order);
+  #+END_SRC
+  the above is fine if we don't expect changes to the types of taxes to account
+  for; alternatively we can design the DSL as follows (using lambda / method
+  references):
+  #+BEGIN_SRC java
+    double value =  new TaxCalculator().with(Tax::regional)
+                                       .with(Tax::surcharge)
+                                       .calculate(order);
+  #+END_SRC
+  the above is as readable, but is also extensible because new tax will only
+  need to be added to the ~Tax~ class, without requiring any change on the
+  ~TaxCalculator~.
+** Part 4 - Everyday Java
+*** Chapter 11 - Using Optional as a better alternative to null
+- Some of the problems with using ~null~ to represent an absence of value are:
+  - It is a source of error (i.e., NPE)
+  - It bloats the code (with all the null checks)
+  - It is meaningless: modelling the absence of value using ~null~ in a
+    statically typed language is usually the wrong way
+  - It is the only part of Java that exposes the concept of pointers to
+    developers
+  - It creates a hole in the type system: ~null~ carries no type information or
+    any other information, and can be assigned to any reference type. As such,
+    when null is passed from a part of the system to another part of the system,
+    we have no idea what it is supposed to be in the first place.
+- An ~Optional~ may by created in one of three ways:
+  - ~Optional.empty()~: when the ~Optional~ holds an empty object.
+  - ~Optional.of(myObject)~: when ~myObject~ is non-null; otherwise, a
+    ~NullPointerException~ would be thrown immediately.
+  - ~Optional.ofNullable(myObject)~: when ~myObject~ can possibly be ~null~.
+- One way to rewrite problematic code using ~null~ with ~Optional~ is as
+  follows:
+  - Original code:
+    #+BEGIN_SRC java
+            public String getCarInsuranceName(Person person) {
+                // person, getCar() and getInsurance may return null
+                if (person == null) {
+                    return "Unknown";
+                }
+                Car car = person.getCar();
+                if (car == null) {
+                    return "Unknown";
+                }
+                Insurance insurance = car.getInsurance();
+                if (insurance == null) {
+                    return "Unknown";
+                }
+                return insurance.getName();
+            }
+    #+END_SRC
+  - New code:
+    #+BEGIN_SRC java
+      public String getCarInsuranceName(Optional<Person> person) {
+          // getCar() and getInsurance() requires flatMap() because the
+          // return type is Optional<> and needs to be unwrapped; getName()
+          // can be used with map() because the return type is the String
+          return person.flatMap(Person:getCar)
+                       .flatMap(Car::getInsurance)
+                       .map(Insurance::getName)
+                       .orElse("Unknown");
+      }
+    #+END_SRC
+- When writing a method that accepts as arguments two optionals and returns a
+  non-empty optional only if both input optional are none empty, we can do it in
+  at least two different ways:
+  1. Similar to null checks:
+     #+BEGIN_SRC java
+       public Optional<Insurance> nullSafeFindCheapestInsurance(Optional<Person> person,
+                                                                Optional<Car> car) {
+           if (person.isPresent() && car.isPresent()) {
+               return Optional.of(findCheapestInsurance(person.get(), car.get()));
+           } else {
+               return Optional.empty();
+           }
+       }
+     #+END_SRC
+  2. Using the API on ~Optional~:
+     #+BEGIN_SRC java
+       public Optional<Insurance> nullSafeFindCheapestInsurance(Optional<Person> person,
+                                                                Optional<Car> car) {
+           return person.flatMap(p -> car.map(c -> findCheapestInsurance(p, c)));
+       }
+     #+END_SRC
+- Even though using ~Optional~ may be preferred to using ~null~, many existing
+  Java APIs still return ~null~ to indicate an absence of value. To remedy this,
+  we can use simple utility functions to wrap the existing API, for example:
+  #+BEGIN_SRC java
+    // Instead of:
+    Object value = map.get("key");
+
+    // We can use:
+    Optional<Object> value = Optional.ofNullable(map.get("key"));
+  #+END_SRC
+- It is possible to wrap exceptions throw by existing Java APIs into ~Optional~:
+  #+BEGIN_SRC java
+    public static Optional<Integer> stringToInt(String s) {
+        try {
+            return Optional.of(Integer.parseInt(s));
+        } catch (NumberFormatException e) {
+            return Optional.empty();
+        }
+    }
+  #+END_SRC
+- Complete example:
+  - Assuming we need to read a property representing duration, which can only be
+    a positive integer, the traditional approach might be as follows:
+    #+BEGIN_SRC java
+      public int readDuration(Properties props, String name) {
+          String value = props.getProperty(name);
+          if (value != null) {
+              try {
+                  int i = Integer.parseInt(value);
+                  if (i > 0) {
+                      return i
+                  }
+              } catch (NumberFormatException nfe) {}
+          }
+          return 0;
+      }
+    #+END_SRC
+    using ~Optional~, we can get something more readable:
+    #+BEGIN_SRC java
+      public int readDuration(Properties props, String name) {
+          return Optional.ofNullable(props.getProperty(name))
+                         .flatMap(OptionalUtility::stringToInt)
+                         .filter(i -> i > 0)
+                         .orElse(0);
+      }
+    #+END_SRC
+*** Chapter 12 - New Date and Time API
+- The basic dates and intervals formats are: ~LocalDate~, ~LocalTime~,
+  ~LocalDateTime~, ~Instant~, ~Duration~ and ~Period~. Other related types
+  include: ~TemporalField~, ~ChronoField~, ~ChronoUnits~, ~TemporalAdjusters~
+- The ~TemporalAdjusters~ class contains various static methods for more
+  advanced date manipulation; for example:
+  #+BEGIN_SRC java
+    import static java.time.temporal.TemporalAdjusters.*;
+    LocalDate date1 = LocalDate.of(2021, 3, 13); // 2021-03-13
+    LocalDate date2 = date1.with(nextOrSame(DayOfWeek.SUNDAY)); // 2021-03-14
+    LocalDate date3 = date2.with(lastDayOfMonth()); // 2021-03-31
+  #+END_SRC
+- Generally prefer ~LocalDate~ instead of ~ChronoLocalDate~ becasue a developer
+  could make assumptions in his code that aren't true in a multicalendar system:
+  e.g., the number of days in a month is never greater than 31, and the number
+  of months in a year is always 12. Use ~ChronoLocalDate~ only when localizing
+  the input or output.
+*** Chapter 13 - Default methods
+- In additional to default methods, Java 8 also allows static method inside
+  interfaces.
+- Default methods can be useful for evolving a library in a compatible way.
+- Default methods can also be use for optional methods on the interface, for
+  example:
+  #+BEGIN_SRC java
+    interface Iterator<T> {
+        boolean hasNext();
+        T next();
+        default void remove() {
+            throw new UnsupportedOperationException();
+        }
+    }
+  #+END_SRC
+  this helps in reducing boilerplate code in the implementation clasess that
+  choose not to implement the optional ~remove()~ method.
+*** Chapter 14 - The Java Module System
+- One benefit of using the Java module system is that it provides finer-grained
+  control over which classes can see which other classes.
+- Before the introduction of Java module system in Java 9, there is no way to
+  check that classes and packages were available only for the intended purposes
+  (much like how we use the ~private~ keyword to hide certain methods that are
+  not supposed to be used outside the class).
+  - Back then, Java had three levels at which code was grouped: classes,
+    packages, and JARs.
+  - For classes there is support for access modifiers and encapsulation.
+  - For packages and JARs however, there is limited support for controlling
+    visibility between packages. If we want classes and interfaces from one
+    package to be visible to another package, we have to declare them as public,
+    which results in such classes and interfaces to be accessible to everyone
+    else.
+  - There is the JAR Hell / Class Path Hell problem:
+    - All classes must be shipped in a single JAR
+    - The JAR must be made available to the JVM on the class path
+    - There is no concept of dependencies, and all the various classes are
+      flattened into a pool from which the JVM can locate and load
+    - There is also no concept of versioning for the same class, and we can't
+      predict what will happen if there are multiple versions of the same class
+      in the class path, as is common in bigger projects.
+- A related technology to Java 9's module system is the Open Service Gateway
+  initiative (OSGi), which allows hot-loading and unloading of /bundles/,
+  essentially allowing different versions of the same class to be used
+  (something that the Java 9 module system still doesn't allow).
+- Sidenote: The standard way to package Java source code into a JAR file is as
+  follows:
+  1. ~javac module-info.java <path-to-main>.java -d <output-folder>~
+  2. ~jar cvfe <output-name>.jar <main-class-fully-qualified-name> -C
+     <output-folder-from-above>~
+** Part 5 - Enhanced Java Concurrency
+*** Chapter 15 - Concepts behind CompletableFuture and reactive programming
+- Brief history of Java supporting concurrency:
+  - Originally, there is locks (via ~synchronized~ classes and methods),
+    ~Runnable~ and ~Thread~
+  - Next Java introduced the ~ExecutorService~, together with ~Callable<T>~ and
+    ~Future<T>~, which decoupled tasks submission from thread execution
+  - ~CompletableFuture~ (an implementation of ~Future~) was introduced in Java
+    8; this provided support for /composing/ futures
+- Avoid submitting tasks that can block (sleep or wait for events) to thread
+  pools.
+  - Blocking operations include: waiting for another task to do something, such
+    as invoking ~get()~ on a ~Future~; and waiting for external interactions
+    such as reads from networks, database servers, or human interface devices
+    such as keyboards.
+  - Instead of sleeping, we can schedule the execution to start after a certain
+    delay.
+  - Instead of blocking on I/O, we can leverage the runtime library to schedule
+    the follow-up tasks when the I/O is completed.
+- It is good practice to shutdown every thread pool before exiting the program.
+- Java 9 provides the ~Subscriber~ interface (with ~onNext()~, ~onComplete()~,
+  and ~onError()~ methods) and the ~Publisher~ interface (with the
+  ~subscribe(Subscriber)~ method).
+  - A subscriber will register itself with a publisher by calling the
+    ~subscribe()~ method on the publisher.
+  - A publisher will pass various events to the subscriber via the various
+    methods on the ~Subscriber~ interface.
+  - There is also the ~Sbuscription~ interface that allows for flow control by
+    the subscriber.
+*** Chapter 16 - CompletableFuter: composable asynchronous programming
+- The following will split computation onto different threads, but each thread
+  will still be blocking:
+  #+BEGIN_SRC java
+    List<MyResult> myResults = myItems.stream()
+        .parallelStream()
+        .map(myItem -> myLongTask(myItem))
+        .collect(toList());
+  #+END_SRC
+  , on the other hand, the following ensures each operation is truly
+  non-blocking:
+  #+BEGIN_SRC java
+    List<CompletableFuture<MyItem>> myFutures = myItems.stream()
+        .map(myItem -> CompletableFuture.supplyAsync(myLongTask(myItem)))
+        .collect(toList());
+
+    List<MyResult> myResults = myFutures.stream()
+        .map(CompletableFuture:join)
+        .collect(toList());
+  #+END_SRC
+  - In light of the above, ~parallelStream()~ should generally be used when the
+    time-intensive tasks are CPU-bound, and ~supplyAsync()~ should generally be
+    used when the time-intensive tasks are I/O-bound.
+- In /Java Concurrency in Practice/, the author suggests the following formula
+  for estimate the right size of thread pool:
+  =numThreads = numCpuCores * targetUtilization * (1 + waitTime/computeTime)=
+  - for example, if the ratio of wait time to compute time is 99ms to 1ms, then,
+    then =waitTime/computeTime= can be set to =99=; if the target utilization
+    is 100%, then =targetUtilization= can be set to =1=.
+- *Composing Asynchronous Tasks on List of Items*
+  - Consider a chain of processing involving three steps: a time-intensive
+    I/O-bound first step, followed by a first second step, and finally another
+    I/O bound third step. We might compose the processing a follows:
+    #+BEGIN_SRC java
+      List<Future<MyFinalResult>> myFutureResults = myItems.stream()
+          .map(myItem -> CompletableFuture.supplyAsync(firstStep(myItem)))
+          .map(future -> future.thenApply(result -> secondStep(result)))
+          .map(future -> future.thenCompose(
+                  result -> CompletableFuture.supplyAsync(() => thirdStep(result))))
+          .collect(toList());
+        
+      List<MyFinalResult> myFinalResults = myFutureResults.stream()
+          .map(CompletableFuture::join)
+          .collect(toList());
+    #+END_SRC
+    - Notice that ~thirdStep()~ is called in a ~supplyAsync()~ that is nested
+      within a ~thenCompose()~, this is necessary to prevent blocking when
+      ~thirdStep()~ is called. The alternative might be to call ~thirdStep()~
+      within a ~thenApply()~ directly, but this would result in blocking.
+- ~thenCompose()~ is used to combine two or more asynchronous operations in a
+  non-branching processing pipeline: e.g., starting from item type ~A~, we have
+  call out to a remote service to obtain item type ~B~, then we use
+  ~thenCompose~ to call out to another remote service to obtain item type ~C~
+  from ~B~ without blocking
+- ~thenCombine()~ is used to join two separate asynchronous operations into a
+  single branch: e.g., starting from item type ~A~, we call out to remote
+  services to obtain item type ~B~ and item type ~C~ respectively, and then use
+  ~thenCombine()~ to process ~B~ and ~C~ to return a single result.
+- Java 9 provides ~orTimeout()~ and ~completeOnTimeOut()~ to set timeout on code
+  using ~CompletableFuture~ objects.
+- *Waiting for All to Complete, But Displaying Results whenever Ready*
+  #+BEGIN_SRC java
+    CompletableFuture[ ] futures = myFutureStreams
+        .map(f -> f.thenAccept(System.out::println))
+        .toArray(size -> new CompletableFuture[size]);
+    CompletableFuture.allOf(futures).join();
+  #+END_SRC
+*** Chapter 17 - Reactive Programming
+- Consider having separate thread pools for CPU-bound vs I/O-bound operations
+- The four interfaces comprising Java 9's ~java.util.concurrent.Flow~ API for
+  reactive programming are:
+  1. ~Publisher~, with the following methods:
+     - ~void subscribe(Subscriber<? super T> s)~
+  2. ~Subscriber~, with the following methods:
+     - ~void onSubscribe(Subscription s)~
+     - ~void onNext(T t)~
+     - ~void onError(Throwable t)~
+     - ~void onComplete()~
+  3. ~Subscription~, with the following methods:
+     - ~void request(long n)~
+     - ~void cancel()~
+  4. ~Processor~, which extends ~Subscriber<Type1>~ and ~Publisher<Type2>~
+** Part 6 - Functional Programing and Further Java Evolution
+*** Chapter 18 - Thinking Functionally
+- When writing code in a functional style, sometimes we want to avoid throwing
+  exceptions. A way to avoid throwing exceptions is to return an ~Optional~,
+  where an empty ~Optional~ is returned instead of throwing an exception.
+*** Chapter 19 - Functional Programming Techniques
+- Some elements of functional programming includes:
+  - higher-order functions
+  - currying
+  - persistent data structures
+  - lazy lists
+  - pattern-matching
+  - caching with referential transparency
+  - combinators
+*** Chapter 20 - Blending OOP and FP: Comparing Java and Scala
+*** Chapter 21 - Conclusions and Where Next for Java
+- Some of the features and programming paradigms that are enabled or made more
+  accessible by Java 8 includes:
+  - Behavior parameterization (via lambdas and method references)
+  - Streams (as an alternative way to perform operations on collections of
+    items)
+    - Traditionally, if using a ~Collection~ and we want to perform three
+      operations to it (e.g., calculating derived value based on a field on the
+      element, filter the elements, and sorting the elements), we would need to
+      traverse the ~Collection~ three times. Using ~Stream~, we can perform
+      everything in a single traversal.
+  - ~CompletableFuture~
+    - ~CompletableFuter~ is to ~Future~ as ~Stream~ is to ~Collection~
+      - ~Stream~ allows us to pipeline operations and provides behavior
+        parameterization with ~map~, ~filter~, etc., eliminating boilerplate
+        code otherwise required when using iterators
+      - ~CompletableFuture~ provides operations such as ~thenCompose~,
+        ~thenCombine~ and ~allOf~, which provide functional-programming style
+        concise encodings of common design patterns involving ~Future~ and
+        similarly let us avoid imperative-style boilerplate code.
+  - ~Optional~
+  - Default methods
+- Java 9:
+  - Flow API
+  - Module system
+** Appendices
+*** Appendix A - Miscellaneous Language Updates
+- Annotations can now of applied to any type uses. For example:
+  #+BEGIN_SRC java
+    List<@NonNull Car> cars = new ArrayList<>();
+  #+END_SRC
+*** Appendix B - Miscellaneous Library Updates
+- Use ~LongAdder~, ~LongAccumulator~, ~DoubleAdder~ and ~DoubleAccumulator~
+  instead of the ~Atomic~ classes equivalent when multiple threads updates
+  frequently but read less frequently.
+*** Appendix C - Performing Multiple Operations in Parallel on a Stream
+*** Appendix D - Lambdas and JVM Bytecode 
+* To Internalize /Now/
+* To Learn/Do Soon
+- Find example usage of ~ConcurrentHashMap~ and other similar concurrent objects
+  in open-sourced code.
+  - Also find example usages of atomic objects.
+* To Revisit When Necessary
+** Chapter 3 - Lambda expression
+- Refer to section 3.5.1 /Type checking/ for how lambda expressions are matched
+  to the relevant functional inteface and typed checked.
+** Chapter 6 - Collecting data with streams
+- Refer to sections 6.5 /The Collector interface/ and 6.6 /Developing your own
+  collector for better performance/ for how to create a custom collector.
+** Chapter 7 - Parallel data processing and performance
+- Refer to section 7.2 The fork/join framework for details on how to implement
+  tasks that makes use of the fork/join framework.
+** Chapter 8 - Collection API enhancements
+- Refer to this chapter for idiomatic usage of various common APIs on the
+  Collections package:
+  - Creating instances of ~List~, ~Set~, and ~Map~
+  - Common operations with each of the above (e.g., removing elements, replacing
+    elements etc.)
+** Chapter 10 - Domain-specific language using lambdas
+- Refer to this chapter for the design, implementation and real-world examples
+  of DSL, including a pros and cons table comparing the various approaches
+  (method chaining, nested functions, function sequencing with lambdas) to
+  designing / implementing a DSL.
+** Chapter 11 - Using Optional as a better alternative to null
+- Refer to this chapter for the various common programming scenarios where
+  ~Optional~ may be used.
+- Refer to section 11.3.7 for a table summarizing the API methods on ~Optional~.
+** Chapter 13 - Default Methods
+- Refer to this chapter for a simple example of how a class can be composed of
+  multiple interfaces, and "inheriting" the default methods on each of the
+  interface. This is somewhat akin to mixins.
+** Chapter 17 - Reactive programming
+- Refer to this chapter for the contract that must be complied with by the
+  classes under ~java.util.concurrent.Flow~.
+- Refer to this chapter for a brief introduction to the RxJava library,
+  including commonly used methods (~Observable.just()~,
+  ~Observable.interval()~).
+** Chapter 19 - Functional programming techniques
+- Refer to this chapter for an example implementation of persistent data
+  structures (list and tree).
+- Refer to this chapter for a toy example of a lazy list.
+- Refer to this chapter for a simple use case of the visitor pattern to
+  implement a way to simplify mathematical expressions.
+** Chapter 20 - Blending OOP and FP: Comparing Java and Scala
+- Refer to this chapter for a brief overview of the various comparable features
+  of Java and Scala, and how are these features different in Java vs Scale. The
+  features compared includes:
+  - First class functions
+  - Annonymous functions and closures
+  - Currying
+  - Traits vs interfaces
+** Appendix C  - Performing Multiple Operations in Parallel on a Stream
+- Refer to this section for a (slightly involved) example of implementing a
+  class that allows "forking" of a stream.
+* Other Resources Referred To
+- To learn more about the Java 9 module system, consult /The Java Module System/
+  by Nicolai Parlog: https://www.manning.com/books/the-java-module-system
+- Refer to Netty for example of providing a uniform blocking / non-blocking API
+  for network servers.* Modern Java in Action: Lambdas, streams, functional and
+  reactive programming
