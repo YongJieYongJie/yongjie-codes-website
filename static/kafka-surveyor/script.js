@@ -556,20 +556,20 @@ function removeClass(classAttr, ...clss) {
 // Sample Data (notice that the trailing comma is legal)
 const SAMPLE_DATA = `
 [
-    {'source': 'orders-service', 'target': 'orders-topic'},
-    {'source': 'orders-topic', 'target': 'elasticsearch-sink-connector'},
-    {'source': 'orders-topic', 'target': 'inventory-service'},
-    {'source': 'orders-topic', 'target': 'email-service'},
-    {'source': 'orders-topic', 'target': 'validator-service'},
-    {'source': 'orders-topic', 'target': 'order-details-service'},
-    {'source': 'orders-topic', 'target': 'fraud-service'},
-    {'source': 'warehouse-inventory-topic', 'target': 'inventory-service'},
-    {'source': 'order-validations-topic', 'target': 'validator-service'},
-    {'source': 'fraud-service', 'target': 'order-validations-topic'},
-    {'source': 'order-details-service', 'target': 'order-validations-topic'},
-    {'source': 'payments-topic', 'target': 'email-service'},
-    {'source': 'customers-topic', 'target': 'email-service'},
-    {'source': 'jdbc-source-connector', 'target': 'customers-topic'},
+    { "source": "orders-service",            "target": "orders-topic",                 "type": "producing" },
+    { "source": "orders-topic",              "target": "elasticsearch-sink-connector", "type": "consuming" },
+    { "source": "orders-topic",              "target": "inventory-service",            "type": "consuming" },
+    { "source": "orders-topic",              "target": "email-service",                "type": "consuming" },
+    { "source": "orders-topic",              "target": "validator-service",            "type": "consuming" },
+    { "source": "orders-topic",              "target": "order-details-service",        "type": "consuming" },
+    { "source": "orders-topic",              "target": "fraud-service",                "type": "consuming" },
+    { "source": "warehouse-inventory-topic", "target": "inventory-service",            "type": "consuming" },
+    { "source": "order-validations-topic",   "target": "validator-service",            "type": "consuming" },
+    { "source": "fraud-service",             "target": "order-validations-topic",      "type": "producing" },
+    { "source": "order-details-service",     "target": "order-validations-topic",      "type": "producing" },
+    { "source": "payments-topic",            "target": "email-service",                "type": "consuming" },
+    { "source": "customers-topic",           "target": "email-service",                "type": "consuming" },
+    { "source": "jdbc-source-connector",     "target": "customers-topic",              "type": "producing" },
 ]
 `.trim();
 
