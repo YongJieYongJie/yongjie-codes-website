@@ -1,0 +1,873 @@
+---
+short_title: "Effective C"
+title: "Effective C: An Introduction to Professional C Programming"
+source: Chanced upon the title when searching for other books
+author: Robert C. Seacord
+isbn: 978-1-71850-104-1
+reading_period: 2020.12.13–2021.06
+date: 2021-08-08T14:15:03+08:00
+draft: false
+---
+
+* General Review
+- An excellent book for the inquisitive: the books manages to confuse more so
+  than elucidate, and an inquisitive learner can look forward to hours of trying
+  (and failing miserably) to understand the prose contained within, only to
+  completely understand the topic (and more) after a brief Google search and a
+  visit to cppreference.com (and, God forbid, StackOverflow).
+- More seriously, this is generally an average-to-poor book.
+  - Tends to be mere listing of topics loosely grouped in various topics.
+  - Explanation also isn't very clear, for example the definition of /sequence
+    point/ is =the juncture at which side effects will have completed=; compared
+    this with the way it is explained on cppreference.com: =If a sequence point
+    is present between the subexpressions E1 and E2, then both value computation
+    and side effects of E1 are sequenced-before every value computation and side
+    effect of E2= (and a separate definition of sequenced-before is provided).
+
+* Specific Takeaways
+** Introduction
+- One of the several tenets of C is to trust the programmer, allowing the
+  programmer to do what needs to be done.
+- Different implementations of C can have different behaviors. And because
+  certain behaviors in C are undefined, it is not possible to understand the C
+  language by just writing simple test programs to examine the behavior.
+** Chapter 1 - Getting Started with C
+- C defines two possible execution environments: /freestanding/ and /hosted/.
+  - A freestanding environment may not provide an operating system and is
+    typically used in embedded programming.
+  - The name and type of the function called at program startup are
+    implementation defined. (E.g., ~int main(void) {...}~)
+- Five kinds of portability issues are enumerated in Annex J of the C Standard
+  documents:
+  1. Implementation-defined behavior
+     - I.e., program behavior that is not specified by the C Standard and that
+       may offer different results among implementations, but has consistent,
+       documented behavior within an implementation.
+     - E.g., number of bits in a byte.
+     - Mostly harmless, but can cause defects when porting to different
+       implementations.
+  2. Unspecified behavior
+     - I.e., program behavior for which the standard provides two or more
+       options.
+     - E.g., function parameter storage layout, which can vary among function
+       invocations within the same program.
+  3. Undefined behavior
+     - I.e., behavior that isn't defined by the C Standard; "behavior, upon use
+       of a non-portable or erroneous program construct or of erroneous data, for
+       which the standard imposes no requirements"
+     - E.g., signed integer overflow and dereferencing an invalid pointer value.
+  4. Locale-specific behavior
+  5. Common extensions
+     - I.e., extensions that are widely used in many systems but are not
+       portable to all implementations
+** Chapter 2 - Objects, Functions, and Types
+- Every type in C is either an /object/ type or a /function/ type.
+- An /object/ is storage in which you can represent values; "region of data
+  storage in the execution environment, the contents of which can represent
+  values, ... when referenced, an object can be interpreted as having a
+  particular type"
+- /Functions/ are not objects but do have types.
+- /Pointers/ can be thought of as an /address/ to a location in memory where an
+  object or function is stored.
+  - The object or function pointed to is called the /referenced type/.
+*** Declaring Variables
+*** Scope
+- C has four types of scope: file, block, function prototype, and function.
+*** Storage Duration
+- Storage duration is the lifetime of objects. There are four storage durations
+  available: automatic, static, thread, and allocated.
+  1. Automatic
+     - I.e., objects declared within a block or as a function parameter.
+  2. Static
+     - Objects declared in the file scope have static storage duration. The
+       lifetime of these object is the entire execution of the program.
+     - It is also possible to declare a variable within a block scope to have
+       static storage duration by using the storage-class specifier ~static~.
+       - These objects persist after the function has exited.
+  3. Thread
+     - Not covered in this book.
+  4. Allocated
+     - Deals with dynamically allocated memory (see chapter 6).
+- Note: /Scope/ and /lifetime/ are entirely different concepts. Scope applies to
+  identifiers, whereas lifetime applies to objects. The scope of an identifier
+  is the code region where the object denoted by the identifier can be accessed
+  by its name. The lifetime of an object is the time period for which the object
+  exists.
+*** Alignment
+- Object types have alignment requirements that place restrictions on the
+  addresses at which objects of that type may be allocated.
+- Generally, C programmers need not concern themselves with alignment
+  requirements, because the compiler chooses suitable alignments for its
+  various types.
+- Sometimes, programmers may need to override the compiler's default choices.
+  - This is traditionally done by using linker commands, by over-allocating
+    memory with ~malloc~ followed by rounding the user address upward, or
+    similar operations involving other nonstandard facilities.
+  - C11 introduces a mechanism for specifying alignments using ~_Alignas~.
+*** Object Types
+**** Boolean Types
+**** Character Types
+- C defines three character types: ~char~, ~signed char~, and ~unsigned char~.
+- Each compiler implementation will define ~char~ to have the same alignment,
+  size, range, representation, and behavior as either of the other two, but
+  ~char~ is nonetheless a separate type from the other two.
+- C also provides ~wchar_t~ type to represent a larger character sets required
+  for non-English characters.
+**** Numerical Types
+***** Integer Types
+- Signed integer types: ~signed char~, ~short int~, ~int~, ~long int~, ~long
+  long int~.
+  - The word ~int~ may be omitted when using the above (i.e., ~short myShort =
+    10;~ instead of ~short int myShort = 10;~)
+- Unsigned integer types: ~unsigned char~, ~unsigned short int~, ~unsigned int~,
+  ~unsigned long int~, ~unsigned long long int~.
+- A programmer can specify the actual width using definitions from ~<stdint.h>~
+  or ~<inttypes.h>~, like ~uint32_t~.
+  - Other useful type definitions include ~uintmax_t~ and ~intmax_t~.
+***** Enums
+- E.g.,
+  #+BEGIN_SRC c
+    enum day { sun, mon, tue, wed, thu, fri, sat };
+    enum cardinal_points { north = 0, east = 90, south = 180, west = 270 };
+    enum months { jan = 1, feb, mar, apr, may, jun, jul, aug, sep, oct, nov, dec };
+  #+END_SRC
+***** Floating-Point Types
+- C supports three floating-point types: ~float~, ~double~ and ~long double~.
+**** ~void~ Types
+- When used in function parameter list, it indicates that the function takes no
+  arguments.
+- When used as function return type, it indicates that the function doesn't
+  return a value.
+- The derived type ~void*~ means that the pointer can reference any object.
+*** Function Types
+- E.g.,
+  #+BEGIN_SRC c
+    int f(void);
+    int *fip(); // Bad (because can refer to any function returning int), but valid
+    void g(int i, int j);
+    void h(int, int); // Bad (because no identifiers for parameters), but valid
+  #+END_SRC
+*** Derived Types
+**** Pointers
+**** Arrays
+- The subscript (~[]~) operator and addition (~+~) operator are defined so that
+  ~str[i]~ is identical to ~*(str + i)~. Hence ~str[i] = 10~ becomes ~*(str + i)
+  = 10~.
+- If the operand of the unary ~&~ operator is the result of a ~[]~ operator, the
+  result is as if the ~&~ operator were removed and the ~[]~ operator were
+  changed to a ~+~ operator. For example, ~&str[10]~ is the same as ~str + 10~.
+**** Structures
+- E.g.,
+  #+BEGIN_SRC c
+    struct sigrecord {
+      int signum;
+      char signame[20];
+      char sigdesc[100];
+    } sigline, *sigline_p;
+  #+END_SRC
+**** Unions
+- Union types are similar to structures, except that the memory used by the
+  member objects overlaps. Unions can contain an object of one type at one time,
+  and an object of a different type at a different time, but never both objects
+  at the same time, and are primarily used to save memory.
+- E.g.,
+  #+BEGIN_SRC c
+    union {
+      struct {
+        int type;
+      } n;
+      struct {
+        int type;
+        int intnode;
+      } ni;
+      struct {
+        int type;
+        double doublenode;
+      } nf;
+    } u;
+    u.nf.type = 1;
+    u.nf.doublenode = 3.14;
+  #+END_SRC
+*** Tags
+- Tags are a special naming mechanism for structs, unions and enumerations.
+- For example, the identifier ~s~ below is a tag:
+  #+BEGIN_SRC c
+    struct s {
+      // ...
+    }
+  #+END_SRC
+- A tag is not a type name and cannot be used to declare a variable. For
+  example, to use the ~s~ tag above to declare variables, one must do this:
+  #+BEGIN_SRC c
+    struct s v;   // instance of struct s
+    struct s *p;  // pointer to struct s
+  #+END_SRC
+  - The names of unions and enumerations are also tags and not types. As such,
+    the names cannot be used to declare a variable alone:
+    #+BEGIN_SRC c
+      enum day { sun, mon, tue, wed, thu, fri, sat };
+      day today; // error
+      enum day tomorrow; // OK
+    #+END_SRC
+- The tags of structures, unions and enumerations are defined in a separate
+  namespace from ordinary identifiers, and will not clash with each other.
+*** Type Qualifiers
+- I.e., ~const~, ~volatile~ or ~restrict~
+- ~const~
+  - Objects declared with ~const~ qualifier are not modifiable: i.e., not
+    assignable, but can have constant initializers
+  - It is possible to bypass a ~const~ qualifier using pointers:
+    #+BEGIN_SRC c
+      const int i = 1; // object of const-qualified type
+      int *ip = (int *)&i;
+      *ip = 2; // undefined behavior
+    #+END_SRC
+  - If the ~const~ pointer points to an object that is actually not defined
+    using ~const~, then it is okay to cast away the ~const~ in the pointer
+    (second last line below):
+    #+BEGIN_SRC c
+      int i = 12;
+      const int j = 12;
+      const int *ip = &i;
+      const int *jp = &j;
+      *(int *)ip = 42; //ok
+      *(int *)jp = 42; // undefined behavior
+    #+END_SRC
+- ~volatile~
+  - Static ~volatile~-qualified objects are used to model memory-mapped
+    input/output ports.
+  - Static constant ~volatile~-qualified objects model memory-mapped input ports
+    such as real-time clock.
+  - Values in the objects listed above may change without the knowledge of the
+    compiler; e.g., the value of the real-time clock will change even without
+    interaction from the C program.
+    - ~volatile~ ensures that the value will actually be read each time it is
+      supposed to be read in the program (otherwise the compiler might optimize
+      away certain reads)
+      - E.g., the following code ensures that value of ~port~ is read and
+        assigned back to ~port~ (instead of it being a no-op since it's an
+        assignment to self):
+        #+BEGIN_SRC c
+          volatile int port;
+          port = port;
+        #+END_SRC
+  - ~volatile~-qualified types are also used for signal handlers with ~setjmp~ /
+    ~longjmp~
+  - Unlike in Java, ~volatile~-qualified types in C should not be used for
+    synchronization between threads.
+- ~restrict~
+  - The compiler will assume objects accessed through pointer with
+    ~restrict~-qualified pointers are not accessed by another other pointers,
+    allowing more optimizations. For example:
+    #+begin_src c
+      void f(unsigned int n, int * restrict p, int * restrict q) {
+        while (n-- > 0) {
+          *p++ = *q++;
+        }
+      }
+    #+end_src
+** Chapter 3 - Arithmetic Type
+*** Integers
+- Integer types are unsigned by default, except for ~char~.
+- When declaring integer types, unless ~int~ is the only keyword, it can be
+  removed. For instance, ~long long int~ is the same as ~long long~.
+- When using unsigned integer types, remember to avoid wraparound (if necessary)
+  using the =<limits.h>= library.
+  - Some common mistakes are as follows:
+    - Never-ending loop:
+	    #+begin_src c
+          for (unsigned int i = n; i >= 0; --i)
+	    #+end_src
+    - Value of expression never greater than ~UINT_MAX~:
+      #+begin_src c
+        extern unsigned int ui, sum;
+        if (ui + sum > UINT_MAX)
+          too_big();
+        else
+          sum = sum + ui;
+
+        // One correct way might be as follows
+        extern unsigned int ui, sum;
+        if (ui > UINT_MAX - sum)
+          too_big();
+        else
+          sum = sum + ui
+      #+end_src
+    - Value of expression never negative:
+      #+begin_src c
+        extern unsigned int i, j;
+        if (i - j < 0)
+          negative();
+        else
+          i = i - j;
+
+        // One correct way migh be as follows:
+        extern unsigned int i, j;
+        if (j < i)
+          negative();
+        else
+          i = i - j;
+      #+end_src
+- *Signed Integers*
+  - Historically C support three different representations of signed integers:
+    1. Sign and magnitude - High order bit represents sign, the remaining
+       represents magnitude
+    2. One's complement - The sign bit is given the weight -(2^(N-1) - 1)
+    3. Two's complement - The sign bit is given the weight -(2^(N-1))
+  - Using the two's complement system, we can represent one additional negative
+    value compared to positive value. For instance, a 8-bit signed integer can
+    represent values in the range [-128, 127]. This results is an interesting
+    edge case where abs(-128) is not representation in the same bit-width.
+*** Floating-Point
+- Floating-points are generally represented using (a) the sign bit, (b) the
+  exponent, and (c) the significand (also referred to as the mantissa).
+  - To avoid the need for separately encoding negative values in the exponent,
+    an offset is applied. For example, to encode the zero value for an 8-bit
+    exponent, we might store the value 127.
+  - Exponents of -127 (where every bit is zero) and +128 (where every bit is
+    one) are reserved for special numbers.
+  - The significand is adjusted so that the first digit is always one, and this
+    is implied in the encoding scheme.
+    - As such a ~float~ which uses 1 bit for the sign bit, 8 bits for the
+      exponent, and 23 bits for the significand can actually represent 24 bits
+      of precision.
+    - A ~double~ which uses 1 bit for the sign bit, 11 bits for the exponent,
+      and 52 bits for the significand can represent 53 bits of precision.
+- *Subnormal Floating-Point Number*
+  - A non-zero floating-point number that is so small such that even the
+    smallest value for the exponent is insufficient to represent, is called a
+    subnormal (also known as denormal) floating-point number.
+  - In such a situation, all the bits of the exponent is zero, and the implied
+    leading one for the significand is now implied to be a zero.
+    - As a result, such subnormal floating-point numbers have lower precision.
+- Floating-point types can also represent (a) positive infinity, (b) negative
+  infinity, (c) not-a-number (NaN).
+  - Having infinities allow operations to continue past overflows without
+    requiring special treatment, and are well-defined behaviors.
+  - NaN can be quiet or signalling. A quiet NaN has to be checked manually,
+    whereas a signalling NaN raises floating-point exception when in occurs.
+*** Arithmetic Conversion
+- There are two types of conversion: implicit (also known as coercion) and
+  explicit (via casting)
+- *Integer Conversion Rank*
+  - Every integer has a /integer conversion rank/, where generally:
+    - integer types of higher precision has higher rank than types with lower
+      rank
+    - unsigned and signed integer of the same type has the same rank (e.g.,
+      ~char~, ~signed char~ and ~unsigned char~ has the same rank)
+    - no two signed integer types has the same rank, even if they have the same
+      representation
+- *Integer Promotion*
+  - /Integer promotion/ is the process of converting /small type/ to an ~int~ or
+    ~unsigned int~ (?automatically). A small type is one that has lower integer
+    conversion rank than ~int~ and ~signed int~.
+  - Integer promotion will preserve the value of the original small type. That
+    is, the small type will be converted to ~int~ if the all values of the
+    original type can be represented as ~int~, otherwise, the small type will be
+    converted to ~unsigned int~.
+  - Integer promotion serves two primary purposes:
+    1. Encourage operations in the natural size for the architecture (~int~)
+    2. Avoid overflows from intermediate values. For example, without integer
+       promotion, the ~c1 * c2~ below would have overflowed:
+       #+begin_src c
+         signed char c1, c2, c3, cresult;
+         c1 = 3; c2 = 100; c3 = 4;
+         cresult = c1 * c2 / c3;
+       #+end_src
+- *Usual Arithmetic Conversion*
+  - /Balancing conversions/ converts one or both operands to a binary operator
+    (i.e., an operator that takes two operand, as opposed to an unary operator)
+    to a common type.
+  - The conversion rules are as follows:
+    - If any of the operand is ~long double~, the other operand is converted to
+      ~long double~. Otherwise, check for if any of the operand is ~double~, and
+      if not, ~float~.
+    - Failing the above, integer promotions are applied on both operands:
+      1. Stop if both sides have the same type
+      2. If the type on both sides are signed (or unsigned), the type with lower
+         integer conversion rank is converted to the other.
+      3. If the unsigned type has greater rank than the signed type, then the
+         signed type is converted to the unsigned type.
+      4. If the signed type can represent all values of the unsigned type, then
+         the unsigned type is converted to the signed type.
+      5. Otherwise, both operands are converted to the unsigned integer type
+         corresponding to the type of the signed operand.
+- *Safe Conversions*
+  - While conversion of a type to a large type of the same signedness is always
+    safe, this may not be the same for other conversions.
+  - One way to ensure safe integer conversion is as follows:
+    #+begin_src c
+      #include <errno.h>
+      #include <limits.h>
+
+      errno_t do_stuff(signed long value) {
+        if ((value < SCHAR_MIN) || (value > SCHAR_MAX)) {
+          return ERANGE;
+        }
+        signed char sc = (signed char)value;
+        // do something with sc
+      }
+    #+end_src
+  - Integer to floating-point conversion:
+    - When an integer type is converted to a floating-pointing type, its value
+      is unchanged (if representable in the floating-point type) or rounded to
+      the representable value.
+    - if the value of the integer type is outside the range representable by the
+      floating-point type, then the behavior is undefined.
+  - Floating-point to integer conversion:
+    - When a floating-point type with finite value is converted to an integer
+      type, the fractional part is discarded.
+    - If the integral part cannot be represented by the integer type, then the
+      behavior is undefined.
+  - Floating-point to floating-point conversions:
+    - Conversion of a floating-point type to a larger one is always safe.
+    - Conversion of a larger floating-point type to a smaller one behaves
+      similarly to conversion of a floating-point type to an integer type.
+** Chapter 4 - Expressions and Operators
+*** Simple Assignment
+- A statement like ~int myInt = 123;~ is a declaration with an initializer. It
+  is not an assignment. An assignment is something like ~myInt = 456;~ occurring
+  after a declaration.
+- The left operand of the assignment operation (~=~) is also called the /lvalue/
+  (we can also think of it as the /locator/ value). An lvalue can be an
+  expression like ~*(p+4)~.
+- The right operand is also called the /rvalue/, is also an expression, and
+  additionally can simply be a value (i.e., doesn't need to identify an object).
+*** Evaluations
+- Evaluations mostly mean simplifying an expression down to a single
+  value. Sometimes evaluations will result in side effects.
+*** Operator Precedence and Associativity
+- Associativity affects how operators of the same precedence are grouped. For
+  example, the addition operator (~+~) is left-associative, so an expression
+  like ~a + b + c~ will be grouped as ~((a + b) + c~). An example of a
+  right-associative operand would be the assignment operator.
+- Some weird implications of operator precedence and associativity:
+  - ~*p++~ is evaluated as ~*(p++)~, ~++*p~ is evaluated as ~++(*p)~
+*** Order of Evaluation
+- Order of evaluation in C is generally unspecified, and the compiler may choose
+  to evaluate them in different order in different circumstances. For example,
+  in an expression like ~funcA(funcB(), funcC())~, there is no guarantee whether
+  ~funcB()~ or ~funcC()~ will be evaluated first.
+- Evaluations can be classified as /unsequenced/ and /indeterminately sequenced/.
+  - Execution of /unsequenced/ evaluations can interleave, provided that
+    execution is /sequentially consistent/ (i.e., that the reads and writes
+    happen in the order specificity by the program (YJ: lexical order?))
+  - /Indeterminately sequenced/ evaluations cannot be interleaved, but can still
+    be executed in any order.
+    - See https://en.cppreference.com/w/c/language/eval_order,
+      https://web.archive.org/web/20210411111816/https://en.cppreference.com/w/c/language/eval_order
+- If a side effect is unsequenced relative to another side effect on the same
+  scalar or a value computation that relies on the value of the scalar, the
+  result is undefined behavior. For example, this expression is undefined:
+  ~i++ * i++~.
+*** Some other operators to be aware of
+- ~sizeof()~, ~_Alignof()~, ~,~ (i.e., the comma)
+** Chapter 5 - Control Flow
+- /Compound statements/ are lists of zero or more statements surrounded by curly
+  braces.
+- The ~if~ statement actually only executes the next statement after the
+  condition (or the ~else~ clause), as in:
+  #+begin_src c
+    if (myWonderfulCondition)
+      myOneStatement();
+    else
+      myOtherOneStatement();
+  #+end_src
+  However, because compound statement is treated as a statement too, we can use
+  a compound statement in place of each of ~myOneStatement()~ and/or
+  ~myOtherOneStatement()~ above, giving us the if-else block with the curly
+  braces that we are all so familiar.
+- When using ~switch~ cases with enumerations, consider having a ~default~ case
+  with the ~abort()~ (from the ~<stdlib.h>~ header) to catch situations where
+  the enumeration is updated but not the switch case.
+- One situation where ~goto~ statements might be useful is when dealing with
+  multiple error handling and clean-ups.
+  - For example, if we have three operations in sequential--operations A, B and
+    C--each of which will acquire resources that will need to be cleaned up, but
+    may also fail.
+  - So if A succeeds and B fails, we will need to perform clean-up for A; if A
+    and B succeeds and C fails, then we need to perform clean-up for A and B.
+  - Using ~if-else~ to handle this will require nesting, and can lead to
+    complexity.
+  - A solution using ~goto~ statement may be as follows:
+    #+begin_src c
+      int doSomething(void) {
+        FILE *file1, *file2;
+        object_t *obj;
+        int ret_val = 0;
+
+        file1 = open("file_1", "w");
+        if (file1 == NULL) {
+          ret_val = -1;
+          goto FAIL_FILE1;
+        }
+
+        file2 = open("file_2", "w");
+        if (file2 == NULL) {
+          ret_val = -1;
+          goto FAIL_FILE2;
+        }
+
+        obj = malloc(size_of(object_t));
+        if (obj == NULL) {
+          ret_val = -1;
+          goto FAIL_OBJ;
+        }
+
+        // perform actual operations
+
+        // clean up
+        free(obj);
+       FAIL_OBJ:
+        fclose(file2);
+       FAIL_FILE2:
+        fclose(file1);
+       FAIL_FILE1:
+        return ret_val;
+      }
+    #+end_src
+** Chapter 6 - Dynamically Allocated Memory
+*** Basics
+- Objects declared within a block has /automatic/ storage, and their lifetimes
+  begins and ends with the block.
+- Objects declared in the file scope has static storage, and last for the entire
+  duration of the program. Their values are initialized prior to program
+  start-up.
+  - Objects in block scope can be declared to have static storage using the
+    ~static~ keyword.
+- Dynamically allocated memory has /allocated storage duration/, and extends from
+  allocation until deallocation.
+*** Memory Management Functions
+- ~malloc~
+  - Accepts as argument representing the number of bytes to allocate. Typically
+    used with ~sizeof~ operator for convenience and portability.
+  - Returns null pointer to indicate error.
+  - Because objects of any type can be stored in allocated memory, we can assign
+    the pointers return by all memory allocation functions to point to any type
+    of object.
+  - It appears to be a point of contention whether it is good practice to
+    immediately cast the return value of ~malloc~, like:
+    #+begin_src c
+      widget *w = (widget *)malloc(sizeof(widget));
+    #+end_src
+    The return type would otherwise be ~void *~, and can be implicitly convert to
+    a pointer to any type for which the resulting pointer is correctly aligned.
+- ~aligned_alloc~
+  - Has the following signature:
+    #+begin_src c
+      void * aligned_alloc(size_t alignment, size_t size);
+    #+end_src
+  - Typically used to request for memory with stricter-than-usual requirements
+    for memory alignment (i.e., larger power of 2 required than default).
+- ~calloc~
+  - Has the following signature:
+    #+begin_src c
+      void *calloc(size_t nmemb, size_t size);
+    #+end_src
+  - Allocates ~nmemb~ objects, each with ~size~ bytes.
+  - Initializes the memory to the zero-value for bytes; but note that this may
+    not correspond to the zero values expected of floating-point zero, null
+    pointer, etc.
+- ~realloc~
+  - Has the following signature:
+    #+begin_src c
+      void *realloc(void *ptr, size_t size);
+    #+end_src
+  - Increases or decreases size of previously allocated memory.
+  - If a call to ~realloc~ fails (i.e., a null pointer is returned), the memory
+    pointed to by ~ptr~ is not deallocated, and must be freed manually.
+  - If a call to ~realloc~ succeeds, the pointer ~ptr~ should no longer be used.
+  - Passing in 0 for ~size~ is undefined behavior.
+- ~reallocarray~
+  - Available in OpenBSD, is adopted in GNU libc.
+  - Has the following signature:
+    #+begin_src c
+      void *reallocarray(void *ptr, size_t nmemb, size_t size);
+    #+end_src
+  - Reallocates storage for an array, but also provides overflow checking on
+    array size calculations.
+    - In particular, checks for the overflow that might occur when obtaining
+      memory size from ~nmemb * size~.
+- ~free~
+  - Has the following signature:
+    #+begin_src c
+      void *free(*ptr);
+    #+end_src
+  - Calling ~free~ on the same pointer twice is undefined behavior, and is a
+    security vulnerability.
+  - It is good practice to set a pointer to ~NULL~ after calling ~free~ on it.
+*** Flexible Array Members
+- A struct that defines at least one named member can additionally as its last
+  member an incomplete array type (i.e., an array type without the size filled
+  in).
+  - When the incomplete array is accessed, the struct behaves as if the array
+    member had the longest size that fits in the memory allocated for this object.
+  - This incomplete array will generally have to be manually managed and will be
+    ignored by various operations (e.g., the ~sizeof~ operator does not include
+    the size of the incomplete array). For more details:
+    https://en.cppreference.com/w/c/language/struct
+*** Other Dynamically Allocated Storage
+- ~alloca~
+  - Allows dynamic allocation on the stack; memory is automatically released when
+    the function that calls ~alloca~ returns.
+  - Use of ~alloca~ is generally discouraged because of various reasons. For
+    example, the return value of ~alloca~ does not need to be freed (i.e.,
+    inconsistent with other memory allocation functions), and the compiler tends
+    to not inline functions with ~alloca~ calls.
+- Variable-Length Arrays
+  - Can only be declared in block scope or function prototype scope.
+    #+begin_src c
+      void myFunc(size_t s) {
+        char myArr[s];
+        // do something with myArr
+      }
+    #+end_src
+  - Such arrays are allocated in the stack frame, and released when the function
+    returns.
+  - One use of variable-length array in function prototype scope is as follows:
+    #+begin_src c
+      int myMatrixFunc(size_t rows, size_t cols, int matrix[rows][cols]) {
+        // manually allocate memory for matrix if required.
+  
+        for (int r = 0; r < rows; r++) {
+          for (int c = 0; c < cols; c++) {
+            // Perform operations on each element of the matrix
+          }
+        }
+      }
+    #+end_src
+*** Debugging Allocated Memory Problems
+- Dmalloc: https://dmalloc.com/
+** Chapter 7 - Characters and Strings
+*** Basics
+- ASCII is 7-bits (i.e., 128 characters)
+- For Unicode, the characters represented by codepoints from U+0000 to U+007F are
+  identical to ASCII, and character represented by codepoints from U+0000 to
+  U+00FF are identical to ISO-8859-1 (Latin-1).
+*** Source and Execution Character Sets
+- Each implementation of C defines the /source character set/ (used in source
+  files) and /execution character set/ (used for character and string literals at
+  compile time).
+*** Data Types
+- ~char~ can safely represent any 7-bit character encoding (e.g.,
+  ASCII). However, when used to represent 8-bit encodings, problems might arise
+  if ~char~ is defined by the implementation to be a signed type (e.g., when the
+  character represented by 0xFF is sign-extended, it might become 0xFFFF FFFF
+  instead of 0x0000 00FF, the former is the representation used for EOF).
+- ~int~ should be used when representing EOF, or character data interpreted as
+  ~unsigned char~ then converted to ~int~.
+- ~wchar_t~
+  - Can be signed or unsigned, depending on implementation.
+  - Writing portable code with ~wchar_t~ can be difficult because of the range of
+    implementation-defined behaviors.
+- ~char16_t~ and ~char32_t~
+*** String
+- C11 introduced (in Annex K) bounds-checking interface for string-handling, that
+  tend to be safer than the traditional functions in ~<string.h>~ and ~<wchar.h>~.
+  - Some of the Annex K functions are: ~strcpy_s~, ~strcat_s~, ~strncpy_s~ and
+    ~strncat_s~.
+** Chapter 8 - Input/Output
+** Chapter 9 - Preprocessor
+- Command for generating translation units (i.e., after the preprocessing step)
+  using the common compilers:
+  - ~clang [other-options] -E -o output_file.i source.c~
+  - ~gcc [other-options] -E -o output_file.i source.c~
+  - Visual C++: ~cl [other-options] /P /Fioutput_file.i source.c~
+- Files included using angle brackets are searched on the /system include path/,
+  whereas files included using quotes are searched on the /quoted include path/.
+- When using conditional directives (i.e., ~#if~, ~elif~, etc.), it is possible
+  to throw error using the ~#error~ directive. This would be useful if for
+  example there are no implementation of a particular functionality on the target
+  architecture being built.
+- Run ~clang/gcc -E -dM <source-files>~ to get a list of compiler predefined macros.
+** Chapter 10 - Program Structure
+*** Opaque Types
+- In C, /opaque/ (or /private/) data types are expressed using an /incomplete
+  type/, such as a forward-declared structure type.
+  - An /incomplete type/ describes the identifier, but does not provide enough
+    information to determine the size of the object and the layout. As such, all
+    functions in the public interface must accept a pointer to the type (instead
+    of the type directly).
+*** Linkage
+- C programs can have 3 kinds of linkages: external, internal, and none.
+- When a declaration has /external/ linkage, identifiers referring to that
+  declaration all refer to the same entity (e.g., function or object).
+- When a declaration has /internal/ linkage, identifiers referring to that
+  declaration refer to the same entity only within the same translation unit
+  containing the declaration.
+- If a declaration has no linkage, it is a unique entity in each translation
+  unit.
+- The above might have been explained better by a StackOverflow response:
+  #+begin_quote
+  in addition to type, variables have three other characteristics: linkage, scope
+  and lifetime. All four attributes are sort of orthogonal, but linked in the way
+  they are expressed in the language, and do interact in some ways.
+
+  With regards to linkage: linkage really affects the symbol which is being
+  declared, and not the object itself. If there is no linkage, all declarations
+  of the symbol bind to different objects, e.g.:
+  ...
+
+  Generally speaking, local variables... and function arguments have no linkage,
+  regardless of type and lifetime.
+  ...
+
+  Internal and external linkage are similar, in that repeated declarations of the
+  symbol bind to the same entity: internal linkage binds only within the
+  translation unit, external across the entire program. So given:
+  #+end_quote
+  https://stackoverflow.com/a/24866015/5821101
+- Examples of linkages:
+  #+begin_src c
+    // foo.c
+
+    void func(int i) { // Implicit external linkage
+      // i has no linkage
+    }
+    static void bar(void); // Internal linkage, different bar the one in bar.c
+    extern void bar(void) {
+      // bar still has internal linkage because the initial declaration was declared
+      // as static; the extern specifier has no effect in this case.
+    }
+
+    // bar.c
+
+    extern void func(int i); // Explicit external linkage
+
+    static void bar(void) { // Internal linkage; different bar from the one in foo.c
+      func(12); // Calls func from foo.c
+    }
+    int i; // External linkage; does not conflict with i from foo.c or bar.c
+    void baz(int k) { // Implicit external linkage
+      bar(); // Calls bar from bar.c, not foo.c
+    }
+  #+end_src
+- Given the above, file scope entities that doesn't need to be visible from
+  outside the file should be declared ~static~ to avoid polluting the global
+  namespace.
+** Chapter 11 - Debugging, Testing, and Analysis
+*** Assertions
+**** Static Assertions
+- C supports ~static_assert~ macro for assertion evaluated during compile time:
+  #+begin_src c
+    static_assert(integer-constant-expression, error-message-string-literal);
+  #+end_src
+- Three examples of using static asserts:
+  1. Verify the lack of padding bytes:
+     #+begin_src c
+       #include <assert.h>
+
+       struct packed {
+         unsigned int i;
+         char *p;
+       };
+
+       static_assert(
+         sizeof(struct packed) == sizeof(unsigned int) + sizeof(char *),
+         "struct packed must not have any padding"
+       );
+     #+end_src
+  2. Verify that ~unsigned char~ and ~int~ has different range (although allowed
+     by C standard), so that there will not be false positives when checking for
+     EOF while reading input:
+     #+begin_src c
+       #include <assert.h>
+       #include <stdio.h>
+       #include <limit.h>
+
+       void clear_stdin() {
+         int c;
+
+         do {
+           c = getchar();
+           static_assert(UCHAR_MAX < UINT_MAX, "FIO34-C Violation");
+         } while (c != EOF);
+       }
+     #+end_src
+  3. Compile-time bounds-checking:
+     #+begin_src c
+       static const char prefix[] = "Error No: ";
+       #define arraysize 14
+       char str[arraysize];
+
+       // Ensure that str has sufficient space to store at least one additional
+       // character for error code
+       static_assert(sizeof(str) > sizeof(prefix),
+                     "str must be larger than prefix");
+       strcpy(str, prefix);
+     #+end_src
+**** Runtime Assertions
+- C supports ~assert~ macro for assertion evaluated during runtime time:
+  #+begin_src c
+    #define assert(scalar-expression) /* implementation-defined */
+  #+end_src
+- Runtime assertions are typically used only during development and test phases,
+  and are disabled for production builds. As such, avoid using it to check for
+  conditions that may fail during normal operations, like:
+  - Invalid input
+  - Error opening, reading, or writing streams
+  - Out-of-memory conditions from dynamic allocation functions
+  - System call errors
+  - Invalid permissions
+*** Compiler Settings and Flags
+- Distinct phases of software development calls for different sets of build flags:
+  - *Analysis* - Generally enable maximum diagnostics to catch bugs before the
+    later phases.
+  - *Debugging* - Generally enable debugging information.
+  - *Testing* - Disable the most verbose debugging information, keeping only
+    symbol names for cleaner stack traces. Also start testing optimized builds.
+  - *Acceptance Testing / Deployment*
+
+* To Internalize /Now/
+- N.A.
+
+* To Learn/Do Soon
+- N.A.
+
+* To Revisit When Necessary
+** Chapter 7 - Characters and Strings
+- See the *Windows* section for some elaboration on how character encodings are
+  converted at various points when executing a program (e.g., conversion of
+  command-line arguments to appropriate encoding for the main function,
+  conversion prior to sending output for display on console, etc.)
+- See the *Character Conversion* section for some elaboration and C standard
+  library functions for converting between narrow and wide character types.
+- See the *String* section for some elaboration on the string-handling libraries
+  available.
+** Chapter 8 - Input/Output
+- Refer to this section (or not) for various I/O-related functions, including:
+  - Opening and Creating Files
+  - Closing Files
+  - Reading and Writing Characters and Lines
+  - Stream Flushing
+  - Setting the Position in a File
+  - Removing and Renaming File
+  - Using Temporary Files
+  - Reading Formatted Text Streams
+  - Reading from and Writing to Binary Streams
+** Chapter 9 - Preprocessor
+- Refer to the section on *Type-Generic Macros* for an example of how C might
+  implement simple function overloading like in C++ and Java using generic
+  selection expression macro.
+** Chapter 10 - Program Structure
+- Refer to the section on *Structuring a Simple Program* for an example of a
+  simple program that is more than just a hello world, and involves:
+  - Handling command-line arguments (including allocating memory)
+  - Converting command-line arguments from string to integer type (including
+    error handling)
+  - Implementing the Miller-Rabin test for prime numbers
+  - Splitting code into source files into "library" and "driver" code
+  - Using the ~ar~ command to generate static library (AKA archive) file
+    - Note: by convention, static libraries on Linux have the prefix =lib= and
+      the extension =.a=, but when passing them as argument to the linker, the
+      prefix and extension can be excluded, which is why we link to the ~libm~
+      library using ~-lm~ argument to the compiler/linker.
+** Chapter 11 - Debugging, Testing, and Analysis
+- Refer to this chapter for some common compiler settings and flags that are
+  useful during different stages of development.
+
+* Other Resources Referred To
+- CERT C Coding Standard: 98 Rules for Developing Safe, Reliable, and Secure
+  Systems
+  - Contains examples of common C programming mistakes and how to correct them.
+- [[https://www.nccgroup.trust/us/our-services/cyber-security/security-training/secure-coding/][Training classes offered through NCC Group]] 
