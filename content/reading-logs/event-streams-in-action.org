@@ -1,0 +1,104 @@
+---
+short_title: "Event Streams in Action"
+title: "Event Streams in Action: Real-time event systems with Kafka and Kinesis"
+source: Searching on Amazon for Kafka-related books
+author: Alexander Dean; Valentin Crettaz
+isbn: 9781617292347
+reading_period: 2020.11–2020.11.22
+date: 2021-08-08T14:15:00+08:00
+draft: false
+---
+
+* General Review
+- This book provides a good mix of conceptual discussion and reference
+  implementations at a high level.
+  - For example, it provides a conceptual framework on how events may be
+    modelled as subject-verb-object like customer add item to cart, but does not
+    provide details on any alternative ways of modelling events, and the
+    relative strengths.
+  - Another example (regarding lack of technical depth) is that some code sample
+    uses soft-linking to locally reference the avro schema files. A better way
+    might have been to have a function that mock this out, stating clearly that
+    the schema would be obtained from a registry.
+
+* Specific Takeaways
+** Chapter 10 Analytics-on-read
+- Generally, the various tools and workflows for performing analytics on a
+  unified log falls under one of two types: *analytics-on-read* and
+  *analytics-on-write*.
+*** Analytics-on-read
+- Generally follows a two-step process:
+  1. /Write/ all the events to an event store.
+  2. /Read/ the events to perform an analysis.
+- The implementation has three key parts:
+  1. A /storage target/ to which the events will be written.
+  2. A /schema/, /encoding/ or /format/ in which the events should be written.
+  3. A /query engine/ or /data processing framework/ to allow analyze the events
+     by reading from the storage target.
+*** Analytics-on-write
+- An *analytics-on-write* approach is able to provide the following characteristics:
+  - Very low latency
+  - Thousands of simultaneous users
+  - Highly available
+- Some example uses cases involve the following:
+  - Providing "live" data to dashboards of KPIs, perhaps up to latency measured
+    in minutes, not days.
+  - "Live" status tracking / reporting.
+- Generally follows a four-step process:
+  1. /Read/ the events from the event stream.
+  2. /Analyze/ the events by using a stream processing framework.
+  3. /Write/ the summarized output of the analysis to a storage target.
+  4. /Serve/ the summarized output into real-time dashboards or reports.
+*** Comparison of Analytics-on-read vs Analytics-on-write
+| Analytics-on-read                                                     | Analytics-on-write                                                                          |
+|-----------------------------------------------------------------------+---------------------------------------------------------------------------------------------|
+| Predetermined storage format                                          | Predetermined storage format                                                                |
+| Flexible queries                                                      | Predetermined queries                                                                       |
+| High latency                                                          | Low latency                                                                                 |
+| Support 10-100 users                                                  | Support 10,000s of users                                                                    |
+| Simple (eg., HDFS) or sophisticated (e.g., HP Vertica) storage target | Simple storage target (e.g., key-value store)                                               |
+| Sophisticated query engine or batch processing framework              | Simple (e.g., AWS Lambda) or sophisticated (e.g., Apache Samsa) stream processing framework |
+*** Pros and Cons of Amazon Redshift
+| Pros                                                                          | Cons                                                  |
+|-------------------------------------------------------------------------------+-------------------------------------------------------|
+| Scales horizontally                                                           | High latency even for simple queries                  |
+| Columnar storage allows for fast aggregation for data modelling and reporting | Retrieving rows is slow                               |
+| Append-only data loading from Amazon S3 or DynamoDB is fast                   | Updating existing data is painful                     |
+| Can prioritize important queries and users via workload management            | Designed for tens of users, not hundreds or thousands |
+*** Data volatility -- Early join vs late join
+- When designing message schema, one of the decision is between (a) including
+  the actual data point within the message itself, and (b) including only a
+  reference key, and only enrich the message with the actual data point when
+  processing.
+  - An example of (a) in the ecommerce context may be to include the customer's
+    name in the "Order Placed" event, whereas an example of (b) might be to
+    include only the customer ID, and downstream processes can obtain the
+    customer's name using the customer ID when required.
+  - (a) would be early joining; (b) would be late joining
+- When deciding whether to use early or late joining, one thing to consider is
+  the data volatility: does the data change frequently, infrequently, or never.
+- The more volatile the data is, the earlier the joining should occur.
+** Chapter 11 Analytics-on-write
+- DynamoDB supports conditional writes (i.e., only write if certain conditions
+  are satisfied). This is useful when events in a stream may be processed out of
+  order.
+
+* To Internalize /Now/
+- N.A.
+
+* To Learn/Do Soon
+- N.A.
+
+* To Revisit When Necessary
+** Chapter 10
+*** Section 10.3
+- Refer to this section for a brief discussion on how to structure tables in
+  Amazon Redshift: a fat table or shredded table.
+- Refer to this section for an example usage of Amazon Redshift.
+** Chapter 11
+- Refer to this chapter for an example of streaming data processing on Amazon
+  Kinesis using Amazon Lambda and persisted onto Amazon DynamoDB with
+  conditional writes.
+
+* Other Resources Referred To
+- N.A.
