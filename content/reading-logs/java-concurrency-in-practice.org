@@ -1,0 +1,1418 @@
+---
+short_title: "Java Concurrency in Practice"
+title: "Java Concurrency in Practice"
+source: Recommendations from many sources.
+author: Brian Goetz, Tim Peierls, Joshua Bloch, Joseph Bowbeer, David Holmes, Doug Lea
+isbn: 978-0-321-34960-6
+reading_period: 2021.03.04–2021.04
+date: 2021-08-08T14:15:02+08:00
+draft: false
+---
+
+* General Review
+- While the book is tailored to Java, the discussions on multi-threaded
+  programming and synchronization primitives are generally applicable to
+  programming in general.
+- Littered throughout the books are sentences and paragraphs surrounded by a
+  border. These sections contain concise tips / best practices that summarizes
+  the immediately preceding section(s).
+- /Side note: Take note of a quirk of layout in the book where the code listing
+  is sometimes presented a page or two after the relevant paragraph describing
+  it, and often times under the next section header./
+
+* Specific Takeaways
+*** Chapter 1 - Introduction
+- /Thread-safety/ can be thought of a guaranteeing "nothing bad ever happens",
+  and /liveness/ can be thought of as "some good eventually happens"
+** Part I: Fundamentals
+*** Chapter 2 - Thread Safety
+- The primary mechanism for synchronization in Java is the ~synchronized~
+  keyword, which provides exclusive locking, but the term "synchronization" also
+  includes the use of ~volatile~ variables, explicit locks, and atomic
+  variables.
+- Three ways to ensure "thread safety":
+  1. Don't share the variable used for maintaining state across threads
+  2. Make the variable immutable
+  3. Use synchronization whenever accessing the variable
+- Pragmatic definition of thread safety:
+  #+BEGIN_QUOTE
+  A class is thread-safe if it behaves correctly when accessed from multiple
+  threads, regardless of the scheduling or interleaving of the execution of
+  those threads by the runtime environment, and with no additional
+  synchronization or other coordination on the part of the calling code.
+  #+END_QUOTE
+- Classic examples of non-atomic operations include:
+  - read-modify-write operations (i.e., the resulting state is derived from the
+    previous state)
+- /Race Condition/ occurs when the correctness of a computation depends on the
+  relative timing or interleaving of multiple threads by the runtime.
+- Example of race conditions:
+  - check-then-act operations (because the thing that is checked could have
+    become invalid between the time we observed it and the time we acted on it)
+- /Atomicity/
+  - Operations A and B are atomic with respect to each other if, from the
+    perspective of a thread executing A, when another thread executes B, either
+    all of B has executed or none if it has. An atomic operation is one that is
+    atomic with respect to all operations, including itself, that operate on the
+    same state.
+- One way to ensure atomicity in certain read-modify-write circumstances is to
+  use the classes in ~java.util.concurrent.atomic~ like ~AtomicLong~.
+- Java's intrinsic locks (i.e., using the ~synchronized~ keyword) are reentrant.
+  - This means that the same thread tries to acquires a lock that it already
+    holds, the request succeeds.
+  - Reentrancy facilitates certain object-oriented style of writing code. For
+    example, if a subclass overrides a ~synchronized~ method in the superclass,
+    and the subclass's method calls the superclass's method, the would not be a
+    deadlock since both methods succeeds in acquiring the lock.
+- When using locks to make a compound actions atomic, not only the compound
+  actions themselves must be executed with the locks held; all access to the
+  mutable various involved in the compound actions need to be guarded by locks
+  to ensure atomicity.
+- Consider using the ~@GuardedBy~ annotation to documentation what lock is
+  guarding which variable(s).
+- Always keep the sections of code guarded by locks as small as possible to
+  maximize concurrency.
+*** Chapter 3 - Sharing Objects
+- *Visibility*
+  - In order to ensure visibility of memory writes across threads, we must use
+    synchronization. Otherwise, there is no guarantee when or whether a
+    variable written to by one thread will be visible to another thread.
+  - Without synchronization, when reading a non-volatile 64-bit variable (e.g.,
+    ~long~ or ~double~), it is possible to get back the high 32 bits of one
+    value and the low 32 bits of another values.
+    - *Even if we don't care about stale values, it is not safe to use shared
+      mutable ~long~ and ~double~ variables in multi-threaded programs unless
+      they are declared ~volatile~ or guarded by a lock.*
+  - *Locking is not just about mutual exclusion; it is also about memory
+    visibility. To ensure that all threads see the most up-to-date values of
+    shared mutable variables, the reading and writing threads must synchronize
+    on a common lock.*
+- *Volatile*
+  - When a field is declared ~volatile~, the compiler and runtime will not
+    reorder operations in relating to the field, and will also not cache the
+    field in registers or caches where the field is hidden from other
+    processors, so a read of a volatile variable always return the most recent
+    write by any thread.
+  - The authors do not recommend relying too heavily on volatile variables for
+    visibility; code that relies on volatile variables for visibility of
+    arbitrary state is more fragile and harder to understand than code that uses
+    locking.
+  - Debugging tip: For server applications, be sure to always use the =-server=
+    JVM command line switch, even for development and testing, as server JVM
+    performs more optimization than client JVM, and that might involve hoisting
+    variables out of a loop that are not modified in the loop. Such
+    optimizations may break certain code.
+  - The most common use for volatile variables is as a completion, interruption,
+    or status flag.
+  - *Locking can guarantee both visibility and atomicity; volatile can only
+    guarantee visibility."
+  - We can use volatile variables only when the following criteria are met:
+    - Writes to the variable do not depend on its current value, or we can
+      ensure that only a single thread ever updates the value;
+    - The variable does not participate in invariants with other state variables;
+      and
+    - Locking is not required for any other reason while the variable is being
+      accessed.
+- *Publication and Escape*
+  - Publishing an object means making it available to code outside of its
+    current scope, such as by:
+    - storing a reference to it where other code can find it,
+    - returning it from a non-private method, or
+    - passing it to a method in another class.
+  - We generally want to ensure that objects and their internals are not
+    published.
+  - An object that is published when it should not have been is said to have
+    escaped.
+  - Concrete ways where objects might be published:
+    - Storing in a static field on the class
+    - By being a non-private field of an object that is published
+    - Passing an object to an alien method is also considered publishing the
+      object.
+      - An /alien method/ is one whose behavior is not fully specified its
+        caller / its caller's containing class.
+    - When publishing an internal class of that object. (This is because the
+      internal class contains a hidden reference to the enclosing class.)
+- *Thread Confinement*
+  - /Thread Confinement/ is a simple way to achieve thread safety by ensuring
+    data is only accessed from a single thread.
+    - /Ad-hoc Thread Confinement/ is when the responsibility for maintaining
+      thread confinement falls entirely on the implementation.
+    - /Stack Confinement/ is where an object can only be reached through local
+      variables. Such variables exists only on the executing thread's stack, and
+      is thus not accessible to other threads.
+    - The ~ThreadLocal~ provides a more formal means of maintaining thread
+      confinement: the call to ~.get()~ on a ~ThreadLocal<MyClass>~ object
+      returns the thread local instance of the relevant ~MyClass~ object.
+- *Immutability*
+  - Immutable objects are automatically thread safe.
+  - *Final Fields*
+    - Generally, just as it is a good practice to make all fields ~private~
+      unless they need greater visibility, it is a good practice to make all
+      field ~final~ unless they need to be mutable.
+    - Immutability can sometimes offer a weak form of atomicity.
+      - Race conditions in accessing or updating multiple related variables can
+        be eliminated by using an immutable object to hold all variables. For
+        example:
+        #+BEGIN_SRC java
+          // OneValueCache is an immutable holder of lastNumber and lastFactors,
+          // allowing "atomic" access to the two variables.
+          @Immutable
+          class OneValueCache {
+              private final BigInteger lastNumber;
+              private final BigInteger[] lastFactors;
+
+              public OneValueCache(BigInteger i, BigInteger[] factors) {
+                  lastNumber = i;
+                  lastFactors = Arrays.copyOf(factors, factors.length);
+              }
+
+              public BigInteger[] getFactors(BigInteger i) {
+                  if (lastNumber == null || !lastNumber.equals(i))
+                      return null;
+                  else
+                      return Arrays.copyOf(lastFactors, lastFactors.length);
+              }
+          }
+
+          // VolatileCacheFactorizer achieves thread-safety by using a volatile
+          // immutable object to contain all the state that needs to be changed
+          // atomically.
+          @ThreadSafe
+          public class VolatileCacheFactorizer implements Servlet {
+              private volatile OneValueCache cache =
+                  new OneValueCache(null, null);
+
+              public void service(ServletRequest req, ServletResponse resp) {
+                  BigInteger i = extractFromRequest(req);
+                  BigInteger[] factors = cache.getFactors(i);
+                  if (factors == null) {
+                      factors = factor(i);
+                      cache = new OneValueCache(i, factors);
+                  }
+                  encodeIntoResponse(resp, factors);
+              }
+          }
+        #+END_SRC
+- *Safe Publication*
+  - Simply storing a reference to an object into a public field is not enough to
+    publish the object safely:
+    #+BEGIN_SRC java
+      // Unsafe publication
+      public Holder holder;
+
+      public void initialize() {
+          holder = new Holder(42);
+      }
+    #+END_SRC
+  - Two things can go wrong with improperly published objects:
+    1. Other threads could see a stale value for the ~holder~ field, and thus
+       see a ~null~ reference or other older value even though a value has been
+       placed into the ~holder~.
+    2. Other threads could see an up to date value for the ~holder~ reference,
+       but stale values for the state of the ~holder~.
+  - Immutable objects can be safely accessed even when synchronization is not
+    used to publish the object reference. For this guarantee of initialization
+    to hold, all of the requirements for immutability must be met:
+    1. unmodifiable state
+    2. all fields are ~final~
+    3. proper construction
+  - *Safe Publication Idioms*
+    - To publish an object safely, both the reference to the object and the
+      object's state must be made visible to other threads at the same time. A
+      properly constructed object can be safely published by:
+      1. Initializing an object reference from a static initializer;
+      2. Storing a reference to it into a ~volatile~ field or ~AtomicReference~;
+      3. Storing a reference to it into a ~final~ field of a properly
+         constructed object; or
+      4. Storing a reference to it into a field that is properly guarded by a
+         lock.
+    - Placing an object in a thread-safe collection (such as a ~Vector~ or
+      ~synchronizedList~) fulfils that last three of the above requirements due
+      to internal synchronization in such thread-safe collections. In
+      particular, thread-safe collections offer the following safe publication
+      guarantees:
+      1. Placing a key or value in a ~HashTable~, ~synchronizedMap~, or
+         ~ConcurrentMap~ safely publishes it to any thread that retrieves from
+         the ~Map~
+      2. Placing an element in a ~Vector~, ~CopyOnWriteArrayList~,
+         ~CopyOnWriteArraySet~, ~synchronizedList~, or ~synchronizedSet~ safely
+         publishes it to any thread that retrieves it from the collection;
+      3. Placing an element on a ~BlockingQueue~ or ~ConcurrentLinkedQueue~
+         safely publishes it to any thread that retrieves it from that queue.
+- *Sharing Objects Safely*
+  - When we publish objects, we should document how the object can be
+    accessed. Some of the more useful policies for using and sharing objects in
+    a concurrent program are as follows:
+    - Thread-confined. A thread-confined object is owned exclusively by and
+      confined to one thread, and can be modified by its owning thread.
+    - Shared read-only. A shared read-only object can be accessed concurrently
+      by multiple threads without additional synchronization, but cannot be
+      modified by any thread. Shared read-only objects include immutable and
+      effectively immutable objects.
+    - Shared thread-safe. A thread-safe object performs synchronization
+      internally, so multiple threads can freely access it through its public
+      interface without further synchronization.
+    - Guarded. A guarded object can be accessed only with a specific lock
+      held. Guarded objects include those that are encapsulated within other
+      thread-safe objects and published objects that are known to be guarded by
+      a specific lock.
+*** Chapter 4 - Composing Objects
+- *Design Process*
+  - The design process for a thread-safe class should include these three basic
+    elements:
+    - Identify the variables that form the object's state;
+      - Includes the states of referenced objects.
+    - Identify the invariants that constrain the state variables;
+    - Establish a policy for managing concurrent access to the object's state.
+      - I.e., what combination of immutability, thread confinement and locking
+        is used to maintain thread-safety.
+- *Gathering Synchronization Requirements*
+  - Be cognizant of possible states and also state transitions
+    - Some states might be invalid (e.g., negative values in a counter)
+    - Validity of state transitions may sometimes be verified by comparing the
+      before and after states (e.g., if the after-state of a counter is =18=,
+      the before-state must be =17=)
+    - Not all state transitions are dependent on previous states (e.g., in a
+      thermometer application, the state of the variable representing the
+      current temperature is not determined by the previous state, it depends
+      on the input from the measurement device)
+  - If certain states or state transitions are invalid, then we need to
+    encapsulate the underlying state variables in order to enforce the
+    invariants, making sure the state is always valid.
+    - On the other hand, if all states and state transitions are valid, we may
+      be able to relax the encapsulation or serialization requirements.
+  - *We cannot ensure thread safety without understanding an object's
+    invariants and post-conditions. Constraints on the valid values or state
+    transitions for state variables can create atomicity and encapsulation
+    requirements.*
+- Other concepts to be aware when designing a thread-safe class is
+  /state-dependent operations/ and /state ownership/.
+  - In relation to /state-dependent operations/, how do we ensure (or wait)
+    until the precondition is satisfied?
+  - In relation to /state ownership/, when we pass an object reference from an
+    object to another, are we transferring ownership, engaging in a short-term
+    loan, or envisioning long-term joint ownership?
+- *Instance Confinement*
+  - Encapsulating data within an object confines access to the data to the
+    object's methods, making it easier to ensure that the data is always
+    accessed with the appropriate lock held.
+  - Confined objects must not escape their intended scope.
+  - /Aside: When considering between using Java intrinsic lock versus a private
+    lock object, take note that using a private lock object encapsulates the
+    lock so that client code cannot acquire it. This is not the case for
+    intrinsic lock on the object, which is accessible to all code that have
+    access to the object./
+  - Example program using instance confinement and Java monitor lock (i.e.,
+    intrinsic lock on the instance object itself):
+    #+BEGIN_SRC java
+      /* Example code showing a thread-safe MonitorVehicleTracker built on
+       ,* top of non-thread-safe MutablePoint. */
+
+      /* Client code using an MonitorVehicleTracker instances. */
+      Map<String, Point> locations = vehicles.getLocations();
+      for (String key : locations.keySet())
+          renderVehicle(key, locations.get(key));
+
+      void vehicleMoved(VehicleMovedEvent evt) {
+          Point loc = evt.getNewLocation();
+          vehicles.setLocation(evt.getVehicleId(), loc.x, loc.y);
+      }
+
+      /* Definition of the MonitorVehicleTracker class. */
+      @ThreadSafe
+      public class MonitorVehicleTracker {
+          @GuardedBy("this")
+          private final Map<String, MutablePoint> locations;
+
+          public MonitorVehicleTracker(Map<String, MutablePoint> locations) {
+              this.locations = deepCopy(locations);
+          }
+
+          public synchronized Map<String, MutablePoint> getLocations() {
+              return deepCopy(locations);
+          }
+
+          public synchronized MutablePoint getLocation(String id) {
+              MutablePoint loc = locations.get(id);
+              return loc == null ? null : new MutablePoint(loc);
+          }
+
+          public synchronized void setLocation(String id, int x, int y) {
+              MutablePoint loc = locations.get(id);
+              if (loc == null)
+                  throw new IllegalArgumentException("No such ID: " + id);
+              loc.x = x;
+              loc.y = y;
+          }
+
+          private static Map<String, MutablePoint> deepCopy(Map<String, MutablePoint> m) {
+              Map<String, MutablePoint> result = new HashMap<>();
+              for (String id : m.keySet())
+                  result.put(id, new MutablePoint(m.get(id)));
+              return Collections.unmodifiableMap(result);
+          }
+      }
+
+      /* Example of non-thread-safe object to be confined in the
+       ,* MonitorVehicleTracker instance. */
+
+      // Note: MutablePoint may not be example of good code.
+      @NotThreadSafe
+      public class MutablePoint {
+          public int x, y;
+
+          public MutablePoint() { x = 0; y = 0; }
+          public MutablePoint(MutablePoint p) {
+              this.x = p.x;
+              this.y = p.y;
+          }
+      }
+    #+END_SRC
+- *Delegation*
+  - General guideline:
+    #+BEGIN_QUOTE
+    If a class is composed of multiple independent thread-safe state variables
+    and has no operations that have any invalid state transitions, then it can
+    delegate thread safety to the underlying state variables.
+    #+END_QUOTE
+  - Example program using delegation to achieve thread-safety (in this case,
+    delegating thread-safety to the ~ConcurrentHashMap~ class):
+    #+BEGIN_SRC java
+      @ThreadSafe
+      public class DelegatingVehicleTracker {
+          private final ConcurrentMap<String, Point> locations;
+          private final Map<String, Point> unmodifiableMap;
+
+          public DelegatingVehicleTracker(Map<String, Point> points) {
+              locations = new ConcurrentHashMap<String, Point>(points);
+              unmodifiableMap = Collections.unmodifiableMap(locations);
+          }
+
+          /* getLocations can simply return the unmodifiableMap because the
+           ,* underlying Point is immutable. Note that semantics is different
+           ,* from the getLocations method in the MonitorVehicleTracker class
+           ,* in the example code shown earlier. In this implementation, the
+           ,* Map<String, Point> returned is a "live" version because any
+           ,* updates via calls to setLocation will be reflected. */
+          public Map<String, Point> getLocations() {
+              return unmodifiableMap;
+          }
+
+          /* getLocationsSnapshot behaves similarly to the getLocation
+           ,* method in the MonitorVehicleTracker class shown earlier. */
+          public Map<String, Point> getLocationsSnapshot() {
+              return Collections.unmodifiableMap(new HashMap<String, Point>(locations));
+          }
+
+          public Point getLocation(String id) {
+              return locations.get(id);
+          }
+
+          public void setLocation(String id, int x, int y) {
+              if (locations.replace(id, new Point(x, y)) == null)
+                  throw new IllegalArgumentException("invalid vehicle name: " + id);
+          }
+      }
+
+      @Immutable
+      public class Point {
+          public final int x, y;
+
+          public Point(int x, int y) {
+              this.x = x;
+              this.y = y;
+          }
+      }
+    #+END_SRC
+  - Example program that publishes its state in a thread-safe manner (by making
+    sure the published class itself is thread-safe):
+    #+BEGIN_SRC java
+      @ThreadSafe
+      public class PublishingVehicleTracker {
+          private final Map<String, SafePoint> locations;
+          private final Map<String, SafePoint> unmodifiableMap;
+
+          public PublishingVehicleTracker(Map<String, SafePoint> locations) {
+              this.locations = new ConcurrentHashMap<String, SafePoint>(locations);
+              this.unmodifiableMap = Collections.unmodifiableMap(this.locations);
+          }
+
+          public Map<String, SafePoint> getLocations() {
+              return unmodifiableMap;
+          }
+
+          public SafePoint getLocation(String id) {
+              return locations.get(id);
+          }
+
+          public void setLocation(String id, int x, int y) {
+              if (!locations.containskey(id))
+                  throw new IllegalArgumentException("invalid vehicle name: " + id);
+              locations.get(id).set(x, y);
+          }
+      }
+
+      @ThreadSafe
+      public class SafePoint {
+          @GuardedBy("this") private int x, y;
+
+          private SafePoint(int[] a) { this(a[0], a[1]); }
+
+          public SafePoint(SafePoint p) { this(p.get()); }
+
+          public SafePoint(int x, int y) {
+              this.x = x;
+              this.y = y;
+          }
+
+          public synchronized int[] get() {
+              return new int[] { x, y };
+          }
+
+          public synchronized void set(int x, int y) {
+              this.x = x;
+              this.y = y;
+          }
+      }
+    #+END_SRC
+- *Adding functionality existing thread-safe classes*
+  - Depending on the actual class, there are various ways to add functionality
+    while preserving thread-safety, such as:
+    - Extending the class; for example, here is how we might extend ~Vector~ to
+      support ~putIfAbsent~ semantics in a thread-safe manner,
+      #+BEGIN_SRC java
+        @ThreadSafe
+        public class BetterVector<E> extends Vector<E> {
+            public synchronized boolean putIfAbsent(E x) {
+                boolean absent = !contains(x);
+                if (absent)
+                    add(x);
+                return absent;
+            }
+        }
+      #+END_SRC
+    - Using client-side locking; for example, here is how we might implement
+      put-if-absent:
+      #+BEGIN_SRC java
+        @ThreadSafe
+        public class ListHelper<E> {
+            public List<E> list = Collections.synchronizedList(new ArrayList<E>());
+
+            // ...
+
+            public booleon putIfAbsent(E x) {
+                synchronized (list) { // Synchronizing on the wrapper
+                                      // collection intrinsic lock, as per
+                                      // documentation
+                    boolean absent = !list.contains(x);
+                    if (absent)
+                        list.add(x);
+                    return absent;
+                }
+            }
+        }
+      #+END_SRC
+    - Using composition; this approach is generally prefer (for the reason to
+      prefer composition o inheritance):
+      #+BEGIN_SRC java
+        @ThreadSafe
+        public class ImprovedList<T> implements List<T> {
+            private final List<T> list;
+
+            public ImprovedList(List<T> list) { this.list = list; }
+
+            public synchronized boolean putIfAbsent(T x) {
+                boolean contains = list.contains(x);
+                if (contains)
+                    list.add(x);
+                return !contains;
+            }
+
+            public synchronized void clear() { list.clear(); }
+            // ... similarly delegate other List methods.
+        }
+      #+END_SRC
+*** Chapter 5 - Building Blocks
+**** General
+- Often times even the synchronized collection classes (like ~vector~ and
+  ~Hashtable~) can be awkward to use in a multi-threaded context.
+  - For example, the following code might result in
+    ~ArrayIndexOutOfBoundsException~ if the operation is interleaved with
+    another thread removing the last element:
+    #+BEGIN_SRC java
+      public static Object getLast(Vector list) {
+          int lastIndex = list.size() - 1;
+          return list.get(lastIndex);
+      }
+
+      public static void deleteLast(Vector list) {
+          int lastIndex = list.size() - 1;
+          list.remove(lastIndex);
+      }
+    #+END_SRC
+    Similarly, a simple iteration might throw ~ArrayIndexOutOfBoundsException~
+    in a multi-threaded context:
+    #+BEGIN_SRC java
+      for (int i = 0; i < vector.size(); i++)
+          doSomething(vector.get(i));
+    #+END_SRC
+    To avoid the ~ArrayIndexOutOfBoundsException~, we would need to use
+    client-side locking and acquire the intrinsic lock, at a cost to
+    performance. /Note that the ~Vector~ class is still thread-safe, because the
+    internal state is always valid./
+**** Concurrent Collections in General
+- Regarding "legacy" synchronized collections and the newer concurrent
+  collections:
+  - The "legacy" synchronized collections achieve their thread safety by
+    serializing all access to the collection's state. The cost of this approach
+    is poor concurrency; when multiple threads contend for the collection-wide
+    lock, throughput suffers.
+  - On the other hand, concurrent collections are designed for concurrent access
+    from multiple threads. For example, the ~CopyOnWriteArrayList~ is a
+    replacement for synchronized ~List~ implementations for cases where
+    traversal is the dominant operation.
+- Consider the following "modern" replacements instead of the synchronized
+  collections:
+  - ~ConcurrentSkipListMap~ instead of synchronized ~SortedMap~
+  - ~ConcurrentSkipListSet~ instead of synchronized ~SortedSet~
+***** ~ConcurrentHashMap~
+- Iterators returned by ~ConcurrentHashMap~ are weakly consistent: instead of
+  throwing ~ConcurrentModificationException~, they traverse elements as they
+  existed when the iterator is constructed (and may not reflect modifications to
+  the collection thereafter).
+***** ~CopyOnWriteArrayList~
+- The iterators returned by ~CopyOnWriteArrayList~ are do not throw
+  ~ConcurrentModificationException~; instead, they return the elements exactly
+  as they were at the time the iterator was created.
+**** Blocking Queues and Producer-consumer Pattern
+- Blocking queues support the producer-consumer design. One common
+  producer-consumer design is a thread pool coupled with a work queue.
+- Blocking queues provide an ~offer~ method, which returns a failure status if
+  the item cannot be enqueued; this allows us to handle overload in a flexible
+  manner, instead of always blocking.
+- While the producer-consumer pattern decouples the producer(s) from the
+  consumer(s), the entire system is still coupled indirectly through the shared
+  work queues (i.e., the ultimate consumer, which places a final limit on the
+  processing rate).
+- The concrete implementations of ~BlockingQueue~ include:
+  - ~LinkedBlockingQueue~ that is analogous to ~LinkedList~
+  - ~ArrayBlockingQueue~ that is analogous to ~ArrayList~
+  - ~PriorityBlockingQueue~ that is a priority queue, which is useful when we
+    want to process items other than in a FIFO order
+  - ~SynchronousQueue~ that is not really a queue (YJ: this is similar to an
+    unbuffered channel in Go)
+    - This is useful to reduce the latency associated between moving data from
+      producer to consumer (because the work can be handed off directly).
+***** Deques and Work Stealing
+- ~Deque~ and ~BlockingDeque~ extends ~Queue~ and ~BlockingQueue~ to support
+  efficient insertion and removal at both ends. They naturally support the
+  pattern of work stealing.
+  - Working stealing is suited to problems where consumers are also
+    producers---that is, consumers will produce more work.
+**** Blocking and Interruptible Methods
+- Threads may be blocked when they need to wait for an event beyond they control
+  (e.g., I/O, lock acquisition) before they can continue execution.
+- Methods that throw ~InterruptedException~ means that:
+  1. they are blocking, and
+  2. if interrupted, they'll attempt to stop blocking early.
+- Threads have a ~interrupt~ method for interrupting and thread and querying
+  whether the thread has been interrupted.
+  - When our code throws an ~InterruptedException~, we must also handle the
+    interruption.
+  - If we are writing library code, we generally have one of two options:
+    1. Propagate the exception
+    2. Restore the interrupt (by calling the ~interrupt~ method on the thread)
+       so that code higher up the call stack can see that the stack was
+       interrupted. (See listing 5.10 for an example.)
+  - It is acceptable to swallow the exception generally only when we are
+    extending ~Thread~ and therefore control all the code higher up the call
+    stack.
+**** Synchronizers
+A synchronizer is any object that coordinates the control flow of threads based
+in its state.
+***** Latches
+- A latch delays the progress of threads until it reaches its terminal state,
+  upon which all threads can proceed.
+- Common uses of a latch includes:
+  - Ensuring that a computation does not proceed until the resources it needs
+    are initialized.
+  - Ensuring that a service does not start until the services on which it
+    depends have started. Each service would have an associated binary latch,
+    and will wait on latch(es) of the service(s) that it depends on before
+    releasing its own latch and starting.
+  - Waiting for all parties involved in a particular activities before starting
+    together.
+- ~CountDownLatch~ can be used in any of the above three scenarios.
+***** FutureTasks
+- ~FutureTask~ implements ~Future~, which describes an abstract result-bearing
+  computation.
+- A ~FutureTask~ can be in one of three states:
+  1. Waiting to run
+  2. Running
+  3. Completed
+- The /completed/ state may be one of three status:
+  1. Normal completion
+  2. Cancellation
+  3. Exception
+- Calling ~Future.get~ may result is one of the following behavior:
+  - The call will return immediately if the task has completed normally.
+  - The call will throw an exception if the task completed exceptionally.
+    - The exception may be checked, unchecked, or an ~Error~.
+  - The call will block if the tasks is still in progress.
+***** Semaphores
+- Counting semaphores are used to control the number of activities that can
+  access a certain resource or perform a given action at the same time.
+- A binary semaphore can be used as a mutex with non-reentrant locking
+  semantics.
+- Semaphores are useful for implementing resource pools.
+- Semaphores can also be used to implemented bounded collections, by requiring
+  decrementing the semaphore before adding items to the collection, and
+  incrementing the semaphore when removing items from the collection.
+***** Barriers
+- A barrier blocks multiple threads until a certain number of threads are all
+  waiting at on the barrier, essentially allowing threads to wait for other
+  threads.
+  - This is somewhat similar to a latch; but a latch allows waiting for events
+    (instead of threads).
+- A barrier may also be reused after the threads have crossed the barrier for
+  the first time.
+  - For example, a ~CyclicBarrier~ allows a fixed number of parties to wait at
+    the barrier point.
+    - When the ~await~ call returns, it returns a unique index so each thread
+      can perform different action depending on the index.
+    - If the call to ~await~ times out or a blocked thread gets interrupted, all
+      outstanding calls to ~await~ terminate with ~BrokenBarrierException~.
+    - We can also pass a ~Runnable~ to a ~CyclicBarrier~. This ~Runnable~ will
+      be runned whenever the barrier is crossed, but before the waiting threads
+      are unblocked.
+- Barriers are often used in computation that occurs in stages, and where the
+  processing of each stage can happen in parallel, but each stage must be
+  completed before the next stage can begin. In such a scenario, the computation
+  may be parallelized across threads, and the threads will await for all other
+  threads on a barrier before proceeding to the next stage.
+- Barriers are also used as exchange points, where two asymmetric thread meet
+  and exchange data. For example, one thread might be responsible for filling a
+  queue and the other thread may be responsible for consuming from the queue;
+  these two threads may meet at a barrier to exchange their queues when they are
+  done will filling / consuming respectively.
+** Part II: Structuring Concurrent Applications
+*** Chapter 6 - Task Execution
+- The ~Executor~ framework is an abstraction on the execution of tasks.
+  - Consider web server for example, a standard task will be the handling of
+    requests.
+  - On one end of the spectrum, the tasks may be handled sequentially, leading
+    to poor responsiveness (i.e., high latency) and poor resource utilization
+    (i.e., CPU may be low when blocking on I/O).
+  - On the other end of the spectrum, the web server may create a new thread for
+    every request that comes in. Beyond a certain point, the creation of new
+    thread will offer little to no additional concurrency, but nonetheless still
+    introduce the overhead.
+  - Using the ~Executor~ framework, it becomes easier build a web server that
+    handles the incoming requests on a fixed pool of threads (e.g., using the
+    Executor returned from ~Executors.newFixedThreadPool()~). It'll also be easy
+    to change to execution policy without much code changes.
+    - An execution policy specifies the "what, where, when and how" of task
+      execution, including:
+      - In what thread will tasks be executed?
+      - In what order should tasks be executed (FIFO, LIFO, priority order)?
+      - How many tasks may execute concurrently?
+      - How many tasks may be queued pending execution?
+      - If a tasks has to be rejected because the system is overloaded, which
+        task should that be, and how should the application be notified?
+      - What actions should be taken before or after executing a task?
+  - Whenever we see code of the form: ~new Thread(runnable).start()~, consider
+    whether we should replace it with an ~Executor~.
+- Some common thread pool for use with the ~Executor~ framework includes:
+  - ~newFixedThreadPool~: Creates threads as tasks are submitted, up to the
+    maximum pool size, and then attempts to maintain a constant pool size (e.g.,
+    creating new threads when one dies).
+  - ~newCachedThreadPool~: Reuses idle threads when available, but will
+    otherwise create new threads without bounds.
+  - ~newSingleThreadExecutor~: Single-threaded, with tasks processed
+    sequentially based on order imposed by the task queue.
+  - ~newScheduleThreadPool~: A fixed-size pool that supports delayed and
+    periodic task execution.
+- The ~ExecutorService~ interface is an extension of ~Executor~, providing
+  lifecycle methods like graceful shutdown, checking status.
+- We submit a ~Runnable~ or ~Callable~ to an executor and get back a ~Future~
+  that can be used to retrieve the result or cancel the task.
+- Note that when we are parallelizing heterogeneous tasks , there are various
+  limitations:
+  - (Note: "heterogeneous" here means assigning different tasks to different
+    threads such that different threads will be performing different
+    computation; this is as opposed to splitting the same tasks into smaller
+    tasks, and assigning to different threads such each thread will be solving
+    the same problem as every other thread, but on different chunks of the data
+    / input.)
+  - After parallelizing heterogeneous tasks, when new or more resources are
+    available, it is not immediately clear how we should deploy the additional
+    resources /without finding finer-grained parallelism/.
+  - Different parts of the heterogeneous division may take different amount of
+    time. As a result, dividing the task heterogeneously across two threads may
+    not half the total amount of time required.
+*** Chapter 7 - Cancellation and Shutdown
+**** Task Cancellation
+- Java does not provide any mechanism for safely forcing a thread to stop what
+  it is doing (i.e., no pre-emptive mechanism); tasks cancellation relies on a
+  cooperative mechanism.
+- A tasks that wants to be cancellable must have a cancellation policy that
+  specifies the "how", "when", and "what" of cancellation---how other code can
+  request cancellation, when the task checks whether the cancellation has been
+  requested, and what actions the tasks takes in response to a cancellation
+  request.
+- One way to implement a cancellable tasks is to have a volatile ~cancelled~
+  field (together with the appropriate setter, e.g., a public ~cancel()~ method
+  on the class) that the main processing method on the class checks at various
+  reasonable points in through the execution.
+  - One problem with this is that if the tasks is itself blocking on another
+    call, it may never be able to check the ~cancelled~ field.
+  - To avoid to problem just mentioned, it may make sense to implement /task/
+    cancellation using the /thread/ interruption mechanism in Java.
+    - Note the terminology here: /tasks/ have cancellation policy, and /threads/
+      have interruption policy.
+  - Note that a single interrupt request on the thread may have different
+    meaning:
+    - It may be a signal to cancel the current running /task/, or it may be a
+      signal to shut down the /thread/.
+    - As such, when a task hooks into the thread interruption mechanism to
+      implement cancellation (i.e., by catching the ~InterruptedException~), the
+      task should restore the interruption status after performing its own
+      cancellation code. This can be achieved by calling
+      ~Thread.currentThread().interrupt()~ after handling the cancellation, or
+      rethrowing the exception.
+    - On the other hand, if a task does not support cancellation, but still
+      relies on blocking methods (i.e., methods can may throw
+      ~InterruptedException~), then the task will have to catch the
+      ~InterruptedException~, set a local flag to indicate that an exception has
+      occurred, retry calling the blocking methods until the task is complete
+      (since it does not support cancellation), and restore the interruption
+      status just before returning.
+  - We should generally not interrupt a thread unless we know what it means
+    (i.e., what is the threads interruption policy).
+**** Handling Abnormal Thread Termination
+- The Thread API in Java allows us to register ~UncaughtExceptionHandler~ that
+  handles uncaught exceptions when a thread dies. In long-running applications,
+  we should always use uncaught exception handlers for all threads that at least
+  log the exception.
+**** JVM Shutdown
+- Upon JVM shutdown, all registered shutdown hooks are executed concurrently. As
+  such, a shutdown hook should not rely on services that might be shut down by
+  another shutdown hook (e.g., logging).
+- To avoid the above issue, often times it makes sense to use a single shutdown
+  hook to shutdown all services, avoiding possible race conditions and deadlocks.
+- Daemon threads are threads that do not prevent JVM's automatic
+  shutdown---i.e., when all the non-daemon threads are done and the remaining
+  threads are all daemon threads, JVM will initiate an orderly shutdown.
+*** Chapter 8 - Apply Thread Pools
+This chapter covers the advanced options for configuring and tuning thread
+pools, and their usage in relation to the tasks execution framework.
+**** Implicit Couplings Between Tasks and Exception Policies
+- Thread pools work best when tasks are homogeneous and independent; mixing
+  long-running and short-running tasks risks having the pool dominated by the
+  long-running tasks, resulting in the short-running tasks taking a long time
+  too.
+- Submitting into threadpools tasks that depend on other tasks risks deadlock
+  unless the pool is unbounded.
+**** Sizing Thread Pools
+- Even for compute-intensive tasks, we should usually have slightly more threads
+  than the number of processing cores on the system. This is because even
+  compute-intensive threads occasionally take a page fault or pause for some
+  other reason, having extra threads to be executed prevents CPU cycles from
+  going unused when such events happen.
+- For tasks that include blocking operations (e.g., disk, network and other
+  I/O), we would want a larger pool size, since not all of the threads will be
+  schedulable at any moment in time.
+**** Configuring ThreadPoolExecutor
+- The ~ThreadPoolExecutor~ provides the base implementation for executors
+  returned by ~newCachedThreadPool~, ~newFixedThreadPool~, etc. It is a flexible
+  and robust pool implementation that allows a variety of customizations.
+  - For how to instantiate a ~ThreadPoolExecutor~, consider referring to the
+    source code of an existing factory method (e.g., ~newCachedThreadPool~) that
+    returns a thread pool most similar to the intended thread pool behavior.
+- Remember that even with fixed pool sizes, resource exhaustion may still happen
+  if the task queue itself grows in an unbounded manner.
+  - Consider using ~ArrayBlockingQueue~ or a bounded ~LinkedBlockingQueue~ or
+    ~PriorityBlockingQueue~.
+  - When using bounded work queues, the queue size and pool size must be tuned
+    together.
+  - A large queue coupled with a small pool can help reduce memory usage, CPU
+    usage, and context switching, at the cost of potentially constraining
+    throughput.
+  - For very large or unbounded queues (if for some reason these are
+    acceptable), it is possible to bypass queuing entirely and instead hand off
+    tasks directly from producers to worker threads using ~SynchronousQueue~.
+  - Using ~SynchronousQueue~, if there is no thread already waiting on the
+    queue, the executor will either create a new thread, or reject the tasks if
+    thread creation is not possible (e.g., pool size limit has been reached).
+- *Saturation Policies*
+  - Saturation policies govern what happens when a bounded work queue is filled
+    up, or when a task is submitted to an ~Executor~ that has been shutdown.
+  - Some policies include ~AbortPolicy~, ~CallerRunsPolicy~, ~DiscardPolicy~,
+    and ~DiscardOldestPolicy~.
+    - ~CallerRunsPolicy~ means the task will be runned on the caller's thread,
+      which also has the effect of preventing the caller thread from being able
+      to submit more task until the caller thread itself is done with the task.
+- *Thread Factories*
+  - When a thread pool needs to create a thread, it does so through a thread
+    factory. Specifying a custom thread factory allows us to customize the
+    configuration of pool threads (e.g., setting an ~UncaughtExceptionHandler~,
+    or giving threads meaningful names to ease debugging).
+**** Extending ThreadPoolExecutor
+- ~ThreadPoolExecutor~ is designed for extension and provides several hooks for
+  subclasses to override.
+**** Parallelizing Recursive Algorithms
+- Loops whose bodies contain nontrivial computation or perform potentially
+  blocking I/O are frequently good candidates for parallelization, as long as
+  the iterations are independent.
+- One way to dispose of and wait for ~ExecutorService~ to finish the assigned
+  tasks is to call ~shutdown()~ followed by ~awaitTermination~ on the
+  ~ExecutorService~.
+- Some considerations when converting a sequential recursive algorithm to a
+  parallel one:
+  - How to detect that a solution has been found --> use some variable (the
+    "Solution Variable") that can be accessed by all the tasks parallel task
+    - See listing 8.17 for an example of a result-bearing latch implementation
+      based on the ~CountDownLatch()~
+  - How to synchronize update to the share Solution Variable, preventing
+    corruption and also avoid over-locking and leading to contention
+  - How to wait for the solution, while also ensuring the wait will not block
+    forever if there is no solution --> one possible approach is to keep a count
+    of the submitted tasks, and end when the count drops back to zero (see
+    listing 8.18)
+  - How to implement a timeout / cancellation?
+*** Chapter 9 - GUI Applications
+- One of the reasons why GUI application have a single dedicated event main
+  thread or dispatch thread is to avoid race conditions and deadlock.
+  - User-initiated events tend to "bubble up" from OS to the application (e.g.,
+    detecting mouse input), while application-initiated events tend to "bubble
+    down" from the application to the OS (e.g., repainting the display).
+  - The MVC model also tend to leads to inconsistent lock ordering and thus
+    deadlocks.
+- Skipped, because it is rather focused on GUI, making the theoretical knowledge
+  of limited use. Furthermore, in practical terms, the code samples are in old
+  Java style, making reading them less useful.
+** Part III: Liveness, Performance, and Testing
+*** Chapter 10 - Avoiding Liveness Hazards
+- This chapter explores some of the causes of liveness failures and what can be
+  done to prevent them.
+- On the JVM, once threads are deadlocked, there is nothing we can do about
+  those threads other than restarting the system and hoping that deadlocks
+  doesn't occur again. (YJ: Recall that thread interruptions in Java is purely cooperative.)
+  - This is unlike database systems that actively detects deadlocks and
+    terminate one of the deadlock threads to allow execution to continue.
+- *A program will be free of lock-ordering deadlocks if all threads acquire the
+  locks they need in a fixed global order.*
+  - An additional concern is that the entity to be lock on may depending on user
+    input: e.g., in a bank transfer, we may design of system to always lock the
+    "from" account followed by the "to" account, but if two persons initiate
+    transfers to each other at the same time, a deadlock may still occur.
+  - One way to solve the above issue is to assign each account number a globally
+    unique ID, and always lock the lower ID first.
+- Avoid invoking any alien method with a lock held. This is because the alien
+  method may in turn acquire other locks or block for an unexpectedly long time.
+  - One way this tend to occur insidiously is when a synchronized method of a
+    class calls a method (this is the alien method here) on one of the fields of
+    the class.
+  - One way to avoid this problem is to refactor the code to use open calls (as
+    opposed to ~synchronized~ methods): refer to listing 10.5 vs listing 10.6.
+  - Note however that by converting code to use open calls, we might loss
+    atomicity (since the locking is now more granular), and this may or may not
+    be acceptable, depending on the problem domain.
+**** Avoiding and Diagnosing Deadlocks
+- How to prevent:
+  1. Identify where multiple locks could be acquired (try to make this a small
+     set).
+  2. Perform a global analysis of all such instances to ensure that lock
+     ordering is consistent across the entire program.
+- One other way to avoid deadlock (or at least reduce the impact) is to use
+  timed lock acquisition.
+  - Note however that when a timed lock acquisition time out, it may not
+    necessarily be indicative of a deadlock; the system might merely have been
+    slow, or there might have been an infinite loop somewhere.
+- To diagnose deadlocks, we can send the JVM process i =SIGQUIT= signal (~kill
+  -3~), upon which it will stop and also produce a thread dump which also
+  includes locking information.
+**** Other Liveness Hazards
+- Other liveness hazards include:
+  - *Starvation*: Where a thread is perpetually denied access to resources it
+    needs in order to make progress.
+    - Note: While Java's Thread API provides mechanism for specifying thread
+      priorities, we should generally avoid the temptation to tweak them, as
+      this will result in our application being tied to the underlying
+      platform's scheduling mechanism.
+  - *Poor Responsiveness*
+  - *Livelock*: E.g., where multiple cooperating threads change their state in
+    response to the other in such a way that no thread can ever make progress.
+    - To avoid such livelock, one way is to introduce some randomness into the
+      retry mechanism.
+*** Chapter 11 - Performance and Scalability
+This chapter explores techniques for analyzing, monitoring, and improving the
+performance of concurrent programs.
+**** Thinking about Performance
+- Application performance can be measured in a number of ways: service time,
+  latency, throughput, efficiency, scalability, or capacity.
+- Some metrics measure how fast a given unit of work can be processed or
+  acknowledged, while others measure how much work can be performed with a given
+  quantity of computing resources.
+  - E.g., scalability describes the ability to improve throughput or capacity
+    when additional computing resources (such as additional CPUs, memory,
+    storage, or I/O bandwidth) are added.
+- Designing and tuning concurrent applications for scalability can be very
+  different from traditional performance optimization, where the goal is usually
+  to do the same work with less effort (e.g., by reusing previously computed
+  results through memoization or using a better algorithm).
+  - When tuning for scalability, we are instead trying to find ways to
+    parallelize the problem so we can take advantage of the additional
+    processing resources to do more work with more resources.
+  - Consequently, many of the tricks that improve performance in single-threaded
+    programs are bad for scalability.
+- Some questions to consider when optimizing for performance:
+  - What do we actually mean by "better performance"?
+  - Under what conditions will the approach actually be more performant? Under
+    light or heavy load? With large or small data sets? Can we support our
+    answer with measurements?
+  - Is the code likely to be used in other situations where the conditions may
+    by different?
+  - What hidden costs, such an increased development or maintenance risk, are we
+    trading for this improved performance? Is this a good trade-off?
+- *When we trade safety for performance, we may get neither.*
+  - This is true especially when it comes to concurrency. As such, it is
+    imperative to measure the performance before and after the
+    "optimization". There are many tools available for such measurements
+    (e.g. =perfbar=).
+**** Amdalh's Law
+- The relationship between increased performance and additional computing
+  resources is not linear. As we add more computing resources, the increase in
+  performance becomes less than proportionate.
+- The above is due to the fact that some part of the system must be executed
+  serially with respect to the other parts, and once this part has sufficient
+  resource to execute, adding additional resource will not make it run any
+  faster.
+- As such, before optimizing the program into one that can take advantage of
+  additional computing resources (i.e., making the program /salable/) it is
+  important to consider the sources of serialization, for example:
+  - If there is a single thread pool, the worker queue for submitting tasks to
+    the thread pool is a source of serialization. As such, using
+    ~ConcurrentLinkedQueue~ (which has a more efficient algorithm) as the worker
+    queue may yield better performance than using ~synchronizedList~.
+  - Result handling is also usually processed serially (e.g., writing to a log
+    file, or putting them into a data structure).
+- When evaluating an algorithm, it may be helpful to think how will the
+  algorithm perform when we have hundreds or thousands of processors (as opposed
+  to just around four to eight processors).
+  - For example, locking splitting (splitting one lock into two) may be
+    sufficient when there are around two processors, but lock striping (splitting
+    one lock into many) is necessary to exploit more processors.
+**** Costs Introduced by Threads
+- Whenever a thread is scheduled for execution, there is a minimum amount of
+  time for which the thread cannot be descheduled even if there are many other
+  threads waiting. This is to amortize the cost of the context switch over more
+  uninterrupted execution time (improving overall throughput at some cost to
+  responsiveness).
+  - As such, when a thread blocks because it is waiting for a contended lock, it
+    is not able to use its full scheduling quantum, leading to wasted resources.
+- The =vmstat= command on Unix systems and =perfmon= tool on Windows systems
+  report the number of context switches and percentage of time spent in the
+  kernel.
+  - High kernel usage (over 10%) often indicates heavy scheduling activity,
+    which may be caused by blocking due to I/O or lock contention.
+- *Don't worry excessively about the cost of uncontended synchronization. The
+  basic mechanism is already quite fast, and JVMs can perform additional
+  optimizations (e.g., removing the lock entirely if possible, or coarsening the
+  lock) that further reduce or eliminate the cost. Instead, focus optimization
+  efforts on areas where lock contention actually occurs.*
+- Synchronization by one thread can affect the performance of other threads
+  because synchronization creates traffic on the shared memory bus.
+**** Reducing Lock Contention
+- Two factors influence likelihood of contention for a lock:
+  1. How often that lock is requested?
+  2. How long is the lock held for once acquired?
+- See listing 11.4 for an example of holding a lock longer than necessary.
+- Lock contention may also be reduced by delegating thread safety to thread-safe
+  objects like ~ConcurrentHashMap~.
+- Lock contention may also be reduced by using different locks to guard
+  different variables or different parts of the variables (i.e., using
+  techniques like lock splitting or lock striping).
+  - Refer to listings 11.6 and 11.7 for examples of locking on the fields
+    itself, instead of locking on the containing object.
+  - One downsides of lock striping is that locking the entire collection for
+    exclusive access is more difficult and costly.
+  - Reducing lock granularity will also not help if there are "hot fields" that
+    all operations require. Example of such hot fields might be a cache data
+    structure.
+- Lock contention may also be reduced by using alternatives to exclusive locks:
+  - Concurrent collections, read-write locks, immutable objects, and atomic
+    variables.
+- When testing for scalability, the goal is usually to keep the processors fully
+  utilized. Tools like =vmstat= and =mpstat= on Unix systems and =perfmon= on
+  Windows systems can be helpful.
+- Avoid object pooling other than for the most expensive objects.
+**** Reducing Context Switch Overhead
+- Where there is a single source of blocking calls (e.g., logging directly to
+  output), consider putting some form of buffer in front of the source of
+  blocking calls (e.g., a logging service with a message queue that eventually
+  writes to the output).
+  - This improves performance because the potential point of lock contention has
+    moved from the I/O device, to the message queue on the logging service.
+  - Holding a lock on the I/O device is inherently more prone to lock
+    contention as I/O operations tend to /require more time/ then purely
+    computational operations (like acquiring a lock to the message queue and
+    enqueueing a log message.).
+    - Recall that holding a lock for long duration worsens lock contention.
+*** Chapter 12 - Testing Concurrent Programs
+**** Intro
+- The major challenge in constructing tests for concurrent programs is that
+  potential failures may be rare probabilistic occurrences rather than
+  deterministic ones, and tests that disclose such failures must be more
+  extensive and run for longer than typical sequential tests.
+- Most tests of concurrent classes are either tests for safety or liveness (or
+  both).
+  - Tests of safety verifies that a class's behavior conforms to its
+    specification, and usually work by testing the invariants.
+  - Tests of liveness include tests of progress and non-progress: is the method
+    running blocking or merely running slowly; how to test that an algorithm
+    does not deadlock?
+  - Tests of performance: throughput, responsiveness, scalability.
+**** Testing for Correctness
+- A set of sequential tests are useful even when testing concurrent classes as
+  these sequential tests can disclose non-concurrency related problems.
+- One way to test that a particular operation blocks is to:
+  1. Start a separate thread in the test method to call the blocking method,
+  2. Inside the separate thread, return failure if there is no blocking;
+     otherwise, catch the ~InterruptedException~ and return success,
+  3. Sleep in the main testing thread for a set amount of time,
+  4. Interrupt the separate thread (this should trigger the
+     ~InterruptedException~),
+  5. Join the separate thread, and check that it handled the
+     ~InterruptedException~ in an expected manner.
+- One way to test the safety of classes used in producer-consumer designs is to
+  use an order-sensitive checksum on the elements that are put on the processing
+  queue.
+  - See listings 12.5 and 12.6 for example.
+- When the purpose of the class is to prevent resource exhaustion, we also need
+  to test for resource leaks.
+  - See listing 12.7 for an example.
+- One way to generate more interleaving to test when testing for concurrency
+  errors is to introduce ~Thread.yield~ or non-zero sleep in the actual code
+  during testing.
+  - Aspect-oriented programming (AOP) tools can be used to more conveniently add
+    such calls during testing and remove them for production.
+**** Testing for Performance
+- Sometimes linkedlist-based structures may perform better than array-based
+  structures in a concurrent setting because the former allows concurrent
+  updating of different parts of the structure.
+**** Avoiding Performance Testing Pitfalls
+- We should be conscious of how garbage collection will affect out performance
+  test. Either invoke the JVM with =-verbose:gc= and check that the GC did not
+  run before accepting the test results, or write the tests sufficiently long to
+  ensure that GC runs for a coupled of time in order to factor in GC in the
+  performance tests.
+- We should also ensure that we allow the JVM to "warm-up" and dynamically
+  compile the relevant code before taking measurements.
+  - Note that in production, most application would run long enough for the JVM
+    to dynamically compile all frequent code paths.
+  - Note also that the compilation process itself consumes processing resources,
+    and be sure to factor that into our measurements as necessary.
+  - On HotSpot, run our program with =-XX:+PrintCompilation= to print out a
+    message when dynamic compilation runs, so we can verify this.
+- The JVM uses various background threads for housekeeping tasks, as such, it is
+  a good idea to place explicit pauses between measuring different unrelated
+  computationally intensive tasks, in order to all such background threads to
+  catch up.
+- When writing benchmarks, beware of dead code elimination by the compiler. One
+  way to avoid such dead code elimination is use the results of the computation
+  in a arbitrary manner, such as comparing to the current system time and
+  printing a simple output.
+  - Note not should the computed results be used, they should also be
+    unguessable to prevent pre-computation and inlining.
+**** Complementary Testing Approaches
+** Part IV: Advanced Topics
+*** Chapter 13 - Explicit Locks
+**** Lock and ReentrantLock
+- Unlike intrinsic locking, ~Lock~ offers a choice of unconditional, polled,
+  timed, and interruptible lock acquisition, and all lock and unlock operations
+  are explicit.
+- The ~Lock~ interface is as follows:
+  #+begin_src java
+    public interface Lock {
+        void lock();
+        void lockInterruptibly() throws InterruptedException;
+        boolean tryLock();
+        boolean tryLock(long timeout, TimeUnit unit)
+            throws InterruptedException;
+        void unlock();
+        Condition newCondition();
+    }
+  #+end_src
+- Some limitations of intrinsic locking compared to using ~ReentrantLock~:
+  - Acquisition of intrinsic lock may block forever, without possibility of
+    specifying a timeout.
+  - It is not possible to interrupt a thread waiting to acquire an intrinsic
+    lock.
+  - Intrinsic locks must be released in the same code of block in which they are
+    acquired.
+**** Performance Considerations
+- *Performance is a moving target; yesterday's benchmark showing that X is
+  faster than Y may already be out of date today.*
+**** Fairness
+- A fair lock is one in which threads acquire based on the order of the request.
+- A non-fair lock allows barging: threads requesting a lock can jump ahead of
+  the queue of waiting threads if the lock happens to be available when it is
+  requested.
+- In most cases, the performance benefits of non-fair locks outweigh the
+  benefits of fair queueing.
+  - One reason why non-fair lock is more performant is because it takes time for
+    threads to be suspended and to be woken up; as such suppose that thread A is
+    just done with a lock and thread B is already suspending in a queue waiting
+    and thread C has requested for the lock, it is entirely possible that thread
+    C could have acquired the lock and complete its processing (under a non-fair
+    locking regime) in the time it would have time to suspend thread C and wake
+    thread B (as a fair lock would).
+- Fair locks tend to work best when they are held for a relatively long time or
+  when the mean time between lock requests is relatively long.
+**** Choosing Between Synchronized and ReentrantLock
+- ~ReentrantLock~ is an advanced tool for situations where intrinsic locking is
+  not practical. Use it if we need advanced features: timed, polled, or
+  interruptible lock acquisition, fair queuing, or non-block-structured
+  locking. Otherwise, prefer ~synchronized~.
+**** Read-write Locks
+- In practice, read-write locks can improve performance for frequently accessed
+  read-mostly data structures on multiprocessor systems; under other conditions
+  they perform slightly worse than exclusive locks due to their greater
+  complexity.
+- Some implementation options for a ~ReadWriteLock~ are:
+  - /Release preference/: When a writer releases the write lock and there are both
+    writers and readers queued up, who should be given preference?
+  - /Reader barging/: If the lock is held by reader but there are waiting
+    writers, should newly arriving readers be granted immediate access, or
+    should they wait behind writers?
+  - /Reentrancy/: Are the read and write locks reentrant?
+  - /Downgrading/: If a thread holds the write lock, can it acquire the read
+    lock without releasing the write lock?
+  - /Upgrading/: Can a read lock be upgraded to a write lock in preference to
+    other waiting readers or writers?
+*** Chapter 14 - Building Custom Synchronizers
+**** Managing State Dependence
+- An example of state dependence is how an item cannot be removed from an empty
+  queue.
+- One way to implement a state dependent object is to use polling and
+  sleeping. Take a queue for example, it can expose a method call ~IsFull()~ for
+  client code to check---if the queue is indeed full, the client code should
+  release the lock, and sleep for a while before acquiring the lock and checking
+  the ~IsFull()~ method again. This is the /sleeping-and-polling/ approach.
+- Just as each Java object can act as a lock, each object can also act as a
+  condition queue. The ~wait~, ~notify~, and ~notifyAll~ methods in ~Object~
+  constitute the API for intrinsic condition queues (and requires the intrinsic
+  lock be held before any of them can be called).
+  - ~Object.wait~ atomically releases the intrinsic lock and ask the OS to
+    suspend the current thread. This allow other threads to acquire the
+    intrinsic lock and modify the object state.
+  - Condition queue provides a more efficient building block for the
+    /sleeping-and-polling/ approach.
+**** Using Condition Queues
+- Usage of condition queues requires three elements:
+  1. the lock: to be held when checking the condition predicate
+  2. the condition predicate: the thing that a thread ~wait~ for (e.g., a queue
+     being no longer empty)
+  3. the condition queue: the object to call ~wait~ and ~notify~ / ~notifyAll~
+     on, which should also correspond to the lock
+- When using condition waits (~Object.wait~ or ~Condition.await~):
+  - Always have a condition predicate, some test of object state that must hold
+    before proceeding;
+  - Always test the condition predicate before calling ~wait~, and again after
+    returning from ~wait~ (in case of spurious wakeup or ~notifyAll~);
+  - Always call ~wait~ in a loop;
+  - Ensure that the state variables making up the condition predicate are
+    guarded by the lock associated with the condition queue;
+  - Hold the lock associated with the condition queue when calling ~wait~,
+    ~notify~, or ~notifyAll~; and
+  - Do not release the lock after checking the condition predicate but before
+    acting on it.
+- Beware of /missed signals/---i.e., where a thread waits for a specific
+  condition that is already true, but fails to check the condition predicate
+  before waiting.
+  - Calling ~notify~ instead ~notifyAll~ can sometimes contribute to missed
+    signals too.
+- A state-dependent class should clearly document and expose its waiting and
+  notification protocols to subclasses, or completely prevent subclass from
+  participating in such protocols as all.
+**** Explicit Condition Objects
+- Just as ~Lock~ is a generalization of intrinsic locks, ~Condition~ is a
+  generalization of intrinsic condition queues.
+- Some drawbacks of intrinsic condition queues are:
+  - Each intrinsic lock can have only one associated condition queue, which
+    means multiple threads might be waiting on the same condition queue for
+    different condition predicates.
+- Some additional features provided by explicit ~Condition~ objects are:
+  - multiple wait sets per lock
+  - interruptible and uninterruptible condition waits
+  - deadline-based waiting
+  - choice of fair or non-fair queuing.
+- Note: the equivalent of ~wait~, ~notify~ and ~notifyAll~ for ~Condition~
+  objects are ~await~, ~signal~ and ~signalAll~. However, since ~Condition~
+  extends ~Object~, it has the former sets of methods too, but those should
+  generally not be used.
+**** Anatomy of a Synchronizer
+- Both ~ReentrantLock~ and ~Semaphore~ are implemented on top of the
+  ~AbstractQueuedSynchronizer~ (as are many other synchronizers).
+**** ~AbstractQueuedSynchronizer~
+- N.A.
+**** AQS in ~java.util.concurrent~ ~Synchronizer~ Classes
+- N.A.
+*** Chapter 15 - Atomic Variables and Non-blocking Synchronization
+**** Intro
+- Many of the classes in ~java.util.concurrent~, such as ~Semaphore~ and
+  ~ConcurrentLinkedQueue~, provide better performance and scalability (compared
+  to the ~synchronized~ alternatives) due to their use of atomic variables and
+  non-blocking synchronization.
+**** Disadvantages of Locking
+**** Hardware Support for Concurrency
+- Modern CPUs usually have atomic compare-and-swap (CAS) instruction that has
+  three operands: memory location, expected old value and the new value. CAS
+  updates the value only if the old value matches.
+  - CAS adopts an "optimistic locking" approach allows multiple threads to
+    perform the same instructions, and only one thread will succeed and threads
+    can detect failure and decides how to proceed, without being suspended.
+**** Atomic Variable Classes
+- There are twelve atomic variable classes, divided into four groups: scalars,
+  field updaters, arrays, and compound variables.
+- The most commonly used are atomic scalars: ~AtomicInteger~, ~AtomicLong~,
+  ~AtomicBool~, and ~AtomicReference~.
+- The array atomic classes are arrays whose elements can be updated atomically.
+- Where there are multiple mutable states that needs to be updated atomically,
+  we can consider encapsulating the states in a class, and use an
+  ~AtomicReference~ to update the reference.
+**** Non-blocking Algorithms
+- Non-blocking algorithms generally uses compare-and-set / -swap instead of
+  locking to achieve better performance.
+- However one problem that may arise in naive use of compare-and-set / -swap
+  that even though the compare step succeeds because the value is the same, the
+  value has in fact been changed and then changed back.
+  - This would be a problem if the algorithm is concerned not just about the
+    value, but also whether the value has change.
+  - It would also be a problem if the value is a reference to an object that
+    might have been recycled to represent a different object.
+- To avoid the ABA problem, we can use ~AtomicStampedReference~ or
+  ~AtomicMarkableReference~.
+*** Chapter 16 - The Java Memory Model
+**** What is a Memory Model, and Why would I Want One?
+- The Java Memory Model defines certain /happens-before/ partial orderings:
+  - *Program order rule*: Each action in a thread happens-before every action in
+    that thread that comes later in the program order.
+  - *Monitor lock rule*: An unlock on a monitor happens-before every subsequent
+    lock on the same monitor.
+  - *Volatile variable rule*: A write to a volatile variable happens-before
+    every subsequent read of the same field.
+  - *Thread start rule*: A call to ~Thread.start~ on a thread happens-before
+    every action on the started thread.
+  - *Thread termination rule*: Any action in a thread happens-before any other
+    thread detects that the first-mentioned thread is terminated (either by
+    ~Thread.join~ or ~Thread.isAlive~).
+  - *Interruption rule*: A thread calling interrupt on another thread
+    happens-before the interrupted thread detects the interrupt.
+  - *Finalizer rule*: The end of a constructor for an object happens-before the
+    start of the finalizer for that object.
+  - *Transitivity rule*: If A happens-before B and B happens-before C, than A
+    happens-before C.
+- A data race occurs when a variable is read by more than one thread, and
+  written to by at least on thread, but the reads and writes are not ordered by
+  happens-before.
+- Lock acquisition and release, and reads & writes on volatile variables are
+  totally ordered.
+**** Publication
+- Unsafe publication happens when the initialization of an object (which
+  involves writing to the new object's fields) does not have a happens-before
+  relationship from the code accessing a reference to the object.
+
+* To Internalize /Now/
+- N.A.
+
+* To Learn/Do Soon
+- Lower level OS concepts
+
+* To Revisit When Necessary
+** 5.3 Blocking Queues and the Producer-consumer Pattern
+- Refer to Listing 5.8 for an example of using ~BlockingQueue~ to coordinate
+  producer and consumer threads in an example desktop search application.
+  - Note: It might be better to use the executor framework instead.
+** 5.5 Synchronizers
+- Refer to this section generally for discussions on the common type of
+  synchronization primitives, and what are the common use cases and variations
+  of each.
+** 5.5.1 Latches
+- Refer Listing 5.11 for an example of how ~CountDownLatch~ can be used in two
+  ways:
+  1. Wait for set-up to be ready
+  2. Wait for all other threads that are supposed to start together
+** 5.6 Building an Efficient, Scalable Result Cache
+- Refer to Listings 5.16 through 5.19 for illustration of various mistakes that
+  we may make when building a thread-safe lazy initialization cache:
+  - Listing 5.16 - We achieve thread-safety by synchronizing on the mutable
+    ~HashMap~ used to hold the state, resulting in poor concurrent performance.
+  - Listing 5.17 - We change to using ~ConcurrentHashMap~ instead of ~HashMap~,
+    allowing us to do awaying with synchronizing when retrieving value from the
+    map using ~get~. However, because of the check-then-act operation (checking
+    if value has been initialized, and initializing it if not), we might
+    potentially call the (expensive) initialization function more than once.
+  - Listing 5.18 - We change to using storing ~FutureTask~ (instead of the
+    actual value) in the ~Map~. This decreases the window where duplicated
+    initialization may occur. However, the window still exists.
+  - Listing 5.19 - Finally, we switch to using the ~putIfAbsent~ method on the
+    ~ConcurrentHashMap~ so there is no longer a window that will result in
+    duplicated initialization.
+** 7.2 Stopping a Thread-based Service
+- Refer to listing 7.15 for an example of how to build a simple logging service
+  that supports shutdown lifecycle event. In particular, the example accounts
+  for the following:
+  - Providing lifecycle method ~stop()~ to initiate shutdown.
+  - Having the ~log()~ throw error if called after shutdown has been initiated.
+  - Using a ~BlockingQueue~ to queue up log messages to be processed by a
+    logging thread (essentially fanning in the calls to ~log()~ into the logging
+    thread). Note that we also do not want to be holding onto any intrinsic
+    locks when putting onto the queue if possible, since putting may block.
+  - Using the ~reservation~ field to keep track of pending log messages to be
+    written, before the service can be shutdown and the threads terminated.
+    - This solves the race condition where a client service successfully calls
+      ~log()~ but the logging service terminates before the logging thread
+      within the service can process everything on the queue.
+- Refer to listing 7.16 for an alternative implementation of the logging service
+  that delegates to ~ExecutorService~ instead of handling its own threads.
+- Refer to listing 7.21 and 7.22 for an example of extending
+  ~AbstractExecutorService~ in order to provide a way to check the states of the
+  submitted tasks (pending, in-progress or completed) when shutting down the
+  executor service itself.
+** 8.4 Extending ThreadPoolExecutor
+- Refer to section 8.4.1 for an example of how to extend ~ThreadPoolExecutor~ to
+  record statistics like total number of tasks processed and the total
+  processing time.
+** 9 GUI Applications
+- Refer to this section if I ever need to build a GUI application (either in
+  Java, or that there are no better resources in the target framework / language
+  that I'm working with)
+** 12.4.2 Static Analysis Tools
+- Refer to this section for a list of some common mistakes relating to
+  concurrent programming (e.g., call ~Thread.run()~ instead of ~Thread.start()~,
+  not releasing explicit locks in a ~finally~ block, not calling
+  ~Condition.await()~ in a loop).
+** 14.2 Using Condition Queues
+- Refer to listing 14.9 for an implementation of a recloseable gate using
+  condition queues. Threads can call ~await()~ to synchronize using the
+  recloseable gate until another thread calls ~open()~ on the gate, after which
+  the gate can be closed again for reuse.
+** 14.5 and 14.6 ~AbstractQueuedSynchronizer~
+- Refer to these sections for details on the ~AbstractQueuedSynchronizer~ class
+  that is used to implement many of the synchronizers in Java standard library.
+** 15.4 Non-blocking Algorithms
+- Refer to listing 15.6 for an example implementation of a stack that uses a
+  non-blocking algorithm based on ~compareAndSet~ on an ~AtomicReference~.
+- Refer to listing 15.7 for an example implementation of a linked queue that
+  uses a non-blocking algorithm.
+** 16.1.4 Piggybacking on Synchronization
+- Refer to listing 16.2 for an example of piggybacking on an existing
+  synchronization in order to access a variable not otherwise safe to be
+  assessed.
+** 16.2.3 Safe Initialization Idioms
+- Refer to this section for some safe initialization idioms.
+
+* Other Resources Referred To
+- N.A.
