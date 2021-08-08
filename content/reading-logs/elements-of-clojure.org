@@ -1,0 +1,377 @@
+---
+short_title: "Elements of Clojure"
+title: "Elements of Clojure"
+source: Watched an video title "On Abstraction" by Zachary Tellman and was inspired to
+  explore more.
+author: Zachary Tellman
+isbn: 978-0359360581
+reading_period: 2020.12–2020.12.25
+date: 2021-08-08T14:15:01+08:00
+draft: false
+---
+
+* General Review
+- Provides some useful concepts and terminology for reasoning about software
+  design.
+  - For example, the smallest useful unit of computation can be considered as a
+    /process/, and such a process would comprise three general operations:
+    pulling data, transforming data, and pushing data. The data pushed out will
+    also contain information on how to deal with said data.
+- Can be extremely vague at times. For example, consider the second sentence in
+  the paragraph below, taken from the chapter on =Composition=:
+  #+BEGIN_QUOTE
+  In general, the output of a process is only as interesting as its
+  inputs. Where the data pulled in by a process is /eventually/ available,
+  parameters must be /immediately/ available. When using our process in
+  isolation, the parameters are limited to the information literally at our
+  fingertips. If we are the only source of information, our software can only
+  tell us variations on what we already know.
+  #+END_QUOTE
+- Contains some snippets of Clojure code that are extremely elegant (at least to
+  my untrained eyes).
+  - For example, here is a repl:
+    #+BEGIN_SRC clojure
+      (defn repl
+        (loop []
+          (-> (read)
+              eval
+              print)
+          (recur)))
+    #+END_SRC
+  - For example, here is a handler in a web application:
+    #+BEGIN_SRC clojure
+      (defn handler [request]
+        (-> request
+            request->query
+            query-db!
+            result->response))
+    #+END_SRC
+- Aim of the book can be summarized in the first paragraph:
+  #+BEGIN_QUOTE
+  This book tries to put words to what most experienced programmers already
+  know. This is necessary because, in the words of Michael Polanyi, "we can know
+  more than we can tell." Our design choices are not the result of an
+  ineluctable chain of logic; they come from a deeper place, one which is
+  visceral and inarticulate.
+  #+END_QUOTE
+
+* Specific Takeaways
+** Names
+- Names should be *narrow* and *consistent*.
+  - A /narrow/ name clearly exclude things it cannot represent.
+  - A /consistent/ name is easily understood by someone familiar with the
+    surrounding code, the problem domain, etc.
+- Name can be used as a layer of /indirection/, separating the /what/ from the
+  /how/.
+- Terminologies:
+  - The textual representation of a name is its /sign/.
+  - The thing referred to by the name is its /referent/.
+  - The way a sign references the referent is called the /sense/ of the
+    name. Put another way, /sense/ is /how/ a referent is referenced by the
+    name.
+  - To illustrate the above: if two persons communicating with each other are
+    using the same name (i.e., the sign) to refer to the thing (i.e., the
+    referent), but makes different assumption about the thing, then they have
+    different understanding of the sense.
+    - E.g., two software architects might be using the phrase "event-driven" to
+      describe using Kafka to facilitate passing messages between different
+      services; however, one of them might be thinking of an event-sourced
+      approach, whereas the other is thinking of a simple message-brokering
+      system.
+- For example, consider the situation where our application needs to generate
+  and represent unique identifiers, and we decide to use UUIDs, which are
+  randomly generated 128-bit values.
+  - We can make the following two statements:
+    1. Our unique identifiers are unique.
+    2. Our unique identifiers are 128-bit values.
+  - While the first statement is true, the second is only true for our chosen
+    implementation (i.e., using UUIDs).
+  - Applying the terminologies above:
+    - Our /sign/ is the identifier, perhaps named ~id~.
+    - The /referent/ is the thing being pointed to, in our case it is the UUID
+      implementation.
+    - The /sense/ is the set of fundamental properties we ascribe to it: in this
+      case, the identifier's uniqueness (and not that the identifier is a
+      128-bit value).
+  - *When we encounter a new name, we only need to understand its sense.*
+    - A narrow name reveals its sense. But narrow doesn't necessarily mean
+      specific; a specific name captures most of an implementation, while a
+      general name captures only a small part.
+    - An overly general name obscures fundamental properties and invites
+      breaking changes.
+    - An overly specific exposes the underlying implementation, making it
+      difficult to change or ignore the incidental details.
+- Finding good names is difficult, so wherever possible, we should avoid
+  trying. For example, if composing existing functions are sufficiently clear,
+  there is no need to extract a variable in order to give it a name.
+- *If a function has grown unwieldy, but you can't think of any good names for
+  its pieces, leave it be. Perhaps the names will come to you in time.*
+*** Naming Data
+- When finding names, consider the following:
+  - Whether to use /natural/ names or /synthetic/ names. Natural names (e.g.,
+    "student" will have analogue in the real world and allow unfamiliar readers
+    to reason by analogy. However, this also leads to ambiguity and such names
+    generally have a range of possible meaning. Synthetic names (e.g., "monad")
+    will be incomprehensible to novice, but allows communication without
+    ambiguity.
+  - How deep into the code is the name being used. One can expect the surface
+    layer of the code to be read by a greater audience with less familiarity
+    with the code. Whereas within deeper layers, the one can assume that the
+    reader either has already gained familiarity with the surrounding code, or
+    is willing to do so.
+  - Where is there name used: As a variable declaration where the both the left-
+    and right-hand side of the assignment is controlled by the programmer? As
+    the function parameter name where only the name and possibly type is within
+    control (in which case the function may also consider validating the
+    arguments passed in)? etc.
+*** Naming Functions
+** Indirection
+- What is indirection:
+  #+BEGIN_QUOTE
+  Indirection provides separation between /what/ and /how/. It exists wherever
+  "how does this work?" is best answered, "it depends." This separation is
+  useful when the underlying implementation is complicated or subject to
+  change. It gives us the freedom to change incidental details in our software
+  while maintaining its essential qualities. It also defines the layers of our
+  software; indirection invites the reader to stop and explore no further. It
+  tells us when we're allowed to be incurious.
+  #+END_QUOTE
+*** What is an Abstraction
+- Abstraction must be considered within the environment which it exists in.
+*** A Model for Modules
+- Most software abstractions take the form of a /module/, which consists of a
+  model, an interface, and an environment.
+- The /model/ is a collection of data and functions. The /interface/ is the
+  means by which the model and environment interact. The /environment/ is
+  everything else: other software components, the users, and the world they
+  exist in.
+- Everything that the model does not reflect represents an /assumption/ that
+  these missing facets are either fixed or irrelevant. If a model can represent
+  invalid states, it must enforce /invariants/ that preclude those states.
+- When an assumption underlying an abstraction is no longer valid, we have 3
+  options:
+  1. Grow the model to take into account the assumption (or create another layer
+     of abstraction to ensure the assumption is valid),
+  2. Come up with conventions to ensure the assumption is valid,
+  3. Ignore the problem---i.e., fire the customer, and say that our component is
+     never intended to be used in such situations where the assumption is not
+     valid.
+**** Assumptions
+- *Abstractions that fail together should stay together.*
+*** Systems of Modules
+- It is useful to think for systems as being /principled/ or /adaptable/.
+  - A principled system is one where the components are designed for very
+    specific purpose and are thus highly dependent. This allows the components
+    to be highly optimized. Components in a principled system is also generally
+    organized in a hierarchy (e.g., top-down), and allows for incremental
+    understanding of the system (e.g., understand the top level, and going
+    deeper only as necessary).
+  - An adaptive system is one where the components are independent of each
+    other, generally organized in a graph. Such systems thus usually require
+    exhaustive exploration of the entire system to understand where and/or how
+    things are done.
+- One helpful way to structure systems is in a layered approach:
+  - An adaptive system with principled components.
+  - At the same time, the adaptive top-layer shields the principled components
+    from changes in the environment and from other principled components.
+  - When a principled component has outlived its usefulness, it can simply be
+    replaced without affecting other principled components.
+  - However, the size of principled components must be carefully controlled. If
+    the principled components are too big, then they become too expansive to
+    replace. If the principled components are too small, then the adaptive layer
+    requires a lot more "glue code" to make sure the principled components work
+    together (and remember this "glue code" of the adaptive layer generally must
+    be understood in its entirety because it is arranged in a graph structure as
+    opposed to being hierarchical).
+- The advice from the author is:
+  #+BEGIN_QUOTE
+  We should build our software from principled components wherever possible,
+  separated by interfaces where necessary. Modules that share common assumptions
+  should live in the same component, and modules with dissimilar assumptions
+  should be kept separate. This keeps the effects of changes small and
+  predictable.
+  #+END_QUOTE
+** Composition
+- Definition:
+  #+BEGIN_QUOTE
+  Composition is the combination of separate abstractions to create a new
+  abstraction.
+  #+END_QUOTE
+- The ultimate goal of software composition is to define /processes/ that /pull/
+  data from the environment, /transform/ that data, and /push/ the result back
+  into their environment.
+*** A Unit of Computation
+- A unit of computation can be defined as the smallest piece of code that does
+  something useful on its own.
+- Processes provide some /data/ and/or /execution/ isolation
+- Consider the use of words "pushing" and "pulling" in describing a process's
+  operation with respect to data---even though the words suggest a one-sided act
+  from the process itself, such operations generally still require bidirectional
+  communication.
+  - E.g., to pull data, a process must send information about what data it
+    wishes to receive, or at least signal that it is ready to receive more
+    information over a pre-existing channel.
+  - E.g., to push data, a process must confirm that downstream processes have
+    the capacity to process this new data.
+- Consider the function below to register a callback within a hypothetical
+  frontend application:
+  #+BEGIN_SRC clojure
+    (on-click refresh-button
+              (fn []
+                (query-service
+                 (fn [data]
+                   (update-dom data)))))
+  #+END_SRC
+  - It is not a single process, but rather a mechanism that /spawns/
+    processes. Each time the call back is triggered, process starts, executes
+    once, and exits.
+  - If we were to prevent concurrent operations by disabling the button, then it
+    becomes a single process (since a second process cannot be started until the
+    first is done):
+    #+BEGIN_SRC clojure
+      (on-click refresh-button
+                (fn []
+                  (disable! refresh-button)
+                  (query-service
+                   (fn [data]
+                     (update-dom data)
+                     (enable! refresh-button)))))
+    #+END_SRC
+- *Execution Model*
+  - An execution model describes what our processes do when its environment
+    provides too much or too little. For example, when downstream service is
+    unavailable, our process will retry with exponential backoff.
+  - Queues couple the execution of processes.
+    - If no limit is placed on how long processes using the queue will wait to
+      push or pull data, then the processes cannot be understood separately, and
+      they will share a single execution model.
+    - If we allow an execution model to span too many processes, it will quickly
+      exceed our understanding.
+- It is sometimes helpful to think in terms of process boundaries vs abstraction
+  boundaries.
+  - Leaky abstractions are fine, so long as they sit within a principled
+    component that shares their assumptions. For example, if our code is meant
+    to load a configuration in its entirety into memory, it is alright to use a
+    sort function that assumes that the input is below certain size.
+    - Note: In this case, one leaky abstraction is the fact that the sort
+      function implicitly assumes the input size is below a certain size, and
+      this assumption leaks to the surrounding code. However, the leakage is
+      alright because the whole principled component (i.e., the application's
+      whose config file the code is reading) shares that assumption.
+  - On the other hand, leaky processes (i.e., processes that make implicit
+    assumptions that cannot be guaranteed) are dangerous.
+*** Building a Process
+**** Pulling Data
+- It generally makes sense to cleanly decouple the logic for pulling data from
+  the logic that transforms data. This allows us to deal with the errors that
+  may occur while pulling the data separately. Such errors may include IO
+  errors, resource-related errors, etc.
+- In the author's original words:
+  #+BEGIN_QUOTE
+  In a robust process, the pull phase should invoke the transform phase. This
+  gives us greater flexibility in how we respond to errors; different scenarios
+  may call for different kinds of transforms. If our pull phase simply yields a
+  ~lazy-seq~, this relationship is inverted, and our control flow is greatly
+  constrained.
+  #+END_QUOTE
+**** Transforming Data
+- The three main things that we do to data are as follows:
+  1. /accreting/ the data by adding it to an existing collection,
+  2. /redicing/ the data by discarding information from an existing collection,
+     and
+  3. /reshaping/ data by placing it in a different kind of collection.
+- When designing APIs, we should consider avoiding implicit reshaping of data:
+  if the function that we are designing requires a particular type, it should
+  demand that type to allow others to judge whether the function is a good fit
+  for their problem.
+- We should try to keep our accretions and reductions separate (where possible).
+**** Pushing Data
+- Output data is also a description of what to do next:
+  #+BEGIN_QUOTE
+  The output of the transform phase is not just data, but rather a /descriptor/
+  of the side effects that the process should perform.
+  #+END_QUOTE
+- For example, the output data below specifies the URL to hit, whether to follow
+  redirects (yes), and how many times to do that:
+  #+BEGIN_SRC clojure
+    {:url               "http://example.com"
+     :method            :post
+     :body              "hello world!"
+     :follow-redirects? true
+     :max-redirects     99}
+  #+END_SRC
+- Sometimes instead of returning data in a raw representation, it might make
+  sense to instead return a function wrapped over the data.
+  - Note however that:
+    #+BEGIN_QUOTE
+    A function cannot be reduced or reshaped; it can only accrete. By exchanging
+    a string for a [function that acts on the output data directly], we gain
+    semantics but lose almost everything else. We should seek to delay this as
+    long as possible.
+    #+END_QUOTE
+- It is useful to compose a process with operational phases at the edges and a
+  functional phase in the middle.
+  - The operational phases guard against unexpected behaviors found in
+    production. Such operational phases interact with the environment in
+    production and enforce invariants on how the environment can affect the
+    process. Because it is generally not feasible / impossible to predict and
+    simulate the unexpected behaviors in production, the only true test is to
+    deploy the process and see what happens.
+  - If the operational phases are well-crafted, they allow us to test the
+    functional phase in isolation.
+*** Composing Processes
+- A process is generally a blackbox---we cannot directly affect the internals
+  nor see what is happening within. What we can do is to share data with the
+  process and wait for it the share some data back.
+  - For example:
+    #+BEGIN_SRC bash
+      cat moons | grep 'callisto' | less
+    #+END_SRC
+- To work with processes, we generally assign each process an /identifier/ to
+  interact with them via the identifiers, and / or communicate with the
+  processes via a /channel/.
+- To manage the identifiers assigned to various processes, we use strategies
+  like:
+  - /resolution/: akin to DNS resolution where there is a one-to-many mapping of
+    identifier to processes, and also allow for other operations like
+    load-balancing,
+  - /discovery/: having mechanism to fetch a list of processes able to provide a
+    particular service,
+  - using a /router/: which provides indirection by exposing a single channel
+    and distributing the data on that channel across multiple processes. One
+    example of a router is a thread pool, where functions are placed on a shared
+    queue and distributed to threads which execute them (Yong Jie: This example
+    might be slightly flawed because we are distributing functions across CPU
+    threads, and not data across processes; but the idea /is/ similar.)
+
+* To Internalize /Now/
+- Things I should put into my day-to-day toolbox include:
+  - When designing functions / components, think in terms of pulling,
+    transforming and pushing data.
+  - When designing components / systems, think in terms of principled components
+    surrounded by adaptive system.
+  - When naming, consider not just the sign and the referrent, but also the
+    sense that I want the reader to have.
+  - When designing abstractions, think about what assumptions I'm making, and
+    how are these assumptions valid / invalid in view of the current and future
+    environments.
+
+* To Learn/Do Soon
+- Figure out how to conceptually split the application(s) that I'm working on
+  into:
+  - Operational and functional phases (see earlier sections above for brief
+    description of what are these)
+  - Pulling Data / Transforming Data / Pushing Data
+
+* To Revisit When Necessary
+** Idioms
+- Refer to this section for a list of Clojure-specific idioms when I'm actually
+  writing Clojure code.
+** Composition - Building a Process
+- The author described briefly that processes provides (some) data isolation and
+  (some) execution isolation. I have yet to fully grasp what he is trying to
+  say.
+
+* Other Resources Referred To
+- These book referred to many other interesting conceptual / philosophical
+  materials. Do consult the references when I feel like reading such stuff.
