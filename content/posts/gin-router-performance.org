@@ -1,12 +1,12 @@
 ---
 title: "Many Routes to Gin"
-alternateTitle: "How various ways of declaring routes on Gin affects performanec"
+alternateTitle: "How various ways of declaring routes on Gin affects performance"
 date: 2020-10-09T21:14:00+08:00
 Description: ""
 image: ""
 imageCredit: ""
 Tags: [gin-web-framework, routing]
-Categories: [performance-optimizationo]
+Categories: [performance-optimizations]
 DisableComments: false
 ---
 
@@ -56,7 +56,7 @@ until I arrived at the ~addRoute(...)~ method in =tree.go=.
 
 - Scrolling through the body of ~addRoute(...)~, I see functions and variables
   like ~longestCommonPrefix()~ and ~parentFullPathIndex~, and I knew there will
-  be be some resolution of the routes and handlers.
+  be some resolution of the routes and handlers.
 
 - (/On hindsight, how silly of me to have not foresee this: how else would a/
   /routing component makes sure no routes are duplicated, and to prioritize/
